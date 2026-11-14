@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "forest_midday_alt.ogg",
+    authors = ["SnugglyBun", "Marek \x22Wansti\x22 Moeckel"],
+    license = "CC-BY-SA 4.0",
+    loop_begin = 7.215,
+    loop_at = 101.053,
+]

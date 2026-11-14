@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "night.ogg",
+    authors = ["SnugglyBun"],
+    license = "CC-BY-SA 4.0",
+    loop_begin = 2.912,
+    loop_at = 72.727,
+]

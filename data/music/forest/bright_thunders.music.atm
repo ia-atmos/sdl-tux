@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "bright_thunders.ogg",
+    authors = ["Chris \x22Krobonil\x22 Leutwyler"],
+    license = "CC-BY-SA",
+    loop_begin = 0,
+    loop_at = -1,
+]

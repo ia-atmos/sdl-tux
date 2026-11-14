@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "call_of_the_winding_path.ogg",
+    authors = ["Jason Lavallée"],
+    license = "CC-BY-SA / GPL 2+",
+    loop_begin = 0,
+    loop_at = 394,
+]

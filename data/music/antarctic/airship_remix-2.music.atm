@@ -1,0 +1,8 @@
+:supertux.music [
+    file = "airship_2.ogg",
+    title = "Airship 2",
+    authors = ["Jason Lavallée"],
+    license = "CC-BY-SA / GPL 2+",
+    loop_begin = 0,
+    loop_at = 202,
+]

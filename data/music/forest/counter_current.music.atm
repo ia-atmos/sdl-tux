@@ -1,0 +1,5 @@
+:supertux.music [
+    file = "counter_current.ogg",
+    loop_begin = 38.34,
+    loop_at = 213.58,
+]

@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "halloween_1.ogg",
+    authors = ["Forty-Two"],
+    license = "CC-BY-SA 4.0",
+    loop_begin = 37.6,
+    loop_at = 124.95,
+]

@@ -1,0 +1,8 @@
+:supertux.music [
+    file = "greatgigantic.ogg",
+    authors = ["Marek \x22Wansti\x22 Moeckel", "Chris Huelsbeck"],
+    license = "GPL",
+    title = "The Great Gigantic Secret (with kind permission from Chris Huelsbeck)",
+    loop_begin = 0,
+    loop_at = -1,
+]

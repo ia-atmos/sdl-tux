@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "treeboss.ogg",
+    authors = ["Marek \x22Wansti\x22 Moeckel"],
+    license = "CC-BY-SA / GPL 2+",
+    loop_begin = 32.15,
+    loop_at = -1,
+]

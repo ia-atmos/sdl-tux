@@ -1,0 +1,8 @@
+:supertux.music [
+    file = "forest.ogg",
+    authors = ["Marek \x22Wansti\x22 Moeckel"],
+    license = "CC-BY-SA / GPL 2+",
+    title = "Forest Dance",
+    loop_begin = 54.818,
+    loop_at = 95.955,
+]

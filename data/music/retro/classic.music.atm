@@ -1,0 +1,6 @@
+:supertux.music [
+    file = "classic.ogg",
+    title = "SuperTux 0.0.4 music",
+    loop_begin = 0,
+    loop_at = 97,
+]

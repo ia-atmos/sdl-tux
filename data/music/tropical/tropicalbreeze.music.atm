@@ -1,0 +1,8 @@
+:supertux.music [
+    file = "tropicalbreeze.ogg",
+    authors = ["Flan"],
+    license = "CC-BY-SA 4.0",
+    title = "Tropical Breeze",
+    loop_begin = 0,
+    loop_at = 73,
+]

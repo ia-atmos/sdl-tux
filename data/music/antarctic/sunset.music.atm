@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "sunset.ogg",
+    authors = ["SnugglyBun"],
+    license = "CC-BY-SA 4.0",
+    loop_begin = 34.912,
+    loop_at = 104.727,
+]

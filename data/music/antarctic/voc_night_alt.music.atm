@@ -1,0 +1,5 @@
+:supertux.music [
+    file = "voc_night_alt.ogg",
+    loop_begin = 3.0,
+    loop_at = 203.0,
+]

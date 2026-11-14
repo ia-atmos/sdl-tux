@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "worldmap_old.ogg",
+    authors = ["ZhayTee"],
+    title = "supertux title",
+    loop_begin = 0,
+    loop_at = 40,
+]

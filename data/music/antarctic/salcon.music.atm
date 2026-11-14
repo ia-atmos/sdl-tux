@@ -1,0 +1,8 @@
+:supertux.music [
+    file = "salcon.ogg",
+    authors = ["DJ Gentoo", "Asbjorn \x22Mystical\x22 Andersen"],
+    title = "Salsa Con Carne (remix)",
+    license = "CC-BY-SA / GPL",
+    loop_begin = 0,
+    loop_at = 56,
+]

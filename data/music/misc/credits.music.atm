@@ -1,0 +1,8 @@
+:supertux.music [
+    file = "credits.ogg",
+    authors = ["Marek \x22Wansti\x22 Moeckel"],
+    license = "CC-BY-SA / GPL 2+",
+    title = "SuperTux Credits Theme",
+    loop_begin = 0,
+    loop_at = 107,
+]

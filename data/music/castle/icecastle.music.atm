@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "icecastle.ogg",
+    authors = ["SnugglyBun", "Marek \x22Wansti\x22 Moeckel"],
+    license = "CC-BY-SA 4.0",
+    loop_begin = 9.235,
+    loop_at = 80.0,
+]

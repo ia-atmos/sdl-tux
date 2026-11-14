@@ -1,0 +1,7 @@
+:supertux.music [
+    file = "yetiboss.ogg",
+    authors = ["SnugglyBun", "Marek \x22Wansti\x22 Moeckel"],
+    license = "CC-BY-SA 4.0",
+    loop_begin = 1.446,
+    loop_at = 82.41,
+]
