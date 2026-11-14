@@ -1,0 +1,9 @@
+:supertux.surface [
+    diffuse_texture = [file = "source/distortion_area2.png", wrap = "repeat"],
+    displacement_texture = [
+        file = "source/distortion_disp.png",
+        wrap = "repeat",
+        filter = "linear",
+        animate = [24, 24],
+    ],
+]

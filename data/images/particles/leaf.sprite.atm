@@ -1,0 +1,3 @@
+:supertux.sprite [
+    :action [name = "default", fps = 1.0, images = ["leaf.png"]],
+]

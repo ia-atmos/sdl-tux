@@ -1,0 +1,21 @@
+:supertux.sprite [
+    :action [
+        name = "default",
+        surfaces = [
+            surface = [
+                translate = [0, 0],
+                scale = [1.0, 1.0],
+                rotate = 0,
+                rotate_center = [0.0, 0.0],
+                flip = [false, false],
+                diffuse_texture = [file = "heatshimmer.png"],
+                displacement_texture = [
+                    file = "heatshimmer-displacement.png",
+                    wrap = "repeat",
+                    filter = "nearest",
+                    animate = [0, 32],
+                ],
+            ],
+        ],
+    ],
+]

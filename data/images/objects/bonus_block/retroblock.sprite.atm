@@ -1,0 +1,12 @@
+:supertux.sprite [
+    :action [fps = 15, name = "default", images = ["box-full.png"]],
+    :action [
+        name = "empty",
+        surfaces = [
+            surface = [
+                diffuse_texture = [file = "box-empty.png"],
+                displacement_texture = [file = "displacement.png"],
+            ],
+        ],
+    ],
+]

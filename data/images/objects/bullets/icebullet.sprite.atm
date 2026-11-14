@@ -1,0 +1,8 @@
+:supertux.sprite [
+    :action [
+        name = "right",
+        hitbox = [0, 0, 21, 21],
+        images = ["ice_bullet.png"],
+    ],
+    :action [name = "left", hitbox = [0, 0, 21, 21], mirror_action = "right"],
+]

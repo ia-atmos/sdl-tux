@@ -1,0 +1,4 @@
+:supertux.sprite [
+    :action [name = "default-editor", images = ["box-invisible.png"]],
+    :action [name = "empty", images = ["box-empty.png"]],
+]

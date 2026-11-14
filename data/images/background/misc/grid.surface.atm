@@ -1,0 +1,3 @@
+:supertux.surface [
+    diffuse_texture = [file = "grid.png", wrap = "repeat"],
+]

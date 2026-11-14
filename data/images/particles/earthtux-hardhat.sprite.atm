@@ -1,0 +1,4 @@
+:supertux.sprite [
+    :action [name = "right", fps = 1, images = ["earthtux-hardhat.png"]],
+    :action [name = "left", fps = 1, mirror_action = "right"],
+]

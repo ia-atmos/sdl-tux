@@ -1,0 +1,12 @@
+:supertux.sprite [
+    :action [name = "default-editor", images = ["bonus-invisible.png"]],
+    :action [
+        name = "empty",
+        surfaces = [
+            surface = [
+                diffuse_texture = [file = "empty.png"],
+                displacement_texture = [file = "displacement.png"],
+            ],
+        ],
+    ],
+]
