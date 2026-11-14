@@ -1,0 +1,7 @@
+# The scripted runs: name, level, ticks, input ("-" for none).
+# Their traces in the official game are in tst/official/NAME.txt, made
+# by tools/official-all.sh.
+idle  tst/levels/empty.stl 60  -
+walk  tst/levels/empty.stl 300 20:right:1,200:right:0
+skid  tst/levels/empty.stl 300 10:right:1,150:right:0,150:left:1,220:left:0
+jump  tst/levels/empty.stl 300 10:right:1,60:jump:1,75:jump:0,140:jump:1,141:jump:0,200:right:0
