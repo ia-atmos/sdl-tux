@@ -14,3 +14,9 @@ The plan is in `.claude/plans/261113-sdl-tux.md`, and what is pending in
 [1]: https://github.com/SuperTux/supertux
 [2]: https://github.com/ia-atmos/lang
 [3]: https://github.com/ia-atmos/env-sdl
+
+## License
+
+GPL-3.0-or-later, as SuperTux, from whose source this port is made. The
+art and the music of SuperTux have their own free licenses, listed in
+its repository.
