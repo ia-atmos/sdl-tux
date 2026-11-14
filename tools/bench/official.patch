@@ -42,6 +42,27 @@ index ca64c01..096e57b 100644
  public:
    static void register_class(ssq::VM& vm);
  
+diff --git a/src/supertux/game_session.cpp b/src/supertux/game_session.cpp
+index a201cab..efc6eb1 100644
+--- a/src/supertux/game_session.cpp
++++ b/src/supertux/game_session.cpp
+@@ -43,6 +43,7 @@
+ #include "supertux/level.hpp"
+ #include "supertux/level_parser.hpp"
+ #include "supertux/levelintro.hpp"
++#include "supertux/tuxtest.hpp"
+ #include "supertux/levelset_screen.hpp"
+ #include "supertux/menu/menu_storage.hpp"
+ #include "supertux/resources.hpp"
+@@ -564,7 +565,7 @@ GameSession::setup()
+   m_currentsector->get_singleton_by_type<MusicObject>().play_music(LEVEL_MUSIC);
+ 
+   int total_stats_to_be_collected = m_level->m_stats.m_total_coins + m_level->m_stats.m_total_secrets;
+-  if ((!m_levelintro_shown) && (total_stats_to_be_collected > 0) && m_savegame && !m_skip_intro) {
++  if ((!m_levelintro_shown) && (total_stats_to_be_collected > 0) && m_savegame && !m_skip_intro && !TuxTestTrace::s_nointro) {
+     m_levelintro_shown = true;
+     m_active = false;
+     ScreenManager::current()->push_screen(std::make_unique<LevelIntro>(*m_level, m_best_level_statistics, m_savegame->get_player_status()));
 diff --git a/src/supertux/main.cpp b/src/supertux/main.cpp
 index e8200a1..4ce24be 100644
 --- a/src/supertux/main.cpp
@@ -119,10 +140,10 @@ index 5190cc5..2317031 100644
  #ifdef __EMSCRIPTEN__
 diff --git a/src/supertux/tuxtest.cpp b/src/supertux/tuxtest.cpp
 new file mode 100644
-index 0000000..b77ee71
+index 0000000..893bf39
 --- /dev/null
 +++ b/src/supertux/tuxtest.cpp
-@@ -0,0 +1,155 @@
+@@ -0,0 +1,157 @@
 +// Test mode for the port to Atmos (ia-atmos/sdl-tux). See tuxtest.hpp.
 +
 +#include "supertux/tuxtest.hpp"
@@ -145,6 +166,7 @@ index 0000000..b77ee71
 +long  TuxTestTrace::s_ticks  = 0;
 +FILE* TuxTestTrace::s_trace  = nullptr;
 +bool  TuxTestTrace::s_objs   = false;
++bool  TuxTestTrace::s_nointro = false;
 +
 +namespace {
 +
@@ -205,6 +227,7 @@ index 0000000..b77ee71
 +  s_fast   = getenv("TUX_FAST")   != nullptr;
 +  s_nodraw = getenv("TUX_NODRAW") != nullptr;
 +  s_objs   = getenv("TUX_TRACE_OBJS") != nullptr;
++  s_nointro = getenv("TUX_NOINTRO") != nullptr;
 +  if ((v = getenv("TUX_TICKS")))  s_ticks = atol(v);
 +  if ((v = getenv("TUX_INPUT")))  parse_inputs(v);
 +  if ((v = getenv("TUX_TRACE"))) {
@@ -280,10 +303,10 @@ index 0000000..b77ee71
 +}
 diff --git a/src/supertux/tuxtest.hpp b/src/supertux/tuxtest.hpp
 new file mode 100644
-index 0000000..1dbdd7b
+index 0000000..fa2f74f
 --- /dev/null
 +++ b/src/supertux/tuxtest.hpp
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,32 @@
 +// Test mode for the port to Atmos (ia-atmos/sdl-tux): scripted input by
 +// tick, a trace, and a run with no pacing. All of it is off unless one
 +// of the TUX_* environment variables is set. See tools/bench/README.md
@@ -306,6 +329,7 @@ index 0000000..1dbdd7b
 +  static long  s_ticks;    // TUX_TICKS: exit after this many steps (0: never)
 +  static FILE* s_trace;    // TUX_TRACE: where the trace goes (nullptr: off)
 +  static bool  s_objs;     // TUX_TRACE_OBJS: the badguys too, every tick
++  static bool  s_nointro;  // TUX_NOINTRO: a level starts with no intro screen
 +
 +  static void init();
 +  static int  seed(int def);

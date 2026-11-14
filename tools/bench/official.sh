@@ -15,6 +15,7 @@
 #   DRAW=1      draws the frames (to the dummy video driver)
 #   REALTIME=1  keeps the pace of 15 ms per step
 #   NOTRACE=1   no trace (to measure)
+#   INTRO=1     keeps the intro screen of the level, which a key dismisses
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 OFFICIAL=${OFFICIAL:-$ROOT/../official/supertux}
 UD=$(mktemp -d)
@@ -23,6 +24,7 @@ trap 'rm -rf "$UD"' EXIT
 export SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy
 export TUX_SEED=1 TUX_TICKS="$2" TUX_INPUT="$3"
 [ -z "$NOTRACE" ]  && export TUX_TRACE=-
+[ -z "$INTRO" ]    && export TUX_NOINTRO=1
 [ -n "$OBJS" ]     && export TUX_TRACE_OBJS=1
 [ -z "$DRAW" ]     && export TUX_NODRAW=1
 [ -z "$REALTIME" ] && export TUX_FAST=1

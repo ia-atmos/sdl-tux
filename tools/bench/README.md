@@ -20,7 +20,7 @@ The build has no OpenGL and no networking (`-DENABLE_OPENGL=OFF
 
 ## The test mode (`official.patch`)
 
-The patch adds `src/supertux/tuxtest.{hpp,cpp}` and seven lines of hooks.
+The patch adds `src/supertux/tuxtest.{hpp,cpp}` and a few lines of hooks.
 All of it is off unless a variable is set:
 
 | Variable | Effect |
@@ -32,6 +32,7 @@ All of it is off unless a variable is set:
 | `TUX_TRACE_OBJS=1` | the trace also has every badguy, every tick |
 | `TUX_FAST=1` | exactly one logical step per iteration of the loop, with no sleep |
 | `TUX_NODRAW=1` | draws no frame |
+| `TUX_NOINTRO=1` | a level starts with no intro screen (the one with its name and statistics, which a key dismisses) |
 
 A logical step is 15 ms (`LOGICAL_FPS = 1000/15`). The trace is the
 same with and without `TUX_FAST` and `TUX_NODRAW` (checked on the run
