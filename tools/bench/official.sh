@@ -4,7 +4,8 @@
 #
 #   tools/bench/official.sh LEVEL TICKS [INPUT]
 #
-#   LEVEL   relative to the data of the game: levels/world1/journey_begins.stl
+#   LEVEL   relative to the data of the game: levels/world1/journey_begins.stl,
+#           or a file: tst/levels/empty.stl
 #   TICKS   logical steps to run (15 ms each)
 #   INPUT   "tick:control:value,...": "50:right:1,150:jump:1,170:jump:0"
 #           controls: left right up down jump action item escape ...
@@ -29,6 +30,9 @@ export TUX_SEED=1 TUX_TICKS="$2" TUX_INPUT="$3"
 [ -z "$DRAW" ]     && export TUX_NODRAW=1
 [ -z "$REALTIME" ] && export TUX_FAST=1
 
+LEVEL="$OFFICIAL/data/$1"
+[ -f "$1" ] && LEVEL=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
+
 "$OFFICIAL/build/supertux2" --renderer sdl --datadir "$OFFICIAL/data" \
     --userdir "$UD" --disable-sound --disable-music -g 1280x800 \
-    "$OFFICIAL/data/$1" 2>/dev/null | grep '^[0-9]* [PBE] '
+    "$LEVEL" 2>/dev/null | grep '^[0-9]* [PBE] '
