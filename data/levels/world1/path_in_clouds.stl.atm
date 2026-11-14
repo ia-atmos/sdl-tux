@@ -251,19 +251,34 @@
         ],
         :pushbutton [
             z_pos = -99,
-            script = "platform1.start_moving();\nplatform2.start_moving();",
+            script = [
+                [:call, "platform1", :start_moving],
+                [:call, "platform2", :start_moving],
+            ],
             x = 3040,
             y = 816,
         ],
         :pushbutton [
             z_pos = -99,
             direction = "down",
-            script = "platform3.start_moving();\nplatform4.start_moving();",
+            script = [
+                [:call, "platform3", :start_moving],
+                [:call, "platform4", :start_moving],
+            ],
             x = 10208,
             y = 320,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22secret\x22, \x22secret\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "secret",
+                    "secret",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 544,
             height = 32,
@@ -1374,7 +1389,7 @@
     ],
     :sector [
         name = "secret",
-        init_script = "Tux.deactivate();\nwind.start();",
+        init_script = [[:call, "Tux", :deactivate], [:call, "wind", :start]],
         :ambient_light [color = [0.9999999, 0.9999999, 0.9999999]],
         :background [
             scroll_offset_y = 250,
@@ -1717,7 +1732,7 @@
             ],
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22main\x22, \x22exit\x22, \x22circle\x22);",
+            script = [[:call, "Level", :spawn_transition, "main", "exit", "circle"]],
             button = false,
             width = 1536,
             height = 32,
@@ -1725,7 +1740,11 @@
             y = 1088,
         ],
         :scripttrigger [
-            script = "wind.stop();\nTux.activate();\nTux.use_scripting_controller(false);",
+            script = [
+                [:call, "wind", :stop],
+                [:call, "Tux", :activate],
+                [:call, "Tux", :use_scripting_controller, false],
+            ],
             button = false,
             width = 160,
             height = 32,

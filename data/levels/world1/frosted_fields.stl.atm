@@ -209,7 +209,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret1",
-            script = "secret1_cover.fade(0, 1);",
+            script = [[:call, "secret1_cover", :fade, 0, 1]],
             width = 448,
             height = 256,
             x = 5216,
@@ -217,7 +217,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret2",
-            script = "secret2_cover.fade(0, 1);",
+            script = [[:call, "secret2_cover", :fade, 0, 1]],
             width = 608,
             height = 192,
             x = 9504,

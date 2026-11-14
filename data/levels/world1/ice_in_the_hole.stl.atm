@@ -10,7 +10,7 @@
     statistics = [enable_coins = true, enable_secrets = true],
     :sector [
         name = "main",
-        init_script = "Camera.set_scale(1.1);",
+        init_script = [[:call, "Camera", :set_scale, 1.1]],
         :ambient_light [color = [0.4, 0.45, 0.6]],
         :background [
             scroll_offset_y = 50,
@@ -362,7 +362,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "secret2_cover2.fade(0, 1);",
+            script = [[:call, "secret2_cover2", :fade, 0, 1]],
             button = false,
             width = 32,
             height = 128,
@@ -378,7 +378,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret2",
-            script = "secret2_cover1.fade(0, 1);",
+            script = [[:call, "secret2_cover1", :fade, 0, 1]],
             width = 992,
             height = 128,
             x = 7264,
@@ -483,21 +483,31 @@
         :stalactite [glinting = false, z_pos = -1, x = 6976, y = 992],
         :switch [
             z_pos = 1,
-            script = "bridge6.start_moving();\nbridge7.start_moving();",
+            script = [
+                [:call, "bridge6", :start_moving],
+                [:call, "bridge7", :start_moving],
+            ],
             sprite = "/images/objects/switch/switch.sprite",
             x = 13632,
             y = 1344,
         ],
         :switch [
             z_pos = 1,
-            script = "bridge1.goto_node(1);\nbridge2.goto_node(1);\nbridge3.goto_node(1);",
+            script = [
+                [:call, "bridge1", :goto_node, 1],
+                [:call, "bridge2", :goto_node, 1],
+                [:call, "bridge3", :goto_node, 1],
+            ],
             sprite = "/images/objects/switch/switch.sprite",
             x = 6288,
             y = 416,
         ],
         :switch [
             z_pos = 1,
-            script = "bridge4.goto_node(1);\nbridge5.goto_node(1);",
+            script = [
+                [:call, "bridge4", :goto_node, 1],
+                [:call, "bridge5", :goto_node, 1],
+            ],
             sprite = "/images/objects/switch/switch.sprite",
             x = 7216,
             y = 416,

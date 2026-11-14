@@ -9,7 +9,12 @@
     statistics = [enable_coins = false, enable_badguys = false, enable_secrets = false],
     :sector [
         name = "main",
-        init_script = "import(\x22levels/world1/castle_cutscene.nut\x22);\n\nText.set_anchor_point(7);\nText.set_anchor_offset(0, -160);\n\ntrigger_state(\x22start\x22);",
+        init_script = [
+            [:do, :import, "levels/world1/castle_cutscene.nut"],
+            [:call, "Text", :set_anchor_point, 7],
+            [:call, "Text", :set_anchor_offset, 0, -160],
+            [:do, :trigger_state, "start"],
+        ],
         :ambient_light [color = [0.4, 0.5, 0.6]],
         :background [
             name = "castle_wall",
@@ -91,7 +96,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "trigger_state(\x22textbox\x22);",
+            script = [[:do, :trigger_state, "textbox"]],
             button = false,
             width = 32,
             height = 96,
@@ -100,7 +105,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "trigger_state(\x22yeti_ambush\x22);",
+            script = [[:do, :trigger_state, "yeti_ambush"]],
             button = false,
             width = 32,
             height = 96,

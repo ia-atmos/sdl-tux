@@ -530,7 +530,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "return_lift.start_moving();",
+            script = [[:call, "return_lift", :start_moving]],
             button = false,
             width = 64,
             height = 32,
@@ -539,7 +539,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret1",
-            script = "secret1_cover.fade(0, 1);",
+            script = [[:call, "secret1_cover", :fade, 0, 1]],
             width = 608,
             height = 224,
             x = 4512,
@@ -547,7 +547,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret2",
-            script = "secret2_cover.fade(0, 1);",
+            script = [[:call, "secret2_cover", :fade, 0, 1]],
             width = 192,
             height = 512,
             x = 11616,

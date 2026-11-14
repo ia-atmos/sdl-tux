@@ -452,25 +452,25 @@
         :pushbutton [
             z_pos = -99,
             direction = "down",
-            script = "door1.goto_node(1);",
+            script = [[:call, "door1", :goto_node, 1]],
             x = 896,
             y = 2240,
         ],
         :pushbutton [
             z_pos = -99,
-            script = "lift3.start_moving();\nlift4.start_moving();",
+            script = [[:call, "lift3", :start_moving], [:call, "lift4", :start_moving]],
             x = 7968,
             y = 1136,
         ],
         :pushbutton [
             z_pos = -99,
-            script = "secret_door.goto_node(1);",
+            script = [[:call, "secret_door", :goto_node, 1]],
             x = 4864,
             y = 592,
         ],
         :scripttrigger [
             oneshot = true,
-            script = "lift1.start_moving();",
+            script = [[:call, "lift1", :start_moving]],
             button = false,
             width = 32,
             height = 16,
@@ -479,7 +479,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "sector.Camera.set_scale(1.2);",
+            script = [[:call, "sector.Camera", :set_scale, 1.2]],
             button = false,
             width = 96,
             height = 256,
@@ -487,7 +487,19 @@
             y = 1728,
         ],
         :scripttrigger [
-            script = "sector.Camera.ease_scale_anchor(1, 2, 4, \x22EaseQuadInOut\x22);\nwait(1);\nlift1.stop_moving();",
+            script = [
+                [
+                    :call,
+                    "sector.Camera",
+                    :ease_scale_anchor,
+                    1,
+                    2,
+                    4,
+                    "EaseQuadInOut",
+                ],
+                [:wait, 1],
+                [:call, "lift1", :stop_moving],
+            ],
             button = false,
             width = 128,
             height = 32,
@@ -495,7 +507,7 @@
             y = 1088,
         ],
         :scripttrigger [
-            script = "lift1.start_moving();",
+            script = [[:call, "lift1", :start_moving]],
             button = false,
             width = 256,
             height = 16,
@@ -504,7 +516,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "lift2.start_moving();",
+            script = [[:call, "lift2", :start_moving]],
             button = false,
             width = 96,
             height = 352,
@@ -512,7 +524,16 @@
             y = 896,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22outside\x22, \x22outside\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "outside",
+                    "outside",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 192,
@@ -521,7 +542,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "lift2.start_moving();",
+            script = [[:call, "lift2", :start_moving]],
             button = false,
             width = 128,
             height = 16,
@@ -537,7 +558,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret2",
-            script = "secret2_cover.fade(0, 1);",
+            script = [[:call, "secret2_cover", :fade, 0, 1]],
             width = 416,
             height = 256,
             x = 9888,
@@ -2342,7 +2363,7 @@
         :music [file = "/music/antarctic/cavetheme_alt.music"],
         :particles_clouds [intensity = 30],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22main\x22, \x22exit\x22, \x22circle\x22);",
+            script = [[:call, "Level", :spawn_transition, "main", "exit", "circle"]],
             button = false,
             width = 32,
             height = 194.6667,

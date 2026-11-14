@@ -9,7 +9,18 @@
     statistics = [enable_coins = true, enable_secrets = true],
     :sector [
         name = "main",
-        init_script = "import(\x22levels/world1/intro.nut\x22);\nlogo <- FloatingImage(\x22images/engine/menu/logo.png\x22);\nText.set_anchor_point(ANCHOR_BOTTOM);\nText.set_anchor_offset(0, -160);\nstart_cutscene();\ntrigger_state(\x22start\x22);",
+        init_script = [
+            [:do, :import, "levels/world1/intro.nut"],
+            [
+                :set,
+                "logo",
+                [:do, :FloatingImage, "images/engine/menu/logo.png"],
+            ],
+            [:call, "Text", :set_anchor_point, [:get, "ANCHOR_BOTTOM"]],
+            [:call, "Text", :set_anchor_offset, 0, -160],
+            [:do, :start_cutscene],
+            [:do, :trigger_state, "start"],
+        ],
         :ambient_light [color = [1, 1, 1]],
         :background [
             color = [1, 1, 1],
@@ -104,7 +115,12 @@
             y = 1272,
         ],
         :scripttrigger [
-            script = "wait(2);\nEffect.fade_out(2);\nwait(2);\nLevel.finish(true);",
+            script = [
+                [:wait, 2],
+                [:call, "Effect", :fade_out, 2],
+                [:wait, 2],
+                [:call, "Level", :finish, true],
+            ],
             button = false,
             width = 32,
             height = 1376,
@@ -113,7 +129,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.walk(0);",
+            script = [[:call, "Tux", :walk, 0]],
             button = false,
             width = 32,
             height = 1376,

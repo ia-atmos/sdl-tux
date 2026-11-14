@@ -111,7 +111,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret",
-            script = "secret_cover.fade(0, 1);",
+            script = [[:call, "secret_cover", :fade, 0, 1]],
             width = 256,
             height = 256,
             x = 7424,

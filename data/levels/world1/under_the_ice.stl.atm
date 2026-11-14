@@ -10,7 +10,7 @@
     statistics = [enable_coins = true, enable_secrets = true],
     :sector [
         name = "main",
-        init_script = "Camera.set_scale(1.2);",
+        init_script = [[:call, "Camera", :set_scale, 1.2]],
         :ambient_light [color = [0.4, 0.45, 0.6]],
         :background [
             color = [0.9999999, 0.9999999, 0.9999999],
@@ -167,7 +167,10 @@
             ],
         ],
         :scripttrigger [
-            script = "secret1_cover1.fade(0, 1);\nsecret1_cover2.fade(0, 1);",
+            script = [
+                [:call, "secret1_cover1", :fade, 0, 1],
+                [:call, "secret1_cover2", :fade, 0, 1],
+            ],
             button = false,
             width = 32,
             height = 96,

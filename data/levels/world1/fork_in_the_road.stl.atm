@@ -255,12 +255,21 @@
         ],
         :pushbutton [
             z_pos = -99,
-            script = "lift3.start_moving();",
+            script = [[:call, "lift3", :start_moving]],
             x = 10752,
             y = 1104,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22secretexit\x22, \x22main\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "secretexit",
+                    "main",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -268,7 +277,23 @@
             y = 1056,
         ],
         :scripttrigger [
-            script = "state.fork_secret_v2 <- (\x22fork_secret_v2\x22 in state ? (state.fork_secret_v2 | SPECIALTILE_DIR_SOUTH) : SPECIALTILE_DIR_SOUTH);\n",
+            script = [
+                [
+                    :set,
+                    "state.fork_secret_v2",
+                    [
+                        :cond,
+                        [:op, "in", "fork_secret_v2", [:get, "state"]],
+                        [
+                            :op,
+                            "|",
+                            [:get, "state.fork_secret_v2"],
+                            [:get, "SPECIALTILE_DIR_SOUTH"],
+                        ],
+                        [:get, "SPECIALTILE_DIR_SOUTH"],
+                    ],
+                ],
+            ],
             button = false,
             width = 32,
             height = 672,
@@ -284,7 +309,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret1",
-            script = "secret1_cover.fade(0, 1);",
+            script = [[:call, "secret1_cover", :fade, 0, 1]],
             width = 448,
             height = 160,
             x = 5024,
@@ -428,7 +453,7 @@
         :spawnpoint [name = "secretexit", x = 14336, y = 1152],
         :switch [
             z_pos = 1,
-            script = "lift1.goto_node(1);\nlift2.goto_node(1);",
+            script = [[:call, "lift1", :goto_node, 1], [:call, "lift2", :goto_node, 1]],
             sprite = "/images/objects/switch/switch.sprite",
             x = 4992,
             y = 768,
@@ -1365,7 +1390,16 @@
         :music [file = "/music/antarctic/midday_alt.music"],
         :particles_snow [],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22main\x22, \x22secretexit\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "main",
+                    "secretexit",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -1373,7 +1407,24 @@
             y = 608,
         ],
         :scripttrigger [
-            script = "state.fork_secret_v2 <- (\x22fork_secret_v2\x22 in state ? (state.fork_secret_v2 | SPECIALTILE_DIR_NORTH) : SPECIALTILE_DIR_NORTH);\nTux.trigger_sequence(\x22endsequence\x22);",
+            script = [
+                [
+                    :set,
+                    "state.fork_secret_v2",
+                    [
+                        :cond,
+                        [:op, "in", "fork_secret_v2", [:get, "state"]],
+                        [
+                            :op,
+                            "|",
+                            [:get, "state.fork_secret_v2"],
+                            [:get, "SPECIALTILE_DIR_NORTH"],
+                        ],
+                        [:get, "SPECIALTILE_DIR_NORTH"],
+                    ],
+                ],
+                [:call, "Tux", :trigger_sequence, "endsequence"],
+            ],
             button = false,
             width = 32,
             height = 688,

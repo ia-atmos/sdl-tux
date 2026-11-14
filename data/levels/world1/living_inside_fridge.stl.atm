@@ -10,7 +10,7 @@
     statistics = [enable_coins = true, enable_secrets = true],
     :sector [
         name = "main",
-        init_script = "Camera.set_scale(1.2);",
+        init_script = [[:call, "Camera", :set_scale, 1.2]],
         :ambient_light [color = [0.4, 0.45, 0.6]],
         :background [
             color = [0.9999999, 0.9999999, 0.9999999],
@@ -181,7 +181,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Camera.set_mode(\x22manual\x22);",
+            script = [[:call, "Camera", :set_mode, "manual"]],
             button = false,
             width = 32,
             height = 256,
@@ -189,7 +189,24 @@
             y = 2176,
         ],
         :scripttrigger [
-            script = "state.fridge_secret_v2 <- (\x22fridge_secret_v2\x22 in state ? (state.fridge_secret_v2 | SPECIALTILE_DIR_SOUTH) : SPECIALTILE_DIR_SOUTH);\nTux.trigger_sequence(\x22endsequence\x22);",
+            script = [
+                [
+                    :set,
+                    "state.fridge_secret_v2",
+                    [
+                        :cond,
+                        [:op, "in", "fridge_secret_v2", [:get, "state"]],
+                        [
+                            :op,
+                            "|",
+                            [:get, "state.fridge_secret_v2"],
+                            [:get, "SPECIALTILE_DIR_SOUTH"],
+                        ],
+                        [:get, "SPECIALTILE_DIR_SOUTH"],
+                    ],
+                ],
+                [:call, "Tux", :trigger_sequence, "endsequence"],
+            ],
             button = false,
             width = 32,
             height = 288,
@@ -197,7 +214,23 @@
             y = 2112,
         ],
         :scripttrigger [
-            script = "state.fridge_secret_v2 <- (\x22fridge_secret_v2\x22 in state ? (state.fridge_secret_v2 | SPECIALTILE_DIR_WEST) : SPECIALTILE_DIR_WEST);",
+            script = [
+                [
+                    :set,
+                    "state.fridge_secret_v2",
+                    [
+                        :cond,
+                        [:op, "in", "fridge_secret_v2", [:get, "state"]],
+                        [
+                            :op,
+                            "|",
+                            [:get, "state.fridge_secret_v2"],
+                            [:get, "SPECIALTILE_DIR_WEST"],
+                        ],
+                        [:get, "SPECIALTILE_DIR_WEST"],
+                    ],
+                ],
+            ],
             button = false,
             width = 32,
             height = 352,
@@ -206,7 +239,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret1",
-            script = "secret1_cover.fade(0, 1);",
+            script = [[:call, "secret1_cover", :fade, 0, 1]],
             width = 608,
             height = 256,
             x = 5888,

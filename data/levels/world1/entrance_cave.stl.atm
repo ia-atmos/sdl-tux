@@ -284,13 +284,17 @@
         ],
         :pushbutton [
             z_pos = -99,
-            script = "platform1.goto_node(1);\nplatform2.goto_node(1);\nplatform0.goto_node(1);",
+            script = [
+                [:call, "platform1", :goto_node, 1],
+                [:call, "platform2", :goto_node, 1],
+                [:call, "platform0", :goto_node, 1],
+            ],
             x = 4736,
             y = 1040,
         ],
         :pushbutton [
             z_pos = -99,
-            script = "platform3.goto_node(1);",
+            script = [[:call, "platform3", :goto_node, 1]],
             x = 10016,
             y = 432,
         ],

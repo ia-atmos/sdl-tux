@@ -124,7 +124,16 @@
             y = 1056,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22tunnel\x22, \x22tunnel1\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "tunnel",
+                    "tunnel1",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -132,7 +141,16 @@
             y = 1472,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22tunnel\x22, \x22tunnel2\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "tunnel",
+                    "tunnel2",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -140,7 +158,16 @@
             y = 1344,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22tunnel\x22, \x22tunnel3\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "tunnel",
+                    "tunnel3",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -148,7 +175,16 @@
             y = 1408,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22tunnel\x22, \x22tunnel4\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "tunnel",
+                    "tunnel4",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -156,7 +192,23 @@
             y = 1184,
         ],
         :scripttrigger [
-            script = "state.slide_secret_v2 <- (\x22slide_secret_v2\x22 in state ? (state.slide_secret_v2 | SPECIALTILE_DIR_WEST) : SPECIALTILE_DIR_WEST);",
+            script = [
+                [
+                    :set,
+                    "state.slide_secret_v2",
+                    [
+                        :cond,
+                        [:op, "in", "slide_secret_v2", [:get, "state"]],
+                        [
+                            :op,
+                            "|",
+                            [:get, "state.slide_secret_v2"],
+                            [:get, "SPECIALTILE_DIR_WEST"],
+                        ],
+                        [:get, "SPECIALTILE_DIR_WEST"],
+                    ],
+                ],
+            ],
             button = false,
             width = 64,
             height = 1440,
@@ -1472,7 +1524,7 @@
     ],
     :sector [
         name = "secret_exit",
-        init_script = "Camera.set_scale(1.2);",
+        init_script = [[:call, "Camera", :set_scale, 1.2]],
         :ambient_light [color = [0.92, 0.96, 0.9999999]],
         :background [
             color = [0.9999999, 0.9999999, 0.9999999],
@@ -1539,7 +1591,10 @@
         :music [file = "/music/antarctic/midday_alt.music"],
         :particles_snow [],
         :scripttrigger [
-            script = "sector.settings.fade_to_ambient_light(1, 1, 1, 1);\nCamera.scale(1, 1);\n",
+            script = [
+                [:call, "sector.settings", :fade_to_ambient_light, 1, 1, 1, 1],
+                [:call, "Camera", :scale, 1, 1],
+            ],
             button = false,
             width = 32,
             height = 224,
@@ -1547,7 +1602,16 @@
             y = 352,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22tunnel\x22, \x22tunnel5\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "tunnel",
+                    "tunnel5",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -1555,7 +1619,18 @@
             y = 320,
         ],
         :scripttrigger [
-            script = "sector.settings.fade_to_ambient_light(0.92, 0.96, 1, 1);\nCamera.scale(1.2, 1);\n",
+            script = [
+                [
+                    :call,
+                    "sector.settings",
+                    :fade_to_ambient_light,
+                    0.92,
+                    0.96,
+                    1,
+                    1,
+                ],
+                [:call, "Camera", :scale, 1.2, 1],
+            ],
             button = false,
             width = 32,
             height = 224,
@@ -1563,7 +1638,24 @@
             y = 352,
         ],
         :scripttrigger [
-            script = "state.slide_secret_v2 <- (\x22slide_secret_v2\x22 in state ? (state.slide_secret_v2 | SPECIALTILE_DIR_NORTH) : SPECIALTILE_DIR_NORTH);\nTux.trigger_sequence(\x22endsequence\x22);",
+            script = [
+                [
+                    :set,
+                    "state.slide_secret_v2",
+                    [
+                        :cond,
+                        [:op, "in", "slide_secret_v2", [:get, "state"]],
+                        [
+                            :op,
+                            "|",
+                            [:get, "state.slide_secret_v2"],
+                            [:get, "SPECIALTILE_DIR_NORTH"],
+                        ],
+                        [:get, "SPECIALTILE_DIR_NORTH"],
+                    ],
+                ],
+                [:call, "Tux", :trigger_sequence, "endsequence"],
+            ],
             button = false,
             width = 32,
             height = 624,
@@ -2046,7 +2138,7 @@
     ],
     :sector [
         name = "tunnel",
-        init_script = "Camera.set_scale(1.2);",
+        init_script = [[:call, "Camera", :set_scale, 1.2]],
         :ambient_light [color = [0.92, 0.96, 1]],
         :background [
             color = [0.9999999, 0.9999999, 0.9999999],
@@ -2135,7 +2227,16 @@
             ],
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22main\x22, \x22entrance1\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "main",
+                    "entrance1",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -2143,7 +2244,7 @@
             y = 448,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22main\x22, \x22exit1\x22, \x22circle\x22);",
+            script = [[:call, "Level", :spawn_transition, "main", "exit1", "circle"]],
             button = false,
             width = 32,
             height = 160,
@@ -2151,7 +2252,16 @@
             y = 992,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22main\x22, \x22entrance2\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "main",
+                    "entrance2",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 160,
@@ -2159,7 +2269,7 @@
             y = 1088,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22main\x22, \x22exit2\x22, \x22circle\x22);",
+            script = [[:call, "Level", :spawn_transition, "main", "exit2", "circle"]],
             button = false,
             width = 32,
             height = 128,
@@ -2167,7 +2277,16 @@
             y = 832,
         ],
         :scripttrigger [
-            script = "Level.spawn_transition(\x22secret_exit\x22, \x22secret\x22, \x22circle\x22);",
+            script = [
+                [
+                    :call,
+                    "Level",
+                    :spawn_transition,
+                    "secret_exit",
+                    "secret",
+                    "circle",
+                ],
+            ],
             button = false,
             width = 32,
             height = 128,
@@ -2176,7 +2295,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret1",
-            script = "secret1_cover.fade(0, 1);",
+            script = [[:call, "secret1_cover", :fade, 0, 1]],
             width = 736,
             height = 224,
             x = 2752,
@@ -2184,7 +2303,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret2",
-            script = "secret2_cover.fade(0, 1);",
+            script = [[:call, "secret2_cover", :fade, 0, 1]],
             width = 384,
             height = 160,
             x = 4992,

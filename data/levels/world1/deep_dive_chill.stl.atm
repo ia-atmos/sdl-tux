@@ -10,7 +10,9 @@
     statistics = [enable_coins = true, enable_secrets = true],
     :sector [
         name = "main",
-        init_script = "Camera.set_scale(1.5);\nCamera.ease_scale_anchor(1.1, 3, 4 \x22EaseQuadOut\x22);",
+        init_script = :squirrel [
+            "Camera.set_scale(1.5);\nCamera.ease_scale_anchor(1.1, 3, 4 \x22EaseQuadOut\x22);",
+        ],
         :ambient_light [color = [0.36, 0.45, 0.68]],
         :ambient_sound [
             sample = "/sounds/waterfall.wav",
@@ -271,19 +273,19 @@
         ],
         :pushbutton [
             z_pos = -99,
-            script = "dam1.goto_node(1);",
+            script = [[:call, "dam1", :goto_node, 1]],
             x = 6464,
             y = 1488,
         ],
         :pushbutton [
             z_pos = -99,
-            script = "dam2.goto_node(1);",
+            script = [[:call, "dam2", :goto_node, 1]],
             x = 7744,
             y = 752,
         ],
         :scripttrigger [
             oneshot = true,
-            script = "lift.start_moving();",
+            script = [[:call, "lift", :start_moving]],
             button = false,
             width = 64,
             height = 32,
@@ -291,7 +293,7 @@
             y = 1312,
         ],
         :scripttrigger [
-            script = "Camera.ease_scale(1.5, 1 \x22EaseQuadInOut\x22);",
+            script = :squirrel ["Camera.ease_scale(1.5, 1 \x22EaseQuadInOut\x22);"],
             button = false,
             width = 32,
             height = 192,
@@ -299,7 +301,7 @@
             y = 1792,
         ],
         :scripttrigger [
-            script = "Camera.ease_scale(1.2, 1, \x22EaseSineInOut\x22);",
+            script = [[:call, "Camera", :ease_scale, 1.2, 1, "EaseSineInOut"]],
             button = false,
             width = 32,
             height = 224,
@@ -307,7 +309,7 @@
             y = 1696,
         ],
         :scripttrigger [
-            script = "Camera.ease_scale(1.2, 1, \x22EaseQuadInOut\x22);",
+            script = [[:call, "Camera", :ease_scale, 1.2, 1, "EaseQuadInOut"]],
             button = false,
             width = 32,
             height = 192,
@@ -315,7 +317,7 @@
             y = 1792,
         ],
         :scripttrigger [
-            script = "Camera.ease_scale(1, 1, \x22EaseQuadOut\x22);",
+            script = [[:call, "Camera", :ease_scale, 1, 1, "EaseQuadOut"]],
             button = false,
             width = 480,
             height = 32,
@@ -323,7 +325,7 @@
             y = 2912,
         ],
         :scripttrigger [
-            script = "Camera.ease_scale(1.2, 1, \x22EaseQuadOut\x22);",
+            script = [[:call, "Camera", :ease_scale, 1.2, 1, "EaseQuadOut"]],
             button = false,
             width = 480,
             height = 32,
@@ -331,7 +333,7 @@
             y = 2144,
         ],
         :scripttrigger [
-            script = "Camera.ease_scale(1, 1, \x22EaseQuadInOut\x22);",
+            script = [[:call, "Camera", :ease_scale, 1, 1, "EaseQuadInOut"]],
             button = false,
             width = 544,
             height = 32,
@@ -339,7 +341,7 @@
             y = 2144,
         ],
         :scripttrigger [
-            script = "Camera.ease_scale(1.2, 1, \x22EaseQuadInOut\x22);",
+            script = [[:call, "Camera", :ease_scale, 1.2, 1, "EaseQuadInOut"]],
             button = false,
             width = 544,
             height = 32,
@@ -355,7 +357,7 @@
         ],
         :secretarea [
             fade_tilemap = "secret2",
-            script = "secret2_cover.fade(0, 1);",
+            script = [[:call, "secret2_cover", :fade, 0, 1]],
             width = 544,
             height = 448,
             x = 12064,

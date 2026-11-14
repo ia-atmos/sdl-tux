@@ -10,7 +10,13 @@
     statistics = [enable_coins = true, enable_secrets = true],
     :sector [
         name = "main",
-        init_script = "import(\x22levels/world1/crystal_mine.nut\x22);\n\nText.set_anchor_point(7);\nText.set_anchor_offset(0, -160);\n\nLevel.pause_target_timer();\n\nSWITCH.set_action(\x22off\x22);",
+        init_script = [
+            [:do, :import, "levels/world1/crystal_mine.nut"],
+            [:call, "Text", :set_anchor_point, 7],
+            [:call, "Text", :set_anchor_offset, 0, -160],
+            [:call, "Level", :pause_target_timer],
+            [:call, "SWITCH", :set_action, "off"],
+        ],
         :ambient_light [color = [0.88, 0.8, 1]],
         :background [
             color = [0.95, 0.62, 0.6],
@@ -265,7 +271,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "trigger_state(\x22intro\x22);",
+            script = [[:do, :trigger_state, "intro"]],
             button = false,
             width = 64,
             height = 896,
@@ -274,7 +280,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "trigger_state(\x22textbox_intro\x22);",
+            script = [[:do, :trigger_state, "textbox_intro"]],
             button = false,
             width = 32,
             height = 928,
@@ -283,7 +289,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.do_scripting_controller(\x22right\x22, false);",
+            script = [[:call, "Tux", :do_scripting_controller, "right", false]],
             button = false,
             width = 32,
             height = 800,
@@ -292,7 +298,11 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.do_scripting_controller(\x22jump\x22, true);\nwait(0.5);\nTux.do_scripting_controller(\x22jump\x22, false);",
+            script = [
+                [:call, "Tux", :do_scripting_controller, "jump", true],
+                [:wait, 0.5],
+                [:call, "Tux", :do_scripting_controller, "jump", false],
+            ],
             button = false,
             width = 32,
             height = 800,
@@ -301,7 +311,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.do_scripting_controller(\x22right\x22, false);",
+            script = [[:call, "Tux", :do_scripting_controller, "right", false]],
             button = false,
             width = 32,
             height = 256,
@@ -756,7 +766,7 @@
     ],
     :sector [
         name = "crystal_mine",
-        init_script = "Camera.set_scale(1.1);",
+        init_script = [[:call, "Camera", :set_scale, 1.1]],
         :ambient_light [color = [0.2, 0.28, 0.45]],
         :background [
             color = [0.9999999, 0.9999999, 0.9999999],
@@ -1417,19 +1427,24 @@
         ],
         :pushbutton [
             z_pos = -99,
-            script = "gate2.goto_node(1);",
+            script = [[:call, "gate2", :goto_node, 1]],
             x = 5504,
             y = 1488,
         ],
         :pushbutton [
             z_pos = -99,
-            script = "lift1.start_moving();\nlift2.start_moving();\nlift3.start_moving();\nlift4.start_moving();",
+            script = [
+                [:call, "lift1", :start_moving],
+                [:call, "lift2", :start_moving],
+                [:call, "lift3", :start_moving],
+                [:call, "lift4", :start_moving],
+            ],
             x = 1312,
             y = 912,
         ],
         :pushbutton [
             z_pos = -99,
-            script = "lift7.start_moving();\nlift8.start_moving();",
+            script = [[:call, "lift7", :start_moving], [:call, "lift8", :start_moving]],
             x = 12128,
             y = 1584,
         ],
@@ -1548,7 +1563,22 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "start_cutscene();\n\nTux.deactivate();\nEffect.set_black(true);\nEffect.sixteen_to_nine(0);\nCamera.set_scale(1.2);\nwait(0.5);\nEffect.fade_in(1);\nwait(4);\n\nLevel.set_respawn_point(\x22crystal_mine\x22, \x22start\x22);\n\nEffect.four_to_three(1);\nCamera.scale_anchor(1.1, 1, 4);\nTux.activate();\n\nLevel.resume_target_timer();\n\nend_cutscene();",
+            script = [
+                [:do, :start_cutscene],
+                [:call, "Tux", :deactivate],
+                [:call, "Effect", :set_black, true],
+                [:call, "Effect", :sixteen_to_nine, 0],
+                [:call, "Camera", :set_scale, 1.2],
+                [:wait, 0.5],
+                [:call, "Effect", :fade_in, 1],
+                [:wait, 4],
+                [:call, "Level", :set_respawn_point, "crystal_mine", "start"],
+                [:call, "Effect", :four_to_three, 1],
+                [:call, "Camera", :scale_anchor, 1.1, 1, 4],
+                [:call, "Tux", :activate],
+                [:call, "Level", :resume_target_timer],
+                [:do, :end_cutscene],
+            ],
             button = false,
             width = 160,
             height = 160,
@@ -1557,7 +1587,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "lift5.start_moving();\nlift6.start_moving();",
+            script = [[:call, "lift5", :start_moving], [:call, "lift6", :start_moving]],
             button = false,
             width = 32,
             height = 384,
@@ -1566,7 +1596,31 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Level.pause_target_timer();\n\nstart_cutscene();\nEffect.sixteen_to_nine(1);\nTux.use_scripting_controller(true);\nTux.do_scripting_controller(\x22right\x22, true);\nwait(3);\n\nCamera.set_mode(\x22manual\x22);\n\nend_lift1.start_moving();\nend_lift2.start_moving();\n\nwait(2.5);\nCamera.scroll_to(Camera.get_x(), 1100, 6);\nwait(2);\n\nEffect.fade_out(1);\nwait(4);\nLevel.spawn(\x22harbor\x22, \x22exit\x22);\n\nend_cutscene();",
+            script = [
+                [:call, "Level", :pause_target_timer],
+                [:do, :start_cutscene],
+                [:call, "Effect", :sixteen_to_nine, 1],
+                [:call, "Tux", :use_scripting_controller, true],
+                [:call, "Tux", :do_scripting_controller, "right", true],
+                [:wait, 3],
+                [:call, "Camera", :set_mode, "manual"],
+                [:call, "end_lift1", :start_moving],
+                [:call, "end_lift2", :start_moving],
+                [:wait, 2.5],
+                [
+                    :call,
+                    "Camera",
+                    :scroll_to,
+                    [:call, "Camera", :get_x],
+                    1100,
+                    6,
+                ],
+                [:wait, 2],
+                [:call, "Effect", :fade_out, 1],
+                [:wait, 4],
+                [:call, "Level", :spawn, "harbor", "exit"],
+                [:do, :end_cutscene],
+            ],
             button = false,
             width = 32,
             height = 224,
@@ -1575,7 +1629,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.do_scripting_controller(\x22right\x22, false);",
+            script = [[:call, "Tux", :do_scripting_controller, "right", false]],
             button = false,
             width = 32,
             height = 160,
@@ -1680,7 +1734,7 @@
         :stalactite [glinting = false, z_pos = -1, x = 15552, y = 1408],
         :switch [
             z_pos = 1,
-            script = "gate1.goto_node(1);",
+            script = [[:call, "gate1", :goto_node, 1]],
             off_script = "door1.goto_node(0);",
             sprite = "/images/objects/switch/switch.sprite",
             x = 4480,
@@ -8214,7 +8268,11 @@
     ],
     :sector [
         name = "harbor",
-        init_script = "import(\x22levels/world1/crystal_mine.nut\x22);\n\nText.set_anchor_point(7);\nText.set_anchor_offset(0, -160);",
+        init_script = [
+            [:do, :import, "levels/world1/crystal_mine.nut"],
+            [:call, "Text", :set_anchor_point, 7],
+            [:call, "Text", :set_anchor_offset, 0, -160],
+        ],
         :ambient_light [color = [0.65, 0.72, 1]],
         :background [
             color = [0.1, 0.2, 0.35],
@@ -8335,7 +8393,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "trigger_state(\x22outro\x22);",
+            script = [[:do, :trigger_state, "outro"]],
             button = false,
             width = 96,
             height = 160,
@@ -8344,7 +8402,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "trigger_state(\x22textbox_outro\x22);",
+            script = [[:do, :trigger_state, "textbox_outro"]],
             button = false,
             width = 96,
             height = 192,
@@ -8353,7 +8411,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.do_scripting_controller(\x22right\x22, false);",
+            script = [[:call, "Tux", :do_scripting_controller, "right", false]],
             button = false,
             width = 32,
             height = 832,
@@ -8362,7 +8420,11 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.do_scripting_controller(\x22jump\x22, true);\nwait(0.2);\nTux.do_scripting_controller(\x22jump\x22, false);",
+            script = [
+                [:call, "Tux", :do_scripting_controller, "jump", true],
+                [:wait, 0.2],
+                [:call, "Tux", :do_scripting_controller, "jump", false],
+            ],
             button = false,
             width = 32,
             height = 896,
@@ -8371,7 +8433,7 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.do_scripting_controller(\x22right\x22, false);",
+            script = [[:call, "Tux", :do_scripting_controller, "right", false]],
             button = false,
             width = 32,
             height = 960,
@@ -8380,7 +8442,11 @@
         ],
         :scripttrigger [
             oneshot = true,
-            script = "Tux.do_scripting_controller(\x22jump\x22, true);\nwait(0.5);\nTux.do_scripting_controller(\x22jump\x22, false);",
+            script = [
+                [:call, "Tux", :do_scripting_controller, "jump", true],
+                [:wait, 0.5],
+                [:call, "Tux", :do_scripting_controller, "jump", false],
+            ],
             button = false,
             width = 32,
             height = 832,
