@@ -1,0 +1,317 @@
+diff --git a/src/badguy/badguy.cpp b/src/badguy/badguy.cpp
+index e5ddd7d..b4e5287 100644
+--- a/src/badguy/badguy.cpp
++++ b/src/badguy/badguy.cpp
+@@ -37,6 +37,7 @@
+ #include "supertux/level.hpp"
+ #include "supertux/sector.hpp"
+ #include "supertux/tile.hpp"
++#include "supertux/tuxtest.hpp"
+ #include "util/reader_mapping.hpp"
+ #include "util/writer.hpp"
+ 
+@@ -897,6 +898,7 @@ BadGuy::set_state(State state_)
+     return;
+ 
+   State laststate = m_state;
++  TuxTestTrace::badguy_state(*this, laststate, state_);
+   m_state = state_;
+   switch (state_) {
+     case STATE_BURNING:
+diff --git a/src/badguy/badguy.hpp b/src/badguy/badguy.hpp
+index 4f77be7..8990356 100644
+--- a/src/badguy/badguy.hpp
++++ b/src/badguy/badguy.hpp
+@@ -44,6 +44,7 @@ namespace
+ class BadGuy : public MovingSprite,
+                public Portable
+ {
++  friend class TuxTestTrace;
+ public:
+   static void register_class(ssq::VM& vm);
+ 
+diff --git a/src/object/player.hpp b/src/object/player.hpp
+index ca64c01..096e57b 100644
+--- a/src/object/player.hpp
++++ b/src/object/player.hpp
+@@ -49,6 +49,7 @@ extern const float TUX_INVINCIBLE_TIME_WARNING;
+  */
+ class Player final : public MovingSprite
+ {
++  friend class TuxTestTrace;
+ public:
+   static void register_class(ssq::VM& vm);
+ 
+diff --git a/src/supertux/main.cpp b/src/supertux/main.cpp
+index e8200a1..4ce24be 100644
+--- a/src/supertux/main.cpp
++++ b/src/supertux/main.cpp
+@@ -75,6 +75,7 @@ extern "C" {
+ #include "supertux/tile.hpp"
+ #include "supertux/tile_manager.hpp"
+ #include "supertux/title_screen.hpp"
++#include "supertux/tuxtest.hpp"
+ #include "supertux/world.hpp"
+ #include "supertux/menu/download_dialog.hpp"
+ #include "util/file_system.hpp"
+@@ -104,6 +105,7 @@ ConfigSubsystem::ConfigSubsystem() :
+   }
+ 
+   // init random number stuff
++  m_config.random_seed = TuxTestTrace::seed(m_config.random_seed);
+   gameRandom.seed(m_config.random_seed);
+   graphicsRandom.seed(0);
+   //const char *how = config->random_seed? ", user fixed.": ", from time().";
+diff --git a/src/supertux/screen_manager.cpp b/src/supertux/screen_manager.cpp
+index 5190cc5..2317031 100644
+--- a/src/supertux/screen_manager.cpp
++++ b/src/supertux/screen_manager.cpp
+@@ -45,6 +45,8 @@
+ #include "video/drawing_context.hpp"
+ 
+ #include <stdio.h>
++
++#include "supertux/tuxtest.hpp"
+ #include <chrono>
+ #include <iostream>
+ 
+@@ -618,6 +620,12 @@ void ScreenManager::loop_iter()
+   g_real_time += 1e-9f * static_cast<float>(nsecs);
+   last_time = now;
+ 
++  if (TuxTestTrace::s_fast) {
++    // exactly one logical step per iteration, whatever the real time
++    g_real_time += seconds_per_step - 1e-9f * static_cast<float>(nsecs);
++    elapsed_time = seconds_per_step;
++  }
++
+   float max_elapsed_time = 4 * seconds_per_step;
+   if (elapsed_time > max_elapsed_time) {
+     // when the game loads up or levels are switched the elapsed_ticks grows
+@@ -673,7 +681,9 @@ void ScreenManager::loop_iter()
+     float dtime = seconds_per_step * m_speed * speed_multiplier;
+     g_game_time += dtime;
+     process_events();
++    TuxTestTrace::input(m_input_manager.get_controller());
+     update_gamelogic(dtime);
++    TuxTestTrace::step();
+     elapsed_time -= seconds_per_step;
+   }
+ 
+@@ -682,8 +692,8 @@ void ScreenManager::loop_iter()
+   // limit the draw time offset to at most one step.
+   float time_offset = m_speed * speed_multiplier * std::min(elapsed_time, seconds_per_step);
+ 
+-  if (((steps > 0 && !m_screen_stack.empty())
+-      || always_draw) && m_actions.empty() || m_screen_fade) {
++  if (!TuxTestTrace::s_nodraw && (((steps > 0 && !m_screen_stack.empty())
++      || always_draw) && m_actions.empty() || m_screen_fade)) {
+     // Draw a frame
+     Compositor compositor(m_video_system, g_config->frame_prediction ? time_offset : 0.0f);
+     draw(compositor, *m_fps_statistics);
+@@ -712,6 +722,7 @@ void
+ ScreenManager::run()
+ {
+   Integration::init_all();
++  TuxTestTrace::init();
+ 
+   handle_screen_switch();
+ #ifdef __EMSCRIPTEN__
+diff --git a/src/supertux/tuxtest.cpp b/src/supertux/tuxtest.cpp
+new file mode 100644
+index 0000000..b77ee71
+--- /dev/null
++++ b/src/supertux/tuxtest.cpp
+@@ -0,0 +1,155 @@
++// Test mode for the port to Atmos (ia-atmos/sdl-tux). See tuxtest.hpp.
++
++#include "supertux/tuxtest.hpp"
++
++#include <cstdlib>
++#include <cstring>
++#include <string>
++#include <vector>
++
++#include "badguy/badguy.hpp"
++#include "control/controller.hpp"
++#include "object/player.hpp"
++#include "supertux/game_session.hpp"
++#include "supertux/player_status.hpp"
++#include "supertux/sector.hpp"
++
++bool  TuxTestTrace::s_fast   = false;
++bool  TuxTestTrace::s_nodraw = false;
++long  TuxTestTrace::s_tick   = 0;
++long  TuxTestTrace::s_ticks  = 0;
++FILE* TuxTestTrace::s_trace  = nullptr;
++bool  TuxTestTrace::s_objs   = false;
++
++namespace {
++
++struct Input { long tick; Control control; bool value; };
++std::vector<Input> g_inputs;
++size_t g_next = 0;
++
++const char* dir_name(Direction d)
++{
++  switch (d) {
++    case Direction::LEFT:  return "L";
++    case Direction::RIGHT: return "R";
++    case Direction::UP:    return "U";
++    case Direction::DOWN:  return "D";
++    default:               return "-";
++  }
++}
++
++// "10:right:1,25:jump:1,40:jump:0"
++void parse_inputs(const char* s)
++{
++  std::string src(s);
++  size_t i = 0;
++  while (i < src.size()) {
++    size_t j = src.find(',', i);
++    if (j == std::string::npos) j = src.size();
++    std::string item = src.substr(i, j-i);
++    i = j + 1;
++    size_t a = item.find(':');
++    size_t b = item.find(':', a+1);
++    if (a == std::string::npos || b == std::string::npos) {
++      fprintf(stderr, "TUX_INPUT: invalid item '%s'\n", item.c_str());
++      exit(2);
++    }
++    auto control = Control_from_string(item.substr(a+1, b-a-1));
++    if (!control) {
++      fprintf(stderr, "TUX_INPUT: invalid control in '%s'\n", item.c_str());
++      exit(2);
++    }
++    g_inputs.push_back({ atol(item.substr(0,a).c_str()), *control,
++                         atoi(item.substr(b+1).c_str()) != 0 });
++  }
++}
++
++} // namespace
++
++int
++TuxTestTrace::seed(int def)
++{
++  const char* v = getenv("TUX_SEED");
++  return v ? atoi(v) : def;
++}
++
++void
++TuxTestTrace::init()
++{
++  const char* v;
++  s_fast   = getenv("TUX_FAST")   != nullptr;
++  s_nodraw = getenv("TUX_NODRAW") != nullptr;
++  s_objs   = getenv("TUX_TRACE_OBJS") != nullptr;
++  if ((v = getenv("TUX_TICKS")))  s_ticks = atol(v);
++  if ((v = getenv("TUX_INPUT")))  parse_inputs(v);
++  if ((v = getenv("TUX_TRACE"))) {
++    s_trace = (strcmp(v,"-") == 0) ? stdout : fopen(v, "w");
++    if (!s_trace) {
++      fprintf(stderr, "TUX_TRACE: cannot open '%s'\n", v);
++      exit(2);
++    }
++  }
++}
++
++// The scripted changes of the step that is about to run. `s_tick` is the
++// number of steps already done, so the first step is the tick 1.
++void
++TuxTestTrace::input(Controller& controller)
++{
++  long tick = s_tick + 1;
++  while (g_next < g_inputs.size() && g_inputs[g_next].tick <= tick) {
++    controller.set_control(g_inputs[g_next].control, g_inputs[g_next].value);
++    g_next++;
++  }
++}
++
++void
++TuxTestTrace::step()
++{
++  s_tick++;
++
++  GameSession* session = GameSession::current();
++  if (s_trace && session) {
++    Sector& sector = session->get_current_sector();
++    for (Player* p : sector.get_players()) {
++      Vector pos = p->get_pos();
++      Vector vel = p->m_physic.get_velocity();
++      fprintf(s_trace,
++        "%ld P %.9g %.9g %.9g %.9g b=%d d=%s g=%d j=%d k=%d s=%d w=%d y=%d x=%d e=%d c=%d\n",
++        s_tick, pos.x, pos.y, vel.x, vel.y,
++        static_cast<int>(p->get_bonus()), dir_name(p->m_dir),
++        p->m_on_ground_flag, p->m_jumping, p->m_duck,
++        p->m_skidding_timer.started(), p->m_swimming,
++        p->m_dying, p->m_dead, p->m_winning,
++        p->get_status().coins);
++    }
++    if (s_objs) {
++      for (const auto& obj : sector.get_objects()) {
++        BadGuy* b = dynamic_cast<BadGuy*>(obj.get());
++        if (!b) continue;
++        Vector pos = b->get_pos();
++        Vector vel = b->m_physic.get_velocity();
++        fprintf(s_trace, "%ld B %u %s %.9g %.9g %.9g %.9g s=%d d=%s\n",
++          s_tick, b->get_uid().get_value(), b->get_class_name().c_str(),
++          pos.x, pos.y, vel.x, vel.y,
++          static_cast<int>(b->m_state), dir_name(b->m_dir));
++      }
++    }
++  }
++
++  if (s_ticks > 0 && s_tick >= s_ticks) {
++    if (s_trace) fflush(s_trace);
++    fflush(stdout);
++    _Exit(0);
++  }
++}
++
++void
++TuxTestTrace::badguy_state(const BadGuy& b, int from, int to)
++{
++  if (!s_trace) return;
++  Vector pos = b.get_pos();
++  fprintf(s_trace, "%ld E %u %s %d>%d %.9g %.9g\n",
++    s_tick + 1, b.get_uid().get_value(), b.get_class_name().c_str(),
++    from, to, pos.x, pos.y);
++}
+diff --git a/src/supertux/tuxtest.hpp b/src/supertux/tuxtest.hpp
+new file mode 100644
+index 0000000..1dbdd7b
+--- /dev/null
++++ b/src/supertux/tuxtest.hpp
+@@ -0,0 +1,31 @@
++// Test mode for the port to Atmos (ia-atmos/sdl-tux): scripted input by
++// tick, a trace, and a run with no pacing. All of it is off unless one
++// of the TUX_* environment variables is set. See tools/bench/README.md
++// in the repository of the port.
++
++#ifndef HEADER_SUPERTUX_SUPERTUX_TUXTEST_HPP
++#define HEADER_SUPERTUX_SUPERTUX_TUXTEST_HPP
++
++#include <cstdio>
++
++class Controller;
++class BadGuy;
++
++class TuxTestTrace
++{
++public:
++  static bool  s_fast;     // TUX_FAST: one logical step per iteration, no sleep
++  static bool  s_nodraw;   // TUX_NODRAW: no frame is drawn
++  static long  s_tick;     // logical steps since the start of the loop
++  static long  s_ticks;    // TUX_TICKS: exit after this many steps (0: never)
++  static FILE* s_trace;    // TUX_TRACE: where the trace goes (nullptr: off)
++  static bool  s_objs;     // TUX_TRACE_OBJS: the badguys too, every tick
++
++  static void init();
++  static int  seed(int def);
++  static void input(Controller& controller);   // before a logical step
++  static void step();                          // after a logical step
++  static void badguy_state(const BadGuy& b, int from, int to);
++};
++
++#endif
