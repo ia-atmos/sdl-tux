@@ -35,6 +35,21 @@
 #   (particles-snow)                :particles_snow []
 #   #t  #f                          true  false
 #
+# A script in Squirrel becomes data that the game interprets (see
+# tools/squirrel.py):
+#
+#   (script "torch1.set_burning(true);  script = [
+#            wait(2.2);")                   [:call, "torch1", :set_burning, true],
+#                                           [:wait, 2.2],
+#                                       ]
+#
+# A script that the translation does not cover is kept as it is, and
+# reported with its place and the reason:
+#
+#   (script "function f() {...}")       script = :squirrel ["function f() {...}"]
+#
+# The round trip is checked on the conversion with no translation.
+#
 # The tiles of a tilemap stay as in the original, with runs: `-5 0` is
 # five times the tile `0`.
 #
@@ -54,6 +69,9 @@
 import os
 import re
 import sys
+
+import squirrel
+from squirrel import Tag
 
 # The files to convert: (directory, extension, recursive, count).
 SOURCES = [
@@ -77,6 +95,9 @@ VECTORS = {
 VECTORS_IN = {
     ('.sprite', 'scale'), ('.strf', 'image'),
 }
+
+# Fields with a script in Squirrel, in levels and worldmaps.
+SCRIPTS = { 'script', 'init-script' }
 
 # Parents whose sublists are objects, by position, and not fields.
 # A `None` means all sublists, except the listed fields.
@@ -154,6 +175,9 @@ def sexp_read (src):
 # `map` (a list of pairs, to keep the order).
 ###############################################################################
 
+TRANSLATE = [True]      # False in the conversion for the round trip
+REPORT = []             # (path, reason) of the scripts not translated
+
 class Tab:
     def __init__ (self, tag=None):
         self.tag = tag
@@ -208,9 +232,27 @@ def body_to_atm (t, name, rest, ext, path):
             seen.add(k)
             t.map.append((k, field_to_atm(v[0], v[1:], ext, path+'/'+v[0])))
 
+def script_to_atm (src, path):
+    def tab (v):
+        if isinstance(v, list):
+            t = Tab()
+            t.vec = [ tab(x) for x in v ]
+            return t
+        return v
+    try:
+        return tab(squirrel.translate(src))
+    except squirrel.Unsupported as e:
+        REPORT.append((path, str(e)))
+        t = Tab('squirrel')
+        t.vec = [src]
+        return t
+
 def field_to_atm (name, rest, ext, path):
     if len(rest) == 1 and is_text(rest[0]):
         return rest[0][1]
+    if TRANSLATE[0] and (name in SCRIPTS) and ext in ('.stl', '.stwm') \
+            and len(rest) == 1 and isinstance(rest[0], str):
+        return script_to_atm(rest[0], path)
     if all(is_scalar(v) for v in rest) and not is_vector(ext, name):
         assert len(rest) <= 1, (path, 'not in VECTORS', len(rest))
         if len(rest) == 1:
@@ -266,6 +308,8 @@ def atm_write (v, ind=0):
         sp = '\n' + ' '*(ind+4)
         return pre + '[' + ''.join(sp + i + ',' for i in items) + \
                '\n' + ' '*ind + ']'
+    elif isinstance(v, Tag):
+        return ':' + v
     elif isinstance(v, bool):
         return 'true' if v else 'false'
     elif isinstance(v, str):
@@ -403,12 +447,17 @@ def main (src, dst):
         for rel in files:
             txt = open(os.path.join(src,rel), encoding='utf-8').read()
             exprs = sexp_read(txt)
-            out = atm_write(file_to_atm(exprs, ext, rel)) + '\n'
 
-            # round trip, from the text that is written
+            # round trip, from the text that is written, with the
+            # scripts as they are
+            TRANSLATE[0] = False
+            out = atm_write(file_to_atm(exprs, ext, rel)) + '\n'
             a = obj_to_sexp(atm_read(out))
             b = normal(exprs[0])
             assert same(a, b), (rel, 'round trip')
+
+            TRANSLATE[0] = True
+            out = atm_write(file_to_atm(exprs, ext, rel)) + '\n'
 
             os.makedirs(os.path.dirname(os.path.join(dst,rel)), exist_ok=True)
             with open(os.path.join(dst,rel+'.atm'), 'w', encoding='utf-8') as fd:
@@ -416,6 +465,9 @@ def main (src, dst):
         print('%-14s %-9s %d' % (dir, ext, len(files)))
         total += len(files)
     print('files          ', total)
+    print('scripts not translated:', len(REPORT))
+    for path, why in REPORT:
+        print('    %s : %s' % (path, why))
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
