@@ -10,7 +10,18 @@ The plan is in `.claude/plans/261113-sdl-tux.md`, and what is pending in
 
 - [x] T0: the official game built in the container, with scripted input
       and a trace (`tools/bench/`).
-- [ ] T1: the converter of the data.
+- [x] T1: the data of World 1 as Atmos data (`tools/convert.py`, `data/`):
+      31 levels, the worldmap, 393 sprites, 3 tilesets. The scripts of the
+      levels are data too (`tools/squirrel.py`): 193 of 196.
+- [ ] T2: the game over `env-sdl`.
+
+## Tests
+
+    tst/run.sh
+
+It needs the compiler in `../lang` (`ia-atmos/lang`), and, to check the
+conversion again, the official game in `../official/supertux` (see
+`tools/bench/README.md`).
 
 [1]: https://github.com/SuperTux/supertux
 [2]: https://github.com/ia-atmos/lang
