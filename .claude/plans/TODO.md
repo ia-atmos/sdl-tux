@@ -25,7 +25,8 @@ See C for the decisions taken as recommended.
 |---|------|------|
 | 3 | The trace of the official game has only the player and the badguys. Coins, blocks, powerups, and the end of a level enter it when the port reaches them (T5) | |
 | 5 | The images, sounds, and music are not in the repository (270 MB in the original). Decide at T2 how the game gets them: a script that copies what World 1 uses from the checkout of the official game | |
-| 6 | T2: ask the session of `env-sdl` for what the game needs of the platform | Next |
+| 6 | T2 and T3 wait for `env-sdl`, which has no code yet; the list of what the game needs was sent to its session on 2026-11-14. Meanwhile the order is T4 first: collisions, physics, and the player with no screen | |
+| 7 | T4: the collision kernel is in C (`game/coll.h`, a translation of the C++) and gives the lines of the official trace for Tux falling and landing. Next: the sector and its tick in Atmos, then the player (walk, run, skid, jump), each compared by trace | In course |
 | 4 | T3 to T9 | See the plan |
 
 ## C. Reported or decided, and not acknowledged
@@ -39,6 +40,12 @@ See C for the decisions taken as recommended.
 | 4 | Two scripts of `deep_dive_chill.stl` have a syntax error in the original (a missing comma in `ease_scale(1.1, 3 "EaseQuadOut")`), so the official game never runs them. The port keeps them as `:squirrel`, which does nothing, as there | 2026-11-14 |
 | 5 | The tiles of a tilemap stay with the runs of the original (`-5 0` is five times the tile `0`), decoded when the level loads. The largest level loads with `X.load` in 18 ms | 2026-11-14 |
 
+| 6 | The order of the milestones changed: T4 (collisions and the player, with no screen) before T2 and T3, which need `env-sdl` | 2026-11-14 |
+| 7 | 32-bit reals: reported to the session of the compiler, which is putting it to the author. Until then the arithmetic of the player and of the badguys goes in C kernels | 2026-11-14 |
+
 ### Places where exactness forces the form (candidates to relax later)
 
-None yet.
+- `game/coll.h`: the collision system and `Physic` in C, with callbacks,
+  as in the C++. With 32-bit reals in the language, `Physic` and the
+  handlers could be Atmos.
+- The player: its arithmetic in C (to come).
