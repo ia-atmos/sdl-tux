@@ -4,6 +4,7 @@
 # Atmos data, which the game reads with `X.load`.
 #
 #   tools/convert.py <data of SuperTux/supertux@v0.7.0> <data of the port>
+#   tools/convert.py --file <a level> <the level as data>
 #
 # It follows the converter of the port of Pingus (ia-atmos/sdl-pingus,
 # tools/convert.py), whose reader of s-expressions and writer of Atmos
@@ -469,7 +470,18 @@ def main (src, dst):
     for path, why in REPORT:
         print('    %s : %s' % (path, why))
 
+# One file, such as a level made for the tests.
+def one (src, dst):
+    ext = os.path.splitext(src)[1]
+    exprs = sexp_read(open(src, encoding='utf-8').read())
+    with open(dst, 'w', encoding='utf-8') as fd:
+        fd.write(atm_write(file_to_atm(exprs, ext, src)) + '\n')
+
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        sys.exit('usage: convert.py <source data> <destination data>')
-    main(sys.argv[1], sys.argv[2])
+    if len(sys.argv) == 4 and sys.argv[1] == '--file':
+        one(sys.argv[2], sys.argv[3])
+    elif len(sys.argv) == 3:
+        main(sys.argv[1], sys.argv[2])
+    else:
+        sys.exit('usage: convert.py <source data> <destination data>\n'
+                 '       convert.py --file <source file> <destination file>')
