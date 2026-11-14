@@ -19,10 +19,10 @@ None open. See C for those taken as recommended.
 
 | # | Work | Note |
 |---|------|------|
-| 1 | T0: the official game built at `v0.7.0` in the container, with the SDL renderer and the dummy video driver | In course |
-| 2 | T0: `tools/bench/official.patch`: scripted input by tick, a fixed seed, the trace | After B1 |
-| 3 | T0: the measures of the official game (memory, CPU, frames) | After B1 |
-| 4 | T1 to T9 | See the plan |
+| 1 | T1: the converter (`tools/convert.py`): structure, then the Squirrel of the levels as data | In course |
+| 2 | T1: `tools/check.atm`, and the time of `X.load` on the largest level (`crystal_mine`) | |
+| 3 | The trace of the official game has only the player and the badguys. Coins, blocks, powerups, and the end of a level enter it when the port reaches them (T5) | |
+| 4 | T2 to T9 | See the plan |
 
 ## C. Reported or decided, and not acknowledged
 

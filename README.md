@@ -8,8 +8,9 @@ The plan is in `.claude/plans/261113-sdl-tux.md`, and what is pending in
 
 ## Status
 
-- [ ] T0: the official game built in the container, with scripted input
-      and a trace.
+- [x] T0: the official game built in the container, with scripted input
+      and a trace (`tools/bench/`).
+- [ ] T1: the converter of the data.
 
 [1]: https://github.com/SuperTux/supertux
 [2]: https://github.com/ia-atmos/lang
