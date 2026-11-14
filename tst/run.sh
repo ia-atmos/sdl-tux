@@ -29,3 +29,13 @@ fi
 # every data file loads
 find data -name '*.atm' | sort > "$TMP/files.txt"
 "$ATMOS" tools/check.atm "$TMP/files.txt"
+
+# the collision kernel in C: it builds clean, and Tux falls and lands as
+# in the official game (the stored lines are those of its trace)
+cc -std=c99 -Wall -Wextra -O2 -fsanitize=address,undefined -Igame tst/coll.c -lm -o "$TMP/coll"
+"$TMP/coll" > /dev/null
+echo "coll: ok"
+ATMOS_CFLAGS="-O2 -I$ROOT" ATMOS_LDFLAGS="-lm" \
+    "$ATMOS" tst/fall.atm /levels/world1/journey_begins.stl 12 > "$TMP/fall.txt"
+cmp "$TMP/fall.txt" tst/fall.txt
+echo "fall: ok"
