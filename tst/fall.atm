@@ -1,0 +1,121 @@
+;; The collision kernel against the official game: Tux falls and lands
+;; at the start of a level, with no input.
+;;
+;;      atmos tst/fall.atm LEVEL TICKS
+;;
+;; Prints the position and the velocity per tick, as the lines `P` of the
+;; trace of the official game (tools/bench/README.md).
+
+include "../game/data.atm"
+
+```:prelude
+#include "game/coll.h"
+
+static TxSector  tf_sec;
+static TxObj     tf_obj;
+static TxPhysic  tf_phy;
+static int       tf_ground;
+
+static void tf_solid (TxObj* self, const TxHit* hit) {
+    (void) self;
+    if (hit->bottom) {
+        if (tf_phy.vy > 0) {
+            tf_phy.vy = 0;
+        }
+        tf_ground = 1;
+    } else if (hit->top) {
+        if (tf_phy.vy < 0) {
+            tf_phy.vy = .2f;
+        }
+    }
+    if ((hit->left || hit->right) && hit->slope_normal.x == 0) {
+        tf_phy.vx = 0;
+    }
+}
+
+static uint32_t* tf_tiles (AVal t, int n) {
+    uint32_t* v = malloc(n * sizeof(uint32_t));
+    int len = 0;
+    int i = 0;
+    {
+        AVal l;
+        a_len(&l, t);
+        len = (int) l.u.i;
+    }
+    for (int k=0; k<len && i<n; k++) {
+        int64_t x = a_tab_get(A_TAB_OF(t), a_int(k)).u.i;
+        if (x < 0) {                        /* a run: -count, tile */
+            int64_t id = a_tab_get(A_TAB_OF(t), a_int(++k)).u.i;
+            for (int64_t j=0; j<-x && i<n; j++) {
+                v[i++] = (uint32_t) id;
+            }
+        } else {
+            v[i++] = (uint32_t) x;
+        }
+    }
+    return v;
+}
+```
+
+val path, ticks = ...
+val lvl = data.load(path)
+val ts  = data.tileset("/images/tiles.strf")
+
+`tx_sector_init(&tf_sec);`
+do {
+    val n = ts.max + 1
+    `tf_sec.tiles.count = $n.u.i;`
+    `tf_sec.tiles.attrs = calloc($n.u.i, sizeof(uint32_t));`
+    `tf_sec.tiles.data  = calloc($n.u.i, sizeof(int));`
+    loop id,a in ts.attrs {
+        val d = ts.datas@id
+        `tf_sec.tiles.attrs[$id.u.i] = $a.u.i;`
+        `tf_sec.tiles.data[$id.u.i]  = $d.u.i;`
+    }
+}
+
+var sec
+loop _,s in lvl {
+    if (type(s) == :table) && (s.tag == :sector) && (s.name == "main") {
+        set sec = s
+    }
+}
+
+var x, y
+loop _,o in sec {
+    if type(o) == :table {
+        if (o.tag == :tilemap) && o.solid {
+            val w, h, tiles = o.width, o.height, o.tiles
+            ```
+            TxMap* m = malloc(sizeof(TxMap));
+            tx_map_init(m, $w.u.i, $h.u.i, tf_tiles($tiles, $w.u.i * $h.u.i));
+            tx_sector_add_map(&tf_sec, m);
+            ```
+        }
+        if (o.tag == :spawnpoint) && (o.name == "main") {
+            set x, y = o.x, o.y
+        }
+    }
+}
+
+;; Sector::activate: small Tux spawns 32 below the spawnpoint
+```
+tx_obj_init(&tf_obj, TX_COLGROUP_MOVING);
+tx_obj_set_size(&tf_obj, 31.8f, 30.8f);
+tx_obj_set_pos(&tf_obj, tx_vec((float)a_dbl($x), (float)a_dbl($y) + 32));
+tx_physic_init(&tf_phy);
+tx_obj_set_physic_hint(&tf_obj, &tf_phy);
+tf_sec.collision_solid = tf_solid;
+tx_sector_add(&tf_sec, &tf_obj);
+```
+
+loop i in (1, tonumber(ticks)) {
+    ```
+    float dt = 1.0f / (1000.0f / 15.0f);
+    tf_ground = 0;
+    tx_obj_set_movement(&tf_obj, tx_physic_get_movement(&tf_phy, tf_sec.gravity, dt));
+    tx_coll_update(&tf_sec);
+    printf("%d P %.9g %.9g %.9g %.9g g=%d\n", (int)$i.u.i,
+        tf_obj.bbox.x1, tf_obj.bbox.y1, tf_phy.vx, tf_phy.vy, tf_ground);
+    ```
+}
