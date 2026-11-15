@@ -1,13 +1,13 @@
 ;; The data of the game: files read with `X.load`.
 
-val data = [
+pin data = [
     root = "data",          ;; where the converted data is
 ]
 
 ;; A data file, as the value written in it.
 func data.load (path) {
     val full = data.root ++ path ++ ".atm"
-    val f = io.open(full) || throw :tux.data, "cannot open " ++ full
+    pin f = io.open(full) || throw :tux.data, "cannot open " ++ full
     val src = io.read(f, :all)
     io.close(f)
     X.load(src)
@@ -18,7 +18,7 @@ func data.load (path) {
 ;;      datas   the kind of slope, or the directions of a worldmap tile
 ;; A tile with no entry has no attributes.
 
-val TILE = [
+pin TILE = [
     SOLID = 0x0001, UNISOLID = 0x0002, BRICK = 0x0004, GOAL = 0x0008,
     SLOPE = 0x0010, FULLBOX  = 0x0020, COIN  = 0x0040,
     ICE   = 0x0100, WATER    = 0x0200, HURTS = 0x0400, FIRE = 0x0800,
@@ -28,8 +28,8 @@ val TILE = [
 ]
 
 func data.tileset (path) {
-    val src = data.load(path)
-    val ts = [attrs=[], datas=[], max=0]
+    pin src = data.load(path)
+    pin ts = [attrs=[], datas=[], max=0]
     val func add (id, a, d) {
         if ts.attrs@(id) == nil {       ;; the first definition stays
             set ts.attrs@(id) = a

@@ -58,8 +58,8 @@ static uint32_t* tf_tiles (AVal t, int n) {
 ```
 
 val path, ticks = ...
-val lvl = data.load(path)
-val ts  = data.tileset("/images/tiles.strf")
+pin lvl = data.load(path)
+pin ts  = data.tileset("/images/tiles.strf")
 
 `tx_sector_init(&tf_sec);`
 do {
