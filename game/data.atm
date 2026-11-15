@@ -4,9 +4,11 @@ pin data = [
     root = "data",          ;; where the converted data is
 ]
 
-;; A data file, as the value written in it.
+;; A data file, as the value written in it. A path that starts with `/`
+;; is relative to the data of the game (`/levels/world1/x.stl`); any
+;; other is a file as it is (`tst/levels/empty.stl`).
 func data.load (path) {
-    val full = data.root ++ path ++ ".atm"
+    val full = if string.sub(path,0,0) == "/" => data.root ++ path ++ ".atm" => path ++ ".atm"
     pin f = io.open(full) || throw :tux.data, "cannot open " ++ full
     val src = io.read(f, :all)
     io.close(f)

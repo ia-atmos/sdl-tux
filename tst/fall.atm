@@ -38,7 +38,7 @@ static uint32_t* tf_tiles (AVal t, int n) {
     int len = 0;
     int i = 0;
     {
-        AVal l;
+        AVal l = a_nil();
         a_len(&l, t);
         len = (int) l.u.i;
     }
