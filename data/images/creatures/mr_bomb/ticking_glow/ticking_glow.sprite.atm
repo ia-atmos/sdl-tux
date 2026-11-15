@@ -1,5 +1,10 @@
 :supertux.sprite [
-    :action [name = "default", fps = 15, images = ["ticking_glow-0.png"]],
+    :action [
+        name = "default",
+        fps = 15,
+        images = ["ticking_glow-0.png"],
+        size = [150, 150],
+    ],
     :action [
         name = "exploding",
         fps = 15,
@@ -12,5 +17,6 @@
             "ticking_glow-0.png", "ticking_glow-4.png",
         ],
         hitbox = [75, 75, 0, 0],
+        size = [150, 150],
     ],
 ]

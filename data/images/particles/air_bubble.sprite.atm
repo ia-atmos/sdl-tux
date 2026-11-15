@@ -10,6 +10,7 @@
             "air_bubble-3.png",
             "air_bubble-4.png",
         ],
+        size = [12, 12],
     ],
     :action [
         name = "small",
@@ -21,5 +22,6 @@
             "air_bubble-2.png",
             "air_bubble-3.png",
         ],
+        size = [12, 12],
     ],
 ]

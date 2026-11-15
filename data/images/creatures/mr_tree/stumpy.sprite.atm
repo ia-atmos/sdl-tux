@@ -15,6 +15,7 @@
             "stumpy-8.png",
             "stumpy-9.png",
         ],
+        size = [90, 90],
     ],
     :action [
         hitbox = [22, 38, 46, 50],
@@ -26,6 +27,7 @@
         hitbox = [12, 30, 64, 64],
         name = "iced-left",
         images = ["stumpy-7.png"],
+        size = [90, 90],
     ],
     :action [
         hitbox = [12, 30, 64, 64],
@@ -36,6 +38,7 @@
         hitbox = [22, 38, 46, 50],
         name = "burning-left",
         images = ["stumpy-7.png"],
+        size = [90, 90],
     ],
     :action [
         hitbox = [22, 38, 46, 50],
@@ -56,6 +59,7 @@
             "dizzy-5.png",
             "dizzy-4.png",
         ],
+        size = [90, 90],
     ],
     :action [
         hitbox = [22, 38, 46, 50],
@@ -68,6 +72,7 @@
         hitbox = [22, 38, 46, 32],
         name = "squished-left",
         images = ["squished.png"],
+        size = [90, 90],
     ],
     :action [
         hitbox = [22, 38, 46, 32],

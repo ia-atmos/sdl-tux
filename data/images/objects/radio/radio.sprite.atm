@@ -3,6 +3,7 @@
         name = "quiet",
         hitbox = [6, 19, 70, 43],
         images = ["radio_inactive.png"],
+        size = [82, 62],
     ],
     :action [
         name = "loud",
@@ -16,5 +17,6 @@
             "radio4.png",
             "radio5.png",
         ],
+        size = [82, 62],
     ],
 ]

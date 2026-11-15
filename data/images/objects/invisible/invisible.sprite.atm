@@ -1,4 +1,4 @@
 :supertux.sprite [
-    :action [name = "default", images = ["invisible.png"]],
-    :action [name = "solved", images = ["invisible.png"]],
+    :action [name = "default", images = ["invisible.png"], size = [32, 32]],
+    :action [name = "solved", images = ["invisible.png"], size = [32, 32]],
 ]

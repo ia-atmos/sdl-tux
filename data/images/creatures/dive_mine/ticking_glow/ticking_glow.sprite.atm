@@ -4,6 +4,7 @@
         fps = 15,
         images = ["ticking_glow-4.png"],
         hitbox = [48, 48, 0, 0],
+        size = [96, 96],
     ],
     :action [
         name = "ticking",
@@ -16,5 +17,6 @@
             "ticking_glow-4.png",
         ],
         hitbox = [48, 48, 0, 0],
+        size = [96, 96],
     ],
 ]

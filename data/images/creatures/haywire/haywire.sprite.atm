@@ -13,6 +13,7 @@
             "left-6.png",
             "left-7.png",
         ],
+        size = [60, 60],
     ],
     :action [
         name = "right",
@@ -24,6 +25,7 @@
         name = "iced-left",
         hitbox = [9, 8, 45, 43],
         images = ["left-0.png"],
+        size = [60, 60],
     ],
     :action [
         name = "iced-right",
@@ -44,6 +46,7 @@
             "chase-6.png",
             "chase-7.png",
         ],
+        size = [60, 60],
     ],
     :action [
         name = "ticking-right",
@@ -72,6 +75,7 @@
             "triggered-7.png",
             "triggered-8.png",
         ],
+        size = [60, 60],
     ],
     :action [
         name = "active-right",
@@ -86,6 +90,7 @@
         fps = 20.0,
         hitbox = [14, 19, 32, 32],
         images = ["skid-0.png", "skid-1.png", "skid-2.png", "skid-3.png"],
+        size = [60, 60],
     ],
     :action [
         name = "skid-right",
@@ -100,6 +105,7 @@
         fps = 20.0,
         hitbox = [14, 19, 32, 32],
         images = ["jump-0.png", "jump-1.png", "jump-2.png", "jump-3.png"],
+        size = [60, 60],
     ],
     :action [
         name = "jump-right",

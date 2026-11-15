@@ -3,5 +3,6 @@
         name = "default",
         hitbox = [32, 320, 448, 90],
         images = ["boat.png"],
+        size = [512, 416],
     ],
 ]

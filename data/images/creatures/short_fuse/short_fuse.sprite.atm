@@ -13,6 +13,7 @@
             "short_fuse-6.png",
             "short_fuse-7.png",
         ],
+        size = [42, 42],
     ],
     :action [
         name = "right",
@@ -25,6 +26,7 @@
         fps = 15,
         hitbox = [0, 0, 45, 43],
         images = ["short_fuse-0.png"],
+        size = [42, 42],
     ],
     :action [
         name = "iced-right",

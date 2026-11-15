@@ -10,6 +10,7 @@
             "eye_glow-3.png",
             "eye_glow-4.png",
         ],
+        size = [90, 90],
     ],
     :action [
         hitbox = [14, 10, 62, 78],
@@ -22,6 +23,7 @@
         name = "burning-left",
         fps = 15,
         images = ["eye_glow-0.png"],
+        size = [90, 90],
     ],
     :action [
         hitbox = [14, 10, 62, 78],
@@ -33,6 +35,7 @@
         hitbox = [14, 10, 62, 78],
         name = "iced-left",
         images = ["eye_glow-0.png"],
+        size = [90, 90],
     ],
     :action [
         hitbox = [14, 10, 62, 78],

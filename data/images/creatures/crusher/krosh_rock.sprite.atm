@@ -3,30 +3,36 @@
         name = "idle",
         hitbox = [4, 4, 128, 128],
         images = ["krosh_rock_main.png"],
+        size = [136, 136],
     ],
     :action [
         name = "crushing",
         hitbox = [4, 4, 128, 128],
         images = ["krosh_rock_hit.png"],
+        size = [136, 136],
     ],
     :action [
         name = "recovering",
         hitbox = [4, 4, 128, 128],
         images = ["krosh_rock_main.png"],
+        size = [136, 136],
     ],
     :action [
         name = "whites",
         hitbox = [4, 4, 128, 128],
         images = ["krosh_rock_whites.png"],
+        size = [136, 136],
     ],
     :action [
         name = "lefteye",
         hitbox = [4, 4, 128, 128],
         images = ["krosh_rock_lefteye.png"],
+        size = [136, 136],
     ],
     :action [
         name = "righteye",
         hitbox = [4, 4, 128, 128],
         images = ["krosh_rock_righteye.png"],
+        size = [136, 136],
     ],
 ]

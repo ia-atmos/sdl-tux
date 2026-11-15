@@ -13,5 +13,6 @@
             "ghostflame-2.png",
             "ghostflame-1.png",
         ],
+        size = [42, 42],
     ],
 ]

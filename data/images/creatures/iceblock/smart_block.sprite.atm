@@ -13,6 +13,7 @@
             "smartblock-6.png",
             "smartblock-7.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "right",
@@ -24,6 +25,7 @@
         name = "flat-left",
         hitbox = [8, 16, 32, 26],
         images = ["smartblock-squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "flat-right",
@@ -34,6 +36,7 @@
         name = "melting",
         hitbox = [0, 0, 32, 32],
         images = ["../../objects/water_drop/pink-drop.png"],
+        size = [32, 32],
     ],
     :action [
         name = "ground-melting",
@@ -46,6 +49,7 @@
             "../../objects/water_drop/pink-splash-4.png",
             "../../objects/water_drop/pink-splash-5.png",
         ],
+        size = [60, 22],
     ],
     :action [
         name = "waking-left",
@@ -66,6 +70,7 @@
             "smartblock_recover-5.png",
             "smartblock_recover-6.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "waking-right",

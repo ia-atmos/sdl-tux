@@ -21,6 +21,7 @@
             "granito_sleep-4.png",
             "granito_sleep-4.png",
         ],
+        size = [222, 188],
     ],
     :action [
         name = "sleep-right",
@@ -37,6 +38,7 @@
             "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-0.png", "granito_awake-1.png", "granito_awake-2.png", "granito_awake-3.png",
             "granito_sleep-0.png", "granito_awake-3.png", "granito_awake-2.png", "granito_awake-1.png",
         ],
+        size = [222, 188],
     ],
     :action [
         name = "idle-right",

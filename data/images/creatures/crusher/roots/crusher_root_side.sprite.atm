@@ -3,6 +3,7 @@
         name = "default",
         hitbox = [6, 6, 60, 20],
         images = ["root_side-empty.png"],
+        size = [96, 32],
     ],
     :action [
         name = "sideways-left",
@@ -23,6 +24,7 @@
             "root_side-0.png",
         ],
         loops = 1,
+        size = [96, 32],
     ],
     :action [
         name = "sideways-right",

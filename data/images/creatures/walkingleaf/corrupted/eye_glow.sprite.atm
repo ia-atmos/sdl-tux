@@ -13,6 +13,7 @@
             "../../vicious_ivy/corrupted/eye_glow-6.png",
             "../../vicious_ivy/corrupted/eye_glow-7.png",
         ],
+        size = [60, 48],
     ],
     :action [
         name = "right",
@@ -34,6 +35,7 @@
             "../../vicious_ivy/corrupted/eye_glow-10.png",
             "../../vicious_ivy/corrupted/eye_glow-9.png",
         ],
+        size = [66, 54],
     ],
     :action [
         name = "float-right",
@@ -45,6 +47,7 @@
         name = "iced-left",
         hitbox = [9, 12, 32, 32],
         images = ["../../vicious_ivy/corrupted/eye_glow-2.png"],
+        size = [60, 48],
     ],
     :action [
         name = "iced-right",
@@ -56,6 +59,7 @@
         hitbox = [9, 12, 32, 32],
         fps = 15,
         images = ["../../vicious_ivy/corrupted/eye_glow-0.png"],
+        size = [60, 48],
     ],
     :action [
         name = "burning-right",

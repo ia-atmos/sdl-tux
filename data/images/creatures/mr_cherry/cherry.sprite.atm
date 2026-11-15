@@ -10,6 +10,7 @@
             "cherrybomb_hit_4.png",
             "cherrybomb_hit_5.png",
         ],
+        size = [48, 66],
     ],
     :action [
         name = "ticking-right",
@@ -28,5 +29,6 @@
             "sparkle-4.png",
             "sparkle-5.png",
         ],
+        size = [70, 70],
     ],
 ]

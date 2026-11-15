@@ -9,5 +9,6 @@
             "flying_platform-2.png",
             "flying_platform-3.png",
         ],
+        size = [128, 58],
     ],
 ]

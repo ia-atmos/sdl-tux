@@ -4,6 +4,7 @@
         fps = 16,
         hitbox = [-2, 30, 14, 128],
         images = ["flame1.png", "flame2.png", "flame3.png", "flame4.png"],
+        size = [32, 48],
     ],
     :action [
         name = "greyscale",
@@ -15,5 +16,6 @@
             "greyscale/flame3.png",
             "greyscale/flame4.png",
         ],
+        size = [32, 48],
     ],
 ]

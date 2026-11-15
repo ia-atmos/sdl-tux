@@ -3,6 +3,7 @@
         name = "silver-right",
         hitbox = [0, 2, 48, 28],
         images = ["key_skull.png"],
+        size = [48, 32],
     ],
     :action [
         name = "silver-left",

@@ -13,6 +13,7 @@
             "run-6.png",
             "run-7.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "walk-right",
@@ -33,6 +34,7 @@
             "jump-4.png",
             "jump-5.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "jump-right",
@@ -47,6 +49,7 @@
         fps = 12,
         loops = 1,
         images = ["jump-3.png", "jump-2.png", "jump-1.png"],
+        size = [140, 130],
     ],
     :action [
         name = "fall-right",
@@ -69,6 +72,7 @@
             "stand-6.png",
             "stand-7.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "stand-right",
@@ -86,6 +90,7 @@
             "idle-4.png", "idle-5.png", "idle-3.png", "idle-6.png", "idle-7.png", "idle-3.png", "idle-4.png", "idle-5.png", "idle-3.png", "idle-6.png", "idle-7.png", "idle-3.png", "idle-4.png", "idle-5.png", "idle-3.png", "idle-6.png",
             "idle-7.png", "idle-3.png", "idle-2.png", "idle-1.png", "stand-0.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "rage-right",
@@ -110,6 +115,7 @@
             "idle-6.png",
             "idle-7.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "taunt-right",
@@ -124,6 +130,7 @@
         fps = 15,
         loops = 1,
         images = ["leap-0.png", "leap-1.png", "leap-2.png", "leap-3.png"],
+        size = [140, 130],
     ],
     :action [
         name = "leap-right",
@@ -146,6 +153,7 @@
             "stomp-6.png",
             "stomp-7.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "stomp-right",
@@ -171,6 +179,7 @@
             "throw-9.png",
             "stand-0.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "throw-right",
@@ -188,6 +197,7 @@
             "stomp-7.png", "stomp-6.png", "stomp-5.png", "stomp-4.png", "stomp-3.png", "stomp-2.png", "stomp-4.png", "stomp-3.png", "stomp-2.png", "stomp-3.png", "stomp-2.png", "stomp-2.png", "stomp-2.png", "stomp-2.png", "stomp-6.png", "idle-3.png",
             "leap-3.png", "leap-4.png", "leap-4.png", "leap-3.png", "leap-2.png", "leap-1.png", "leap-0.png", "stand-0.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "big-throw-right",
@@ -213,6 +223,7 @@
             "stunned-6.png",
             "stunned-7.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "dizzy-right",
@@ -226,6 +237,7 @@
         fps = 15,
         hitbox = [31, 27, 72, 100],
         images = ["stunned-8.png", "stunned-9.png", "stunned-10.png", "stunned-11.png"],
+        size = [140, 130],
     ],
     :action [
         name = "busted-right",
@@ -246,6 +258,7 @@
             "idle-1.png",
             "idle-2.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "grab-right",
@@ -269,6 +282,7 @@
             "throw-9.png",
             "stand-0.png",
         ],
+        size = [140, 130],
     ],
     :action [
         name = "push-right",

@@ -18,6 +18,7 @@
             "explosion-11.png",
             "explosion-12.png",
         ],
+        size = [120, 120],
     ],
     :action [
         name = "pop",
@@ -38,5 +39,6 @@
             "pop-11.png",
             "pop-12.png",
         ],
+        size = [42, 42],
     ],
 ]

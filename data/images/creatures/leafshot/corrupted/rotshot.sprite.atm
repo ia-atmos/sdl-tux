@@ -11,6 +11,7 @@
             "rotshot-4.png",
             "rotshot-5.png",
         ],
+        size = [64, 48],
     ],
     :action [
         name = "right",
@@ -22,6 +23,7 @@
         name = "iced-left",
         hitbox = [5, 17, 36, 26],
         images = ["rotshot-0.png"],
+        size = [64, 48],
     ],
     :action [
         name = "iced-right",
@@ -32,6 +34,7 @@
         hitbox = [5, 17, 36, 26],
         name = "burning-left",
         images = ["rotshot-0.png"],
+        size = [64, 48],
     ],
     :action [
         hitbox = [23, 17, 36, 26],
@@ -42,6 +45,7 @@
         name = "squished-left",
         hitbox = [9, 12, 32, 32],
         images = ["../../vicious_ivy/corrupted/squished.png"],
+        size = [60, 48],
     ],
     :action [
         name = "squished-right",
@@ -52,6 +56,7 @@
         name = "collision-left",
         hitbox = [5, 17, 36, 26],
         images = ["collision-left.png"],
+        size = [64, 48],
     ],
     :action [
         name = "collision-right",

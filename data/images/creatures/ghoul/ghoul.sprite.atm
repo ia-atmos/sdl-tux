@@ -5,6 +5,7 @@
         fps = 15,
         hitbox = [21, 7, 28, 38],
         images = ["up-0.png", "up-1.png", "up-2.png", "up-3.png"],
+        size = [72, 76],
     ],
     :action [
         name = "accel1-right",
@@ -19,6 +20,7 @@
         fps = 15,
         hitbox = [21, 7, 28, 38],
         images = ["up-4.png", "up-5.png", "up-6.png", "up-7.png"],
+        size = [72, 76],
     ],
     :action [
         name = "accel2-up",
@@ -32,6 +34,7 @@
         fps = 15,
         hitbox = [21, 7, 28, 38],
         images = ["up-8.png"],
+        size = [72, 76],
     ],
     :action [
         name = "right-up",
@@ -51,6 +54,7 @@
             "down-4.png",
             "down-5.png",
         ],
+        size = [72, 76],
     ],
     :action [
         name = "right",
@@ -64,6 +68,7 @@
         loops = 1,
         hitbox = [21, 7, 28, 38],
         images = ["stun-0.png", "stun-1.png", "stun-2.png", "stun-3.png", "stun-4.png"],
+        size = [72, 76],
     ],
     :action [
         name = "stunned-right",
@@ -78,6 +83,7 @@
         loops = 1,
         hitbox = [21, 7, 28, 38],
         images = ["stun-4.png", "stun-3.png", "stun-2.png", "stun-1.png", "stun-0.png"],
+        size = [72, 76],
     ],
     :action [
         name = "recovering-right",

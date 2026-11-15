@@ -13,6 +13,7 @@
             "laptop-6.png",
             "laptop-7.png",
         ],
+        size = [44, 44],
     ],
     :action [
         name = "right",
@@ -24,6 +25,7 @@
         name = "falling-left",
         hitbox = [6, 26, 32, 16],
         images = ["laptop_flat.png"],
+        size = [44, 44],
     ],
     :action [
         name = "falling-right",
@@ -34,6 +36,7 @@
         name = "flat-left",
         hitbox = [6, 26, 32, 16],
         images = ["laptop_flat.png"],
+        size = [44, 44],
     ],
     :action [
         name = "flat-right",
@@ -56,6 +59,7 @@
             "waking-9.png",
             "waking-10.png",
         ],
+        size = [44, 44],
     ],
     :action [
         name = "waking-right",
@@ -67,6 +71,7 @@
         hitbox = [1, 5, 45, 43],
         fps = 12,
         images = ["laptop-0.png"],
+        size = [44, 44],
     ],
     :action [
         name = "iced-right",

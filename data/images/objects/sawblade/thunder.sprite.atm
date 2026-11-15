@@ -13,5 +13,6 @@
             "shock-0.png",
             "shock-4.png",
         ],
+        size = [32, 32],
     ],
 ]

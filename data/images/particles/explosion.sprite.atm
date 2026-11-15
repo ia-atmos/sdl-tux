@@ -16,5 +16,6 @@
             "explosion-2.png",
             "explosion-2.png",
         ],
+        size = [106, 126],
     ],
 ]

@@ -1,4 +1,12 @@
 :supertux.sprite [
-    :action [name = "on", images = ["../bonus_block/invisible.png"]],
-    :action [name = "off", images = ["../bonus_block/invisible.png"]],
+    :action [
+        name = "on",
+        images = ["../bonus_block/invisible.png"],
+        size = [32, 32],
+    ],
+    :action [
+        name = "off",
+        images = ["../bonus_block/invisible.png"],
+        size = [32, 32],
+    ],
 ]

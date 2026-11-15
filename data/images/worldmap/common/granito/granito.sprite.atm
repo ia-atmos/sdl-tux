@@ -10,6 +10,7 @@
             "granito_3_empty.png",
             "granito_3_empty.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -29,6 +30,7 @@
             "granito_3_small.png",
             "granito_0_small.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -58,6 +60,7 @@
             "granito_2_small.png",
             "granito_3_small.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -89,6 +92,7 @@
             "granito_3_big.png",
             "granito_0_big.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -118,6 +122,7 @@
             "granito_2_big.png",
             "granito_3_big.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -149,6 +154,7 @@
             "granito_3_fire.png",
             "granito_0_fire.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -178,6 +184,7 @@
             "granito_2_fire.png",
             "granito_3_fire.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -209,6 +216,7 @@
             "granito_3_ice.png",
             "granito_0_ice.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -238,6 +246,7 @@
             "granito_2_ice.png",
             "granito_3_ice.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -269,6 +278,7 @@
             "granito_3_air.png",
             "granito_0_air.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -298,6 +308,7 @@
             "granito_2_air.png",
             "granito_3_air.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -329,6 +340,7 @@
             "granito_3_earth.png",
             "granito_0_earth.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],
@@ -358,6 +370,7 @@
             "granito_2_earth.png",
             "granito_3_earth.png",
         ],
+        size = [74, 74],
     ],
     :action [
         hitbox = [8, 19, 32, 32],

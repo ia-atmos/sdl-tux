@@ -9,6 +9,7 @@
             "flying_snowball-2.png",
             "flying_snowball-3.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "right",
@@ -20,6 +21,7 @@
         name = "squished-left",
         hitbox = [8, 8, 32, 32],
         images = ["flying-squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "squished-right",
@@ -30,5 +32,6 @@
         name = "melting",
         hitbox = [0, 0, 32, 32],
         images = ["../../objects/water_drop/water-drop.png"],
+        size = [32, 32],
     ],
 ]

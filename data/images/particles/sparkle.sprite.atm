@@ -2,14 +2,17 @@
     :action [
         name = "small",
         images = ["sparkle-0.png", "sparkle-1.png", "sparkle-0.png"],
+        size = [24, 24],
     ],
     :action [
         name = "small-key-collect",
         images = ["sparkle-0.png", "sparkle-1.png", "sparkle-0.png", "sparkle-2.png"],
+        size = [24, 24],
     ],
     :action [
         name = "dark",
         images = ["sparkle-dark-0.png", "sparkle-dark-1.png", "sparkle-dark-0.png"],
+        size = [24, 24],
     ],
     :action [
         name = "medium",
@@ -20,5 +23,6 @@
             "sparkle-1.png",
             "sparkle-0.png",
         ],
+        size = [24, 24],
     ],
 ]

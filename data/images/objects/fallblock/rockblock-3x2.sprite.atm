@@ -3,5 +3,6 @@
         name = "default",
         hitbox = [0, 0, 96, 64],
         images = ["rockblock-3x2.png"],
+        size = [96, 64],
     ],
 ]

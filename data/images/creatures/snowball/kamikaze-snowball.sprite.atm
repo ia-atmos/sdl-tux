@@ -11,6 +11,7 @@
             "kamikaze-4.png",
             "kamikaze-5.png",
         ],
+        size = [68, 38],
     ],
     :action [
         name = "right",
@@ -22,6 +23,7 @@
         name = "squished-left",
         hitbox = [8, 13, 32, 32],
         images = ["snowball-squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "squished-right",
@@ -32,6 +34,7 @@
         name = "collision-left",
         hitbox = [5, 6, 32, 28],
         images = ["kamikaze-collision.png"],
+        size = [38, 38],
     ],
     :action [
         name = "collision-right",
@@ -42,5 +45,6 @@
         name = "melting",
         hitbox = [0, 0, 32, 32],
         images = ["../../objects/water_drop/water-drop.png"],
+        size = [32, 32],
     ],
 ]

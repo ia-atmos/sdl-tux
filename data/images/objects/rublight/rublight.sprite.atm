@@ -16,6 +16,7 @@
             "rublight-9.png",
             "rublight-10.png",
         ],
+        size = [32, 32],
     ],
-    :action [name = "inactive", images = ["rublight-0.png"]],
+    :action [name = "inactive", images = ["rublight-0.png"], size = [32, 32]],
 ]

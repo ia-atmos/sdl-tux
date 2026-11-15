@@ -4,6 +4,7 @@
         fps = 4.0,
         hitbox = [0, 0, 32, 32],
         images = ["water-drop.png"],
+        size = [32, 32],
     ],
     :action [
         name = "splash",
@@ -17,29 +18,34 @@
             "water-splash-4.png",
             "water-splash-5.png",
         ],
+        size = [60, 22],
     ],
     :action [
         name = "particle_0",
         fps = 1.0,
         hitbox = [0, 0, 8, 8],
         images = ["water-particle-0.png"],
+        size = [8, 8],
     ],
     :action [
         name = "particle_1",
         fps = 1.0,
         hitbox = [0, 0, 6, 6],
         images = ["water-particle-1.png"],
+        size = [6, 6],
     ],
     :action [
         name = "particle_2",
         fps = 1.0,
         hitbox = [0, 0, 4, 4],
         images = ["water-particle-2.png"],
+        size = [4, 4],
     ],
     :action [
         name = "particle_3",
         fps = 1.0,
         hitbox = [0, 0, 2, 2],
         images = ["water-particle-3.png"],
+        size = [2, 2],
     ],
 ]

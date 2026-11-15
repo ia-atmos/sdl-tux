@@ -1,4 +1,9 @@
 :supertux.sprite [
-    :action [name = "right", fps = 1, images = ["santatux-hat.png"]],
+    :action [
+        name = "right",
+        fps = 1,
+        images = ["santatux-hat.png"],
+        size = [36, 28],
+    ],
     :action [name = "left", fps = 1, mirror_action = "right"],
 ]

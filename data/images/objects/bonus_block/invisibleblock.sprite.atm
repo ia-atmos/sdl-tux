@@ -1,5 +1,9 @@
 :supertux.sprite [
-    :action [name = "default-editor", images = ["bonus-invisible.png"]],
+    :action [
+        name = "default-editor",
+        images = ["bonus-invisible.png"],
+        size = [32, 32],
+    ],
     :action [
         name = "empty",
         surfaces = [

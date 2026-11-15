@@ -3,25 +3,30 @@
         name = "piece-0",
         hitbox = [0, 0, 25, 20],
         images = ["pumpkin_piece-0.png"],
+        size = [25, 20],
     ],
     :action [
         name = "piece-1",
         hitbox = [0, 0, 12, 12],
         images = ["pumpkin_piece-1.png"],
+        size = [12, 12],
     ],
     :action [
         name = "piece-2",
         hitbox = [0, 0, 12, 12],
         images = ["pumpkin_piece-2.png"],
+        size = [12, 12],
     ],
     :action [
         name = "piece-3",
         hitbox = [0, 0, 12, 12],
         images = ["pumpkin_piece-3.png"],
+        size = [12, 12],
     ],
     :action [
         name = "piece-4",
         hitbox = [0, 0, 12, 12],
         images = ["pumpkin_piece-4.png"],
+        size = [12, 12],
     ],
 ]

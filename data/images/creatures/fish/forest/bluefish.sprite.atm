@@ -13,6 +13,7 @@
             "swim_blue-6.png",
             "swim_blue-7.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "swim-right",
@@ -24,6 +25,7 @@
         name = "iced-left",
         hitbox = [2, 10, 64, 43],
         images = ["swim_blue-0.png"],
+        size = [64, 64],
     ],
     :action [
         name = "iced-right",
@@ -34,6 +36,7 @@
         hitbox = [8, 15, 48, 32],
         name = "burning-left",
         images = ["swim_blue-0.png"],
+        size = [64, 64],
     ],
     :action [
         hitbox = [8, 15, 48, 32],

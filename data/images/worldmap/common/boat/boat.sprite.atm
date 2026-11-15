@@ -10,6 +10,7 @@
             "boat_3_empty.png",
             "boat_3_empty.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -29,6 +30,7 @@
             "boat_3_small.png",
             "boat_0_small.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -58,6 +60,7 @@
             "boat_2_small.png",
             "boat_3_small.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -89,6 +92,7 @@
             "boat_3_big.png",
             "boat_0_big.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -118,6 +122,7 @@
             "boat_2_big.png",
             "boat_3_big.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -149,6 +154,7 @@
             "boat_3_fire.png",
             "boat_0_fire.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -178,6 +184,7 @@
             "boat_2_fire.png",
             "boat_3_fire.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -209,6 +216,7 @@
             "boat_3_ice.png",
             "boat_0_ice.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -238,6 +246,7 @@
             "boat_2_ice.png",
             "boat_3_ice.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -269,6 +278,7 @@
             "boat_3_air.png",
             "boat_0_air.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -298,6 +308,7 @@
             "boat_2_air.png",
             "boat_3_air.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -329,6 +340,7 @@
             "boat_3_earth.png",
             "boat_0_earth.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],
@@ -358,6 +370,7 @@
             "boat_2_earth.png",
             "boat_3_earth.png",
         ],
+        size = [68, 68],
     ],
     :action [
         hitbox = [8, 39, 32, 32],

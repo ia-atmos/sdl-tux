@@ -3,6 +3,11 @@
         hitbox = [8, 8, 32, 32],
         name = "default",
         images = ["magicblock.png"],
+        size = [48, 48],
     ],
-    :action [name = "solid", images = ["magicblock-solid.png"]],
+    :action [
+        name = "solid",
+        images = ["magicblock-solid.png"],
+        size = [32, 32],
+    ],
 ]

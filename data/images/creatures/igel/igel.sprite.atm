@@ -13,6 +13,7 @@
             "walk-6.png",
             "walk-7.png",
         ],
+        size = [68, 45],
     ],
     :action [
         name = "right",
@@ -31,6 +32,7 @@
             "roll_start-2.png",
             "roll_start-3.png",
         ],
+        size = [68, 46],
     ],
     :action [
         name = "roll-start-right",
@@ -51,6 +53,7 @@
             "roll-4.png",
             "roll-5.png",
         ],
+        size = [50, 46],
     ],
     :action [
         name = "roll-right",
@@ -69,6 +72,7 @@
             "roll_start-1.png",
             "roll_start-0.png",
         ],
+        size = [68, 46],
     ],
     :action [
         name = "roll-end-right",
@@ -81,6 +85,7 @@
         name = "iced-left",
         hitbox = [2, 4, 64, 43],
         images = ["walk-0.png"],
+        size = [68, 45],
     ],
     :action [
         name = "iced-right",
@@ -91,6 +96,7 @@
         hitbox = [15, 10, 36, 32],
         name = "burning-left",
         images = ["walk-0.png"],
+        size = [68, 45],
     ],
     :action [
         hitbox = [17, 10, 36, 32],

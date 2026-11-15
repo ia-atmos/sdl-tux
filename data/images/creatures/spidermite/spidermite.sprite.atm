@@ -7,6 +7,7 @@
             "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-9.png", "spidermite-7.png",
             "spidermite-8.png", "spidermite-9.png",
         ],
+        size = [120, 92],
     ],
     :action [
         name = "dive",
@@ -19,6 +20,7 @@
             "spidermite-2.png",
             "spidermite-3.png",
         ],
+        size = [120, 92],
     ],
     :action [
         name = "rebound",
@@ -34,10 +36,12 @@
             "spidermite-8.png",
             "spidermite-9.png",
         ],
+        size = [120, 92],
     ],
     :action [
         name = "squished",
         hitbox = [36, 16, 48, 47],
         images = ["squished.png"],
+        size = [120, 92],
     ],
 ]

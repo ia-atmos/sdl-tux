@@ -18,11 +18,13 @@
             "../../creatures/ghosttree/worldmap_1.png",
             "../../creatures/ghosttree/worldmap_0.png",
         ],
+        size = [160, 128],
     ],
     :action [
         name = "solved",
         hitbox = [80, 144, 0, 0],
         fps = 1,
         images = ["../../creatures/ghosttree/ghosttree_dust_wm_0.png"],
+        size = [160, 128],
     ],
 ]

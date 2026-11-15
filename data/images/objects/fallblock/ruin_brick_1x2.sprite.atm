@@ -3,5 +3,6 @@
         name = "normal",
         hitbox = [0, 0, 64, 32],
         images = ["ruin_brick_1x2.png"],
+        size = [64, 32],
     ],
 ]

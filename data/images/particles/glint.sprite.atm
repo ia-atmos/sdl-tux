@@ -9,5 +9,6 @@
             "glint-3.png",
             "glint-4.png",
         ],
+        size = [24, 24],
     ],
 ]

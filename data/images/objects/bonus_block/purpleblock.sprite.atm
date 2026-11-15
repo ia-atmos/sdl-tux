@@ -14,6 +14,7 @@
             "purple-0.png",
             "purple-0.png",
         ],
+        size = [32, 32],
     ],
     :action [
         name = "empty",

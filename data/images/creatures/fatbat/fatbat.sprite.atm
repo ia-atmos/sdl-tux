@@ -13,6 +13,7 @@
             "fatbat-5.png",
             "fatbat-4.png",
         ],
+        size = [96, 60],
     ],
     :action [
         name = "right",
@@ -27,6 +28,7 @@
         hitbox = [30, 15, 32, 38],
         fps = 30,
         images = ["fatbat-4.png", "fatbat-9.png", "fatbat-10.png", "fatbat-11.png"],
+        size = [96, 60],
     ],
     :action [
         name = "right-down",
@@ -41,6 +43,7 @@
         hitbox = [30, 15, 32, 38],
         fps = 30,
         images = ["fatbat-6.png", "fatbat-7.png", "fatbat-8.png", "fatbat-0.png"],
+        size = [96, 60],
     ],
     :action [
         name = "right-up",
@@ -53,6 +56,7 @@
         name = "squished-left",
         hitbox = [30, 15, 32, 38],
         images = ["squished.png"],
+        size = [96, 60],
     ],
     :action [
         name = "squished-right",
@@ -65,6 +69,7 @@
         loops = 1,
         fps = 20,
         images = ["fatbat-0.png"],
+        size = [96, 60],
     ],
     :action [
         name = "iced-right",
@@ -77,6 +82,7 @@
         hitbox = [30, 15, 32, 38],
         name = "burning-left",
         images = ["fatbat-0.png"],
+        size = [96, 60],
     ],
     :action [
         hitbox = [34, 15, 32, 38],

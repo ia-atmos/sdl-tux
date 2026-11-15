@@ -3,6 +3,7 @@
         name = "closed",
         hitbox = [8, 4, 44, 92],
         images = ["door-0.png"],
+        size = [60, 100],
     ],
     :action [
         name = "opening",
@@ -19,8 +20,14 @@
             "door-6.png",
             "door-7.png",
         ],
+        size = [60, 100],
     ],
-    :action [name = "open", hitbox = [8, 4, 44, 92], images = ["door-7.png"]],
+    :action [
+        name = "open",
+        hitbox = [8, 4, 44, 92],
+        images = ["door-7.png"],
+        size = [60, 100],
+    ],
     :action [
         name = "closing",
         hitbox = [8, 4, 44, 92],
@@ -36,5 +43,6 @@
             "door-1.png",
             "door-0.png",
         ],
+        size = [60, 100],
     ],
 ]

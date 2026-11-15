@@ -3,6 +3,7 @@
         name = "left",
         hitbox = [20, 61, 55, 35],
         images = ["rocket_launcher-left.png"],
+        size = [95, 96],
     ],
     :action [
         name = "broken-left",
@@ -23,6 +24,7 @@
             "rocket_launcher-broken-left8.png",
             "rocket_launcher-broken-left5.png",
         ],
+        size = [95, 96],
     ],
     :action [
         name = "iced-left",
@@ -36,11 +38,13 @@
             "rocket_launcher-frozen-left3.png",
             "rocket_launcher-frozen-left4.png",
         ],
+        size = [95, 96],
     ],
     :action [
         name = "right",
         hitbox = [20, 61, 55, 35],
         images = ["rocket_launcher-right.png"],
+        size = [95, 96],
     ],
     :action [
         name = "broken-right",
@@ -61,6 +65,7 @@
             "rocket_launcher-broken-right8.png",
             "rocket_launcher-broken-right5.png",
         ],
+        size = [95, 96],
     ],
     :action [
         name = "iced-right",
@@ -74,6 +79,7 @@
             "rocket_launcher-frozen-right3.png",
             "rocket_launcher-frozen-right4.png",
         ],
+        size = [95, 96],
     ],
     :action [
         name = "turn-left",
@@ -91,6 +97,7 @@
             "rocket_launcher-turning0.png",
             "rocket_launcher-left.png",
         ],
+        size = [95, 96],
     ],
     :action [
         name = "turn-right",
@@ -108,5 +115,6 @@
             "rocket_launcher-turning7.png",
             "rocket_launcher-right.png",
         ],
+        size = [95, 96],
     ],
 ]

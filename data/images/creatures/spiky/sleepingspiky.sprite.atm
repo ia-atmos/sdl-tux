@@ -13,6 +13,7 @@
             "spiky-6.png",
             "spiky-7.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "right",
@@ -24,6 +25,7 @@
         name = "iced-left",
         hitbox = [3, 8, 45, 43],
         images = ["spiky_sleep-3.png"],
+        size = [48, 48],
     ],
     :action [
         name = "iced-right",
@@ -34,6 +36,7 @@
         name = "sleeping-left",
         hitbox = [8, 13, 32, 32],
         images = ["spiky_sleep-0.png"],
+        size = [48, 48],
     ],
     :action [
         name = "sleeping-right",
@@ -51,6 +54,7 @@
             "spiky_sleep-2.png",
             "spiky_sleep-3.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "waking-right",
@@ -71,6 +75,7 @@
             "spiky_gear-3.png",
             "spiky_gear-4.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "inside-melting-right",
@@ -83,6 +88,7 @@
         name = "gear-left",
         hitbox = [8, 13, 32, 32],
         images = ["spiky_gear-4.png"],
+        size = [48, 48],
     ],
     :action [
         name = "gear-right",

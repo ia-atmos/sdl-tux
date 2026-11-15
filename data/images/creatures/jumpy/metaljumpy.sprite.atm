@@ -14,6 +14,7 @@
             "metal_down-0.png",
             "metal_up-0.png",
         ],
+        size = [52, 72],
     ],
     :action [
         name = "right-up",
@@ -26,6 +27,7 @@
         name = "left-down",
         hitbox = [9, 8, 32, 43],
         images = ["metal_up-3.png"],
+        size = [52, 72],
     ],
     :action [
         name = "right-down",
@@ -36,6 +38,7 @@
         name = "left-middle",
         hitbox = [9, 8, 32, 43],
         images = ["metal_up-3.png"],
+        size = [52, 72],
     ],
     :action [
         name = "right-middle",
@@ -46,6 +49,7 @@
         name = "iced-left",
         hitbox = [3, 3, 45, 64],
         images = ["metal_up-0.png"],
+        size = [52, 72],
     ],
     :action [
         name = "iced-right",
@@ -56,6 +60,7 @@
         name = "editor-left",
         hitbox = [9, 8, 32, 43],
         images = ["metal_up-0.png"],
+        size = [52, 72],
     ],
     :action [
         name = "editor-right",

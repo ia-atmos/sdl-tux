@@ -8,6 +8,7 @@
             "granito_stand-6.png", "granito_stand-7.png", "granito_stand-8.png", "granito_stand-9.png", "granito_stand-0.png", "granito_stand-1.png", "granito_stand-2.png", "granito_stand-3.png", "granito_stand-4.png", "granito_stand-5.png", "granito_stand-6.png", "granito_stand-7.png", "granito_stand-8.png", "granito_stand-10.png", "granito_stand-11.png", "granito_stand-12.png",
             "granito_stand-2.png", "granito_stand-3.png", "granito_stand-4.png", "granito_stand-5.png", "granito_stand-6.png", "granito_stand-7.png", "granito_stand-8.png", "granito_stand-9.png",
         ],
+        size = [84, 84],
     ],
     :action [
         name = "stand-right",
@@ -29,6 +30,7 @@
             "granito_walk-6.png",
             "granito_walk-7.png",
         ],
+        size = [84, 84],
     ],
     :action [
         name = "right",

@@ -8,5 +8,5 @@
             ],
         ],
     ],
-    :action [name = "default", images = ["invisible.png"]],
+    :action [name = "default", images = ["invisible.png"], size = [32, 32]],
 ]

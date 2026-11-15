@@ -1,3 +1,8 @@
 :supertux.sprite [
-    :action [name = "default", hitbox = [0, 0, 32, 32], images = ["rock.png"]],
+    :action [
+        name = "default",
+        hitbox = [0, 0, 32, 32],
+        images = ["rock.png"],
+        size = [32, 32],
+    ],
 ]

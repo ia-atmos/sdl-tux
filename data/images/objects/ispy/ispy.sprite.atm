@@ -3,6 +3,7 @@
         name = "idle-left",
         hitbox = [0, 0, 32, 34],
         images = ["i-idle.png"],
+        size = [32, 34],
     ],
     :action [
         name = "idle-right",
@@ -31,6 +32,7 @@
             "i-showing1.png",
             "i-hiding.png",
         ],
+        size = [32, 34],
     ],
     :action [
         name = "alert-right",
@@ -53,6 +55,7 @@
             "i-hiding.png",
             "i-hiding.png",
         ],
+        size = [32, 34],
     ],
     :action [
         name = "hiding-right",
@@ -71,6 +74,7 @@
             "i-idle.png",
             "i-idle.png",
         ],
+        size = [32, 34],
     ],
     :action [
         name = "showing-right",
@@ -83,6 +87,7 @@
         hitbox = [0, 0, 34, 28],
         fps = 14,
         images = ["i-idle-down.png"],
+        size = [34, 28],
     ],
     :action [
         name = "alert-down",
@@ -106,6 +111,7 @@
             "i-showing1-down.png",
             "i-hiding-down.png",
         ],
+        size = [34, 28],
     ],
     :action [
         name = "hiding-down",
@@ -123,6 +129,7 @@
             "i-hiding-down.png",
             "i-hiding-down.png",
         ],
+        size = [34, 28],
     ],
     :action [
         name = "showing-down",
@@ -136,6 +143,7 @@
             "i-idle-down.png",
             "i-idle-down.png",
         ],
+        size = [34, 28],
     ],
     :action [
         name = "idle-up",

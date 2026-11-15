@@ -3,6 +3,7 @@
         name = "left",
         hitbox = [12, 20, 71.8, 55.8],
         images = ["left-0.png", "left-1.png", "left-2.png", "left-1.png"],
+        size = [90, 81],
     ],
     :action [
         name = "right",
@@ -13,6 +14,7 @@
         name = "sleeping-left",
         hitbox = [12, 20, 71.8, 55.8],
         images = ["sleeping-left.png"],
+        size = [90, 81],
     ],
     :action [
         name = "sleeping-right",
@@ -31,6 +33,7 @@
             "waking-left-4.png",
             "waking-left-5.png",
         ],
+        size = [90, 81],
     ],
     :action [
         name = "waking-right",
@@ -55,6 +58,7 @@
             "burning-9.png",
             "burning-10.png",
         ],
+        size = [90, 113],
     ],
     :action [
         name = "burning-right",
@@ -77,6 +81,7 @@
             "sleeping-burning-7.png",
             "sleeping-burning-8.png",
         ],
+        size = [90, 81],
     ],
     :action [
         name = "sleeping-burning-right",

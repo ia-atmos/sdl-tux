@@ -3,6 +3,7 @@
         name = "left",
         hitbox = [24, 4, 56, 46],
         images = ["granito_hive-0.png"],
+        size = [110, 132],
     ],
     :action [name = "right", hitbox = [30, 4, 56, 46], mirror_action = "left"],
 ]

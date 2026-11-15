@@ -13,6 +13,7 @@
             "swim_green-6.png",
             "swim_green-7.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "swim-right",
@@ -31,6 +32,7 @@
             "notice_green-1.png",
             "notice_green-2.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "notice-right",
@@ -51,6 +53,7 @@
             "chase_green-4.png",
             "chase_green-5.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "chase-right",
@@ -62,6 +65,7 @@
         name = "iced-left",
         hitbox = [0, 0, 64, 64],
         images = ["swim_green-0.png"],
+        size = [64, 64],
     ],
     :action [
         name = "iced-right",
@@ -72,6 +76,7 @@
         hitbox = [10, 10, 46, 46],
         name = "burning-left",
         images = ["swim_green-0.png"],
+        size = [64, 64],
     ],
     :action [
         hitbox = [8, 10, 46, 46],

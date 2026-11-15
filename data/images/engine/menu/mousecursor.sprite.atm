@@ -1,5 +1,13 @@
 :supertux.sprite [
-    :action [name = "default", images = ["mousecursor.png"]],
-    :action [name = "click", images = ["mousecursor-click.png"]],
-    :action [name = "link", images = ["mousecursor-link.png"]],
+    :action [name = "default", images = ["mousecursor.png"], size = [32, 32]],
+    :action [
+        name = "click",
+        images = ["mousecursor-click.png"],
+        size = [32, 32],
+    ],
+    :action [
+        name = "link",
+        images = ["mousecursor-link.png"],
+        size = [33, 33],
+    ],
 ]

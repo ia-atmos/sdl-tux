@@ -14,5 +14,6 @@
             "infoblock-0.png",
             "infoblock-0.png",
         ],
+        size = [32, 32],
     ],
 ]

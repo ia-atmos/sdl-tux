@@ -8,5 +8,6 @@
             "ice_flower-3.png",
             "ice_flower-4.png",
         ],
+        size = [32, 32],
     ],
 ]

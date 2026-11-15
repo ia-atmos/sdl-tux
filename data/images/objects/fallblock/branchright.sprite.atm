@@ -3,5 +3,6 @@
         name = "default",
         hitbox = [5, 32, 123, 32],
         images = ["branchright.png"],
+        size = [128, 96],
     ],
 ]

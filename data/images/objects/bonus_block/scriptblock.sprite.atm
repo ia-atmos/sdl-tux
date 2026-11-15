@@ -14,6 +14,7 @@
             "scriptblock-0.png",
             "scriptblock-0.png",
         ],
+        size = [32, 32],
     ],
     :action [
         name = "empty",

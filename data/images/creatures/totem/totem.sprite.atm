@@ -13,6 +13,7 @@
             "walking7.png",
             "walking8.png",
         ],
+        size = [48, 49],
     ],
     :action [
         hitbox = [0, 2, 48, 49],
@@ -23,6 +24,7 @@
         hitbox = [0, 2, 48, 43],
         name = "stacked-left",
         images = ["stacked.png"],
+        size = [48, 45],
     ],
     :action [
         hitbox = [0, 2, 48, 43],
@@ -33,6 +35,7 @@
         hitbox = [0, 2, 48, 45],
         name = "squished-left",
         images = ["squished.png"],
+        size = [48, 45],
     ],
     :action [
         hitbox = [0, 2, 48, 45],

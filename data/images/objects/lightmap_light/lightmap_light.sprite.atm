@@ -3,5 +3,6 @@
         name = "default",
         images = ["lightmap_light.png"],
         hitbox = [256, 256, 0, 0],
+        size = [512, 512],
     ],
 ]

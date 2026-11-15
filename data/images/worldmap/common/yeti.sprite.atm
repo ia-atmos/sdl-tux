@@ -17,6 +17,7 @@
             "../../creatures/yeti/worldmap_11.png",
             "../../creatures/yeti/worldmap_12.png",
         ],
+        size = [136, 78],
     ],
     :action [
         name = "solved",
@@ -27,5 +28,6 @@
             "../../creatures/yeti/iceyeti_dust_wm_1.png",
             "../../creatures/yeti/iceyeti_dust_wm_2.png",
         ],
+        size = [55, 55],
     ],
 ]

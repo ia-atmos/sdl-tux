@@ -1,5 +1,5 @@
 :supertux.sprite [
-    :action [name = "default", images = ["meltbox-0.png"]],
+    :action [name = "default", images = ["meltbox-0.png"], size = [32, 32]],
     :action [
         name = "burning",
         fps = 16,
@@ -11,6 +11,7 @@
             "meltbox-4.png",
             "meltbox-5.png",
         ],
+        size = [32, 32],
     ],
     :action [
         name = "disintegrating",
@@ -24,5 +25,6 @@
             "meltbox-10.png",
             "meltbox-11.png",
         ],
+        size = [32, 32],
     ],
 ]

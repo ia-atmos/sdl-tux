@@ -1,3 +1,7 @@
 :supertux.sprite [
-    :action [name = "default", images = ["vertical-wood-long.png"]],
+    :action [
+        name = "default",
+        images = ["vertical-wood-long.png"],
+        size = [32, 192],
+    ],
 ]

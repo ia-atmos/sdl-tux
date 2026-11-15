@@ -3,6 +3,7 @@
         name = "default",
         images = ["bell-m.png"],
         hitbox = [8, 5, 32, 32],
+        size = [48, 37],
     ],
     :action [
         name = "ringing",
@@ -17,5 +18,6 @@
             "bell-m.png",
         ],
         hitbox = [8, 5, 32, 32],
+        size = [48, 37],
     ],
 ]

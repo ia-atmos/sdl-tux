@@ -1,5 +1,10 @@
 :supertux.sprite [
-    :action [fps = 15, name = "default", images = ["box-full.png"]],
+    :action [
+        fps = 15,
+        name = "default",
+        images = ["box-full.png"],
+        size = [32, 32],
+    ],
     :action [
         name = "empty",
         surfaces = [

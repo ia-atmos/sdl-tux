@@ -3,5 +3,6 @@
         name = "default",
         hitbox = [0, 0, 16, 100],
         images = ["torch1.png"],
+        size = [37, 100],
     ],
 ]

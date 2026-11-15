@@ -13,6 +13,7 @@
             "left-6.png",
             "left-7.png",
         ],
+        size = [60, 60],
     ],
     :action [
         name = "right",
@@ -34,6 +35,7 @@
             "flee-6.png",
             "flee-7.png",
         ],
+        size = [60, 60],
     ],
     :action [
         name = "flee-right",
@@ -46,6 +48,7 @@
         fps = 25.0,
         hitbox = [14, 19, 32, 32],
         images = ["scared-0.png", "scared-1.png"],
+        size = [60, 60],
     ],
     :action [
         name = "scared-right",
@@ -62,6 +65,7 @@
             "scared-2.png", "scared-3.png", "scared-4.png", "scared-5.png", "scared-6.png", "scared-7.png", "scared-4.png", "scared-5.png", "scared-6.png", "scared-7.png", "scared-8.png", "scared-9.png", "scared-9.png", "scared-9.png", "scared-9.png", "scared-9.png",
             "scared-10.png", "scared-11.png", "scared-11.png", "scared-11.png", "scared-11.png", "scared-11.png", "scared-10.png", "scared-7.png",
         ],
+        size = [60, 60],
     ],
     :action [
         name = "recover-right",
@@ -74,6 +78,7 @@
         name = "iced-left",
         hitbox = [9, 8, 45, 43],
         images = ["left-0.png"],
+        size = [60, 60],
     ],
     :action [
         name = "iced-right",
@@ -92,6 +97,7 @@
             "ticking-0.png", "ticking-4.png", "ticking-0.png", "ticking-4.png", "ticking-0.png", "ticking-4.png", "ticking-0.png", "ticking-4.png", "ticking-0.png", "ticking-4.png", "ticking-0.png", "ticking-4.png", "ticking-0.png", "ticking-4.png", "ticking-0.png", "ticking-4.png",
             "ticking-0.png", "ticking-4.png",
         ],
+        size = [60, 60],
     ],
     :action [
         name = "ticking-right",

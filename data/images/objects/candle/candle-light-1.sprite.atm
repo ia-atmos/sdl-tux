@@ -3,10 +3,12 @@
         name = "default",
         images = ["candle-light-1.png"],
         hitbox = [260, 280, 256, 256],
+        size = [512, 512],
     ],
     :action [
         name = "white",
         images = ["candle-light-white-1.png"],
         hitbox = [260, 280, 256, 256],
+        size = [512, 512],
     ],
 ]

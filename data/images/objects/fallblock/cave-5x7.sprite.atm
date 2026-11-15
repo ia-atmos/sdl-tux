@@ -3,5 +3,6 @@
         name = "default",
         hitbox = [0, 32, 160, 224],
         images = ["cave-5x7.png"],
+        size = [160, 256],
     ],
 ]

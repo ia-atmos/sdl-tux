@@ -12,6 +12,7 @@
             "idle_left-4.png",
             "idle_left-5.png",
         ],
+        size = [75, 64],
     ],
     :action [
         name = "standing-right",
@@ -26,6 +27,7 @@
             "idle_right-4.png",
             "idle_right-5.png",
         ],
+        size = [75, 64],
     ],
     :action [
         name = "charging-left",
@@ -33,6 +35,7 @@
         loops = 1,
         fps = 20,
         images = ["idle_left-0.png", "idle_left-1.png", "idle_left-2.png"],
+        size = [75, 64],
     ],
     :action [
         name = "charging-right",
@@ -40,6 +43,7 @@
         loops = 1,
         fps = 20,
         images = ["idle_right-0.png", "idle_right-1.png", "idle_right-2.png"],
+        size = [75, 64],
     ],
     :action [
         name = "jumping-left",
@@ -52,6 +56,7 @@
             "jump_left-2.png",
             "jump_left-3.png",
         ],
+        size = [75, 64],
     ],
     :action [
         name = "jumping-right",
@@ -64,15 +69,18 @@
             "jump_right-2.png",
             "jump_right-3.png",
         ],
+        size = [75, 64],
     ],
     :action [
         name = "squished-left",
         hitbox = [15, 15, 32, 42],
         images = ["squished-left.png"],
+        size = [75, 64],
     ],
     :action [
         name = "squished-right",
         hitbox = [28, 15, 32, 42],
         images = ["squished-right.png"],
+        size = [75, 64],
     ],
 ]

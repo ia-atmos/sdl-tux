@@ -1,3 +1,3 @@
 :supertux.sprite [
-    :action [name = "default", images = ["pedestal.png"]],
+    :action [name = "default", images = ["pedestal.png"], size = [32, 96]],
 ]

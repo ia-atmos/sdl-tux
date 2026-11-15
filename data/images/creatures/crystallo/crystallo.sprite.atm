@@ -13,6 +13,7 @@
             "left-6.png",
             "left-7.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "right",
@@ -36,6 +37,7 @@
         name = "shattered-left",
         hitbox = [8, 12, 32, 26],
         images = ["squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "shattered-right",
@@ -70,6 +72,7 @@
         name = "roof-shattered-left",
         hitbox = [8, 12, 32, 26],
         images = ["squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "roof-shattered-right",
@@ -95,6 +98,7 @@
             "fall-10.png",
             "fall-11.png",
         ],
+        size = [60, 48],
     ],
     :action [
         name = "roof-detected-right",
@@ -107,6 +111,7 @@
         name = "roof-fall-left",
         hitbox = [17, 2, 24, 36],
         images = ["fall-11.png"],
+        size = [60, 48],
     ],
     :action [
         name = "roof-fall-right",
@@ -119,6 +124,7 @@
         hitbox = [8, 12, 32, 26],
         loops = 1,
         images = ["sleep-0.png"],
+        size = [48, 48],
     ],
     :action [
         name = "sleeping-right",
@@ -136,6 +142,7 @@
             "sleep-0.png", "sleep-1.png", "sleep-2.png", "sleep-0.png", "sleep-1.png", "sleep-3.png", "sleep-3.png", "sleep-3.png", "sleep-3.png", "sleep-4.png", "sleep-5.png", "sleep-4.png", "sleep-5.png", "sleep-4.png", "sleep-5.png", "sleep-4.png",
             "sleep-5.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "waking-right",
@@ -157,6 +164,7 @@
             "jump-4.png",
             "jump-5.png",
         ],
+        size = [50, 48],
     ],
     :action [
         name = "jumping-right",

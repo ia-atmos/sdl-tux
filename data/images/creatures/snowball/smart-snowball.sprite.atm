@@ -13,6 +13,7 @@
             "smartball-6.png",
             "smartball-7.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "right",
@@ -24,6 +25,7 @@
         name = "squished-left",
         hitbox = [8, 13, 32, 32],
         images = ["smartball-squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "squished-right",
@@ -34,6 +36,7 @@
         name = "melting",
         hitbox = [0, 0, 32, 32],
         images = ["../../objects/water_drop/pink-drop.png"],
+        size = [32, 32],
     ],
     :action [
         name = "ground-melting",
@@ -46,5 +49,6 @@
             "../../objects/water_drop/pink-splash-4.png",
             "../../objects/water_drop/pink-splash-5.png",
         ],
+        size = [60, 22],
     ],
 ]

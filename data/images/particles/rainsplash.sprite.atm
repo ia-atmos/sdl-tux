@@ -7,5 +7,6 @@
             "rainsplash-3.png",
             "rainsplash-4.png",
         ],
+        size = [32, 32],
     ],
 ]

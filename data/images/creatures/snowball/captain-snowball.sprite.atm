@@ -13,6 +13,7 @@
             "captain_left-6.png",
             "captain_left-7.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "right",
@@ -28,6 +29,7 @@
             "captain_right-6.png",
             "captain_right-7.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "jump-left",
@@ -40,6 +42,7 @@
             "captain_jump-2.png",
             "captain_jump-3.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "jump-right",
@@ -52,21 +55,25 @@
             "captain_jump-6.png",
             "captain_jump-7.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "squished-left",
         hitbox = [8, 13, 32, 32],
         images = ["captain_left-squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "squished-right",
         hitbox = [8, 13, 32, 32],
         images = ["captain_right-squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "melting",
         hitbox = [0, 0, 32, 32],
         images = ["../../objects/water_drop/water-drop.png"],
+        size = [32, 32],
     ],
     :action [
         name = "ground-melting",
@@ -79,5 +86,6 @@
             "../../objects/water_drop/water-splash-4.png",
             "../../objects/water_drop/water-splash-5.png",
         ],
+        size = [60, 22],
     ],
 ]

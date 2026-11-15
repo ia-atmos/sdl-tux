@@ -10,6 +10,7 @@
             "juicebox4.png",
             "juicebox6.png",
         ],
+        size = [48, 66],
     ],
     :action [
         name = "right",
@@ -28,6 +29,7 @@
             "juicebox_hit_4.png",
             "juicebox_hit_5.png",
         ],
+        size = [48, 66],
     ],
     :action [
         name = "ticking-right",
@@ -46,11 +48,13 @@
             "sparkle-4.png",
             "sparkle-5.png",
         ],
+        size = [70, 70],
     ],
     :action [
         name = "iced-left",
         hitbox = [3, 26, 36, 40],
         images = ["juicebox-freeze.png"],
+        size = [48, 66],
     ],
     :action [
         name = "iced-right",

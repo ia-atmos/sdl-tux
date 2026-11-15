@@ -14,5 +14,6 @@
             "foxsleep9.png",
             "foxsleep10.png",
         ],
+        size = [75, 50],
     ],
 ]

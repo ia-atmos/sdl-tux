@@ -12,6 +12,7 @@
             "wind2.png",
             "wind3.png",
         ],
+        size = [63, 1],
     ],
     :action [
         name = "flip",
@@ -26,5 +27,6 @@
             "windup2.png",
             "windup3.png",
         ],
+        size = [1, 63],
     ],
 ]

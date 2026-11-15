@@ -1,5 +1,9 @@
 :supertux.sprite [
-    :action [name = "stopped", images = ["conveyor_stopped.png"]],
+    :action [
+        name = "stopped",
+        images = ["conveyor_stopped.png"],
+        size = [32, 32],
+    ],
     :action [
         fps = 0,
         name = "left",
@@ -11,6 +15,7 @@
             "conveyor_left4.png",
             "conveyor_left5.png",
         ],
+        size = [32, 32],
     ],
     :action [
         fps = 0,
@@ -23,5 +28,6 @@
             "conveyor_right4.png",
             "conveyor_right5.png",
         ],
+        size = [32, 32],
     ],
 ]

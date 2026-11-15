@@ -9,5 +9,6 @@
             "fire_tail-1.png",
             "fire_tail-0.png",
         ],
+        size = [21, 21],
     ],
 ]

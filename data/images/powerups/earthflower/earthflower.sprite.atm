@@ -6,5 +6,6 @@
             "earth_flower-0.png", "earth_flower-0.png", "earth_flower-0.png", "earth_flower-0.png", "earth_flower-0.png", "earth_flower-0.png", "earth_flower-1.png", "earth_flower-1.png", "earth_flower-2.png", "earth_flower-3.png", "earth_flower-3.png", "earth_flower-3.png", "earth_flower-3.png", "earth_flower-3.png", "earth_flower-3.png", "earth_flower-3.png",
             "earth_flower-2.png", "earth_flower-1.png",
         ],
+        size = [32, 32],
     ],
 ]

@@ -3,10 +3,12 @@
         name = "default",
         hitbox = [16, 16, 0, 0],
         images = ["small_earth.png"],
+        size = [32, 16],
     ],
     :action [
         name = "solved",
         hitbox = [16, 16, 0, 0],
         images = ["small_earth.png"],
+        size = [32, 16],
     ],
 ]

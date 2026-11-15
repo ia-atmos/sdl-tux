@@ -13,5 +13,6 @@
             "kracker-8.png",
             "kracker-9.png",
         ],
+        size = [32, 32],
     ],
 ]

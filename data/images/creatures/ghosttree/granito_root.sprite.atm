@@ -3,10 +3,12 @@
         name = "variant1",
         hitbox = [37, 37, 16, 188],
         images = ["granito_root-0.png"],
+        size = [96, 256],
     ],
     :action [
         name = "variant2",
         hitbox = [37, 37, 16, 188],
         images = ["granito_root-1.png"],
+        size = [96, 256],
     ],
 ]

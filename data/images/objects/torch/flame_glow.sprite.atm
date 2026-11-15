@@ -9,6 +9,7 @@
             "flame_glow3.png",
             "flame_glow4.png",
         ],
+        size = [32, 48],
     ],
     :action [
         name = "greyscale",
@@ -20,5 +21,6 @@
             "greyscale/flame_glow3.png",
             "greyscale/flame_glow4.png",
         ],
+        size = [32, 48],
     ],
 ]

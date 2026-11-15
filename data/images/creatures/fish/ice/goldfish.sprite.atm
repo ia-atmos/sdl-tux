@@ -13,6 +13,7 @@
             "swim_orange-6.png",
             "swim_orange-7.png",
         ],
+        size = [32, 32],
     ],
     :action [
         name = "swim-right",
@@ -24,6 +25,7 @@
         name = "iced-left",
         hitbox = [-5, -5, 45, 43],
         images = ["swim_orange-0.png"],
+        size = [32, 32],
     ],
     :action [
         name = "iced-right",

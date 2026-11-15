@@ -3,25 +3,30 @@
         name = "rock-0",
         hitbox = [10, 10, 8, 8],
         images = ["rock-0.png"],
+        size = [28, 27],
     ],
     :action [
         name = "rock-1",
         hitbox = [10, 10, 8, 8],
         images = ["rock-1.png"],
+        size = [28, 27],
     ],
     :action [
         name = "rock-2",
         hitbox = [10, 10, 8, 8],
         images = ["rock-2.png"],
+        size = [28, 27],
     ],
     :action [
         name = "rock-3",
         hitbox = [10, 10, 8, 8],
         images = ["rock-3.png"],
+        size = [28, 27],
     ],
     :action [
         name = "rock-4",
         hitbox = [10, 10, 8, 8],
         images = ["rock-4.png"],
+        size = [28, 27],
     ],
 ]

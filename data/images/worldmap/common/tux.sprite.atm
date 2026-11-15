@@ -3,6 +3,7 @@
         name = "small-stop",
         hitbox = [4, 20, 0, 0],
         images = ["smalltux.png"],
+        size = [38, 38],
     ],
     :action [
         name = "small-walking",
@@ -18,6 +19,7 @@
             "smalltuxwalk7.png",
             "smalltuxwalk8.png",
         ],
+        size = [38, 38],
     ],
     :action [
         name = "large-walking",
@@ -33,11 +35,13 @@
             "tuxwalk7.png",
             "tuxwalk8.png",
         ],
+        size = [38, 38],
     ],
     :action [
         name = "large-stop",
         hitbox = [4, 20, 0, 0],
         images = ["tux.png"],
+        size = [38, 38],
     ],
     :action [
         name = "fire-walking",
@@ -53,11 +57,13 @@
             "firetuxwalk7.png",
             "firetuxwalk8.png",
         ],
+        size = [38, 38],
     ],
     :action [
         name = "fire-stop",
         hitbox = [4, 20, 0, 0],
         images = ["firetux.png"],
+        size = [38, 38],
     ],
     :action [
         name = "ice-walking",
@@ -73,11 +79,13 @@
             "icetuxwalk7.png",
             "icetuxwalk8.png",
         ],
+        size = [38, 38],
     ],
     :action [
         name = "ice-stop",
         hitbox = [4, 20, 0, 0],
         images = ["icetux.png"],
+        size = [38, 38],
     ],
     :action [
         name = "air-walking",
@@ -93,11 +101,13 @@
             "airtuxwalk7.png",
             "airtuxwalk8.png",
         ],
+        size = [38, 39],
     ],
     :action [
         name = "air-stop",
         hitbox = [4, 20, 0, 0],
         images = ["airtux.png"],
+        size = [38, 38],
     ],
     :action [
         name = "earth-walking",
@@ -113,10 +123,12 @@
             "earthtuxwalk7.png",
             "earthtuxwalk8.png",
         ],
+        size = [38, 38],
     ],
     :action [
         name = "earth-stop",
         hitbox = [4, 20, 0, 0],
         images = ["earthtux.png"],
+        size = [38, 38],
     ],
 ]

@@ -3,6 +3,7 @@
         name = "default",
         hitbox = [6, 32, 20, 60],
         images = ["root-empty.png"],
+        size = [32, 96],
     ],
     :action [
         name = "downwards",
@@ -23,6 +24,7 @@
             "root-0.png",
         ],
         loops = 1,
+        size = [32, 96],
     ],
     :action [
         name = "upwards",

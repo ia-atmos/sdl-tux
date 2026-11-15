@@ -3,5 +3,6 @@
         name = "default",
         hitbox = [0, 0, 64, 96],
         images = ["rock-2x3.png"],
+        size = [64, 96],
     ],
 ]

@@ -13,5 +13,6 @@
             "fire_flower-2.png",
             "fire_flower-1.png",
         ],
+        size = [32, 32],
     ],
 ]

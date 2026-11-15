@@ -13,16 +13,19 @@
             "skydive-2.png",
             "skydive-1.png",
         ],
+        size = [60, 60],
     ],
     :action [
         name = "falling",
         fps = 15,
         hitbox = [14, 7, 32, 44],
         images = ["skydive-0.png", "skydive-4.png"],
+        size = [60, 60],
     ],
     :action [
         name = "iced",
         hitbox = [0, 0, 64, 64],
         images = ["skydive-0.png"],
+        size = [60, 60],
     ],
 ]

@@ -7,11 +7,13 @@
             "leveldot_blue-02.png",
             "leveldot_blue-03.png",
         ],
+        size = [32, 32],
     ],
     :action [
         name = "solved",
         hitbox = [16, 16, 0, 0],
         images = ["leveldot_green.png"],
+        size = [32, 32],
     ],
     :action [
         name = "perfect",
@@ -20,5 +22,6 @@
             "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect.png", "leveldot_perfect_1.png", "leveldot_perfect_2.png", "leveldot_perfect_3.png", "leveldot_perfect_3.png", "leveldot_perfect_3.png", "leveldot_perfect_3.png",
             "leveldot_perfect_3.png", "leveldot_perfect_3.png", "leveldot_perfect_2.png", "leveldot_perfect_1.png",
         ],
+        size = [32, 32],
     ],
 ]

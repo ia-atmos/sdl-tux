@@ -9,5 +9,6 @@
             "campfire-2.png",
             "campfire-3.png",
         ],
+        size = [32, 48],
     ],
 ]

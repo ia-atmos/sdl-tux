@@ -3,16 +3,19 @@
         name = "falling",
         hitbox = [0, 0, 63.8, 63.8],
         images = ["falling-0.png", "falling-1.png", "falling-2.png"],
+        size = [64, 128],
     ],
     :action [
         name = "flying",
         hitbox = [0, 0, 63.8, 63.8],
         images = ["flying-0.png", "flying-1.png", "flying-2.png"],
+        size = [64, 64],
     ],
     :action [
         name = "pop",
         hitbox = [0, 0, 63.8, 63.8],
         fps = 20,
         images = ["pop-0.png", "pop-1.png", "pop-2.png", "pop-3.png"],
+        size = [64, 64],
     ],
 ]

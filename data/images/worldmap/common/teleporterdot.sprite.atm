@@ -9,5 +9,6 @@
             "teleporterdot_3.png",
             "teleporterdot_4.png",
         ],
+        size = [32, 32],
     ],
 ]

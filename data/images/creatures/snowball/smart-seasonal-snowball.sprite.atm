@@ -13,6 +13,7 @@
             "smart_christmasball-6.png",
             "smart_christmasball-7.png",
         ],
+        size = [48, 48],
     ],
     :action [
         name = "right",
@@ -24,6 +25,7 @@
         name = "squished-left",
         hitbox = [8, 13, 32, 32],
         images = ["smart_christmasball-squished.png"],
+        size = [48, 48],
     ],
     :action [
         name = "squished-right",

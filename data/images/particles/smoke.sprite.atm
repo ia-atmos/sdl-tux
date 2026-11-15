@@ -9,5 +9,6 @@
             "smoke-5.png",
             "smoke-6.png",
         ],
+        size = [32, 32],
     ],
 ]

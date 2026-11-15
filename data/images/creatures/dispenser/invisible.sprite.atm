@@ -3,5 +3,6 @@
         name = "invisible",
         hitbox = [0, 0, 32, 32],
         images = ["invisible.png"],
+        size = [32, 32],
     ],
 ]

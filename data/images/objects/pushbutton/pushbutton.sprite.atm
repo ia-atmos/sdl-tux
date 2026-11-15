@@ -3,6 +3,7 @@
         name = "off-up",
         hitbox = [0, 0, 30, 16],
         images = ["pushbutton-0.png"],
+        size = [32, 16],
     ],
     :action [
         name = "on-up",
@@ -10,6 +11,7 @@
         loops = 1,
         fps = 20,
         images = ["pushbutton-1.png", "pushbutton-2.png", "pushbutton-3.png"],
+        size = [32, 10],
     ],
     :action [
         name = "off-down",

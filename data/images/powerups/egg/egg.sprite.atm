@@ -1,4 +1,4 @@
 :supertux.sprite [
-    :action [name = "default", images = ["egg.png"]],
-    :action [name = "shadow", images = ["egg-shade.png"]],
+    :action [name = "default", images = ["egg.png"], size = [32, 32]],
+    :action [name = "shadow", images = ["egg-shade.png"], size = [32, 32]],
 ]

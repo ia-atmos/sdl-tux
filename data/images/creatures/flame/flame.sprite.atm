@@ -13,6 +13,7 @@
             "flame-2.png",
             "flame-1.png",
         ],
+        size = [42, 42],
     ],
     :action [
         hitbox = [4.8, 4.8, 31.8, 31.8],
@@ -24,5 +25,6 @@
             "flame-fade-1.png",
             "flame-fade-2.png",
         ],
+        size = [42, 42],
     ],
 ]

@@ -3,5 +3,6 @@
         name = "default",
         hitbox = [11, 16, 32, 20],
         images = ["crystallo-overlay.png"],
+        size = [54, 32],
     ],
 ]

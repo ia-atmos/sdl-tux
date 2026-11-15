@@ -3,6 +3,7 @@
         name = "flying-left",
         hitbox = [6, 12, 22, 9],
         images = ["skull_dart_left.png"],
+        size = [32, 32],
     ],
     :action [
         name = "flying-right",
@@ -13,6 +14,7 @@
         name = "flying-down",
         hitbox = [12, 4, 9, 22],
         images = ["skull_dart_down.png"],
+        size = [32, 32],
     ],
     :action [
         name = "flying-up",

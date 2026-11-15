@@ -1,3 +1,8 @@
 :supertux.sprite [
-    :action [name = "default", fps = 2.0, images = ["rottenivy.png"]],
+    :action [
+        name = "default",
+        fps = 2.0,
+        images = ["rottenivy.png"],
+        size = [20, 20],
+    ],
 ]

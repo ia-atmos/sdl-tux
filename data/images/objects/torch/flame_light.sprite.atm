@@ -3,10 +3,12 @@
         name = "default",
         hitbox = [357, 384, 384, 384],
         images = ["flame_light.png"],
+        size = [768, 768],
     ],
     :action [
         name = "greyscale",
         hitbox = [357, 384, 384, 384],
         images = ["greyscale/flame_light.png"],
+        size = [768, 768],
     ],
 ]

@@ -3,10 +3,12 @@
         name = "default",
         hitbox = [6, 6, 87, 84],
         images = ["big_snowball.png"],
+        size = [99, 96],
     ],
     :action [
         name = "particle",
         hitbox = [0, 0, 38, 38],
         images = ["big_snowball_particle.png"],
+        size = [33, 33],
     ],
 ]

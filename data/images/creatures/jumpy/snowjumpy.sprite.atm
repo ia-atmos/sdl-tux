@@ -14,6 +14,7 @@
             "snow_down-0.png",
             "snow_up-0.png",
         ],
+        size = [48, 69],
     ],
     :action [
         name = "right-up",
@@ -26,6 +27,7 @@
         name = "left-down",
         hitbox = [7, 8, 32, 40],
         images = ["snow_up-3.png"],
+        size = [48, 69],
     ],
     :action [
         name = "right-down",
@@ -36,6 +38,7 @@
         name = "left-middle",
         hitbox = [7, 8, 32, 40],
         images = ["snow_up-3.png"],
+        size = [48, 69],
     ],
     :action [
         name = "right-middle",
@@ -46,6 +49,7 @@
         name = "iced-left",
         hitbox = [2, 3, 45, 64],
         images = ["snow_up-0.png"],
+        size = [48, 69],
     ],
     :action [
         name = "iced-right",
@@ -64,6 +68,7 @@
             "snow_gear-3.png",
             "snow_gear-4.png",
         ],
+        size = [48, 50],
     ],
     :action [
         name = "inside-melting-right",
@@ -76,6 +81,7 @@
         name = "gear-left",
         hitbox = [7, 8, 32, 40],
         images = ["snow_gear-4.png"],
+        size = [48, 50],
     ],
     :action [
         name = "gear-right",
@@ -86,6 +92,7 @@
         name = "editor-left",
         hitbox = [7, 8, 32, 40],
         images = ["snow_up-0.png"],
+        size = [48, 69],
     ],
     :action [
         name = "editor-right",

@@ -4,6 +4,7 @@
         hitbox = [85, 27, 90, 156],
         fps = 5,
         images = ["corrupted_granito_husk-0.png"],
+        size = [222, 188],
     ],
     :action [
         name = "husk1-right",
@@ -15,6 +16,7 @@
         name = "husk2-left",
         hitbox = [88, 28, 80, 156],
         images = ["corrupted_granito_husk-1.png"],
+        size = [250, 188],
     ],
     :action [
         name = "husk2-right",
@@ -26,6 +28,7 @@
         hitbox = [69, 36, 80, 148],
         fps = 5,
         images = ["corrupted_granito_husk-2.png"],
+        size = [238, 188],
     ],
     :action [
         name = "husk3-right",

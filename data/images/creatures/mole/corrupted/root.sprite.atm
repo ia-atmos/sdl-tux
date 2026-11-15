@@ -3,6 +3,7 @@
         name = "root",
         hitbox = [20, 7, 16, 80],
         images = ["root_attack.png"],
+        size = [58, 96],
     ],
     :action [
         name = "root-up",
@@ -13,6 +14,7 @@
         name = "base-up",
         hitbox = [20, 7, 16, 80],
         images = ["root_base.png"],
+        size = [58, 96],
     ],
     :action [
         name = "root-down",
@@ -28,11 +30,13 @@
         name = "root-left",
         hitbox = [7, 22, 80, 16],
         images = ["root_attack_left.png"],
+        size = [96, 58],
     ],
     :action [
         name = "base-left",
         hitbox = [7, 22, 80, 16],
         images = ["root_base_left.png"],
+        size = [96, 58],
     ],
     :action [
         name = "root-right",

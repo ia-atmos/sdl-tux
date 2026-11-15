@@ -1,3 +1,7 @@
 :supertux.sprite [
-    :action [name = "default", images = ["icefloe_small.png"]],
+    :action [
+        name = "default",
+        images = ["icefloe_small.png"],
+        size = [128, 44],
+    ],
 ]

@@ -3,6 +3,7 @@
         name = "dropper",
         hitbox = [2, 3, 64, 32],
         images = ["dropper.png"],
+        size = [68, 38],
     ],
     :action [
         name = "dropper-iced",
@@ -16,5 +17,6 @@
             "dropper_frozen-3.png",
             "dropper_frozen-4.png",
         ],
+        size = [68, 38],
     ],
 ]

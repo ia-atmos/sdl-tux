@@ -17,6 +17,7 @@
             "root_sapling-10.png",
             "root_sapling-11.png",
         ],
+        size = [84, 120],
     ],
     :action [
         name = "idle-up",
@@ -37,6 +38,7 @@
             "corrupted_hill-3.png",
             "corrupted_hill-4.png",
         ],
+        size = [84, 120],
     ],
     :action [
         name = "idle-down",
@@ -69,6 +71,7 @@
             "root_sapling-10_left.png",
             "root_sapling-11_left.png",
         ],
+        size = [120, 84],
     ],
     :action [
         name = "squished-left",
@@ -83,6 +86,7 @@
             "corrupted_hill-3_left.png",
             "corrupted_hill-4_left.png",
         ],
+        size = [120, 84],
     ],
     :action [
         name = "idle-right",

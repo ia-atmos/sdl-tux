@@ -11,5 +11,6 @@
     :action [
         name = "default",
         images = ["../../tiles/blocks/retro_brick.png"],
+        size = [32, 32],
     ],
 ]

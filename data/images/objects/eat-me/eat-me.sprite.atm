@@ -3,5 +3,6 @@
         name = "default",
         hitbox = [3, 5, 55, 32],
         images = ["platter.png"],
+        size = [64, 44],
     ],
 ]

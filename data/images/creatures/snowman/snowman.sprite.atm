@@ -15,6 +15,7 @@
             "snowman-8.png",
             "snowman-9.png",
         ],
+        size = [58, 85],
     ],
     :action [
         name = "right",
@@ -32,6 +33,7 @@
             "headless-2.png",
             "headless-1.png",
         ],
+        size = [58, 85],
     ],
     :action [
         name = "headless-right",
@@ -43,6 +45,7 @@
         name = "melting",
         hitbox = [0, 0, 32, 32],
         images = ["../../objects/water_drop/water-drop.png"],
+        size = [32, 32],
     ],
     :action [
         name = "ground-melting",
@@ -55,5 +58,6 @@
             "../../objects/water_drop/water-splash-4.png",
             "../../objects/water_drop/water-splash-5.png",
         ],
+        size = [60, 22],
     ],
 ]

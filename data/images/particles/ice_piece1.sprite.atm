@@ -1,3 +1,8 @@
 :supertux.sprite [
-    :action [name = "default", fps = 1, images = ["ice_piece1.png"]],
+    :action [
+        name = "default",
+        fps = 1,
+        images = ["ice_piece1.png"],
+        size = [24, 24],
+    ],
 ]

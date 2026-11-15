@@ -3,5 +3,6 @@
         name = "default",
         images = ["blue_root_light.png"],
         hitbox = [32, 32, 0, 0],
+        size = [64, 64],
     ],
 ]

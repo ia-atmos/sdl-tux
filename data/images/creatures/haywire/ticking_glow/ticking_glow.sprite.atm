@@ -5,6 +5,7 @@
         loops = 1,
         images = ["ticking_glow-0.png"],
         hitbox = [75, 75, 0, 0],
+        size = [150, 150],
     ],
     :action [
         name = "run",
@@ -20,6 +21,7 @@
             "ticking_glow-7.png",
         ],
         hitbox = [75, 75, 0, 0],
+        size = [150, 150],
     ],
     :action [
         name = "skid",
@@ -32,6 +34,7 @@
             "ticking_glow-0.png",
         ],
         hitbox = [75, 75, 0, 0],
+        size = [150, 150],
     ],
     :action [
         name = "jump",
@@ -44,5 +47,6 @@
             "ticking_glow-0.png",
         ],
         hitbox = [75, 75, 0, 0],
+        size = [150, 150],
     ],
 ]

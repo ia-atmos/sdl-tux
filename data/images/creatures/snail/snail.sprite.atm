@@ -13,6 +13,7 @@
             "left-6.png",
             "left-7.png",
         ],
+        size = [48, 38],
     ],
     :action [
         name = "right",
@@ -34,6 +35,7 @@
             "rotate-6.png",
             "rotate-7.png",
         ],
+        size = [40, 38],
     ],
     :action [
         name = "flat-right",
@@ -45,6 +47,7 @@
         name = "iced-left",
         hitbox = [-1, 2, 45, 43],
         images = ["rotate-0.png"],
+        size = [40, 38],
     ],
     :action [
         name = "iced-right",
@@ -55,6 +58,7 @@
         hitbox = [4, 7, 32, 28],
         name = "burning-left",
         images = ["rotate-0.png"],
+        size = [40, 38],
     ],
     :action [
         hitbox = [4, 7, 32, 28],
@@ -70,6 +74,7 @@
             "rotate-0.png", "rotate-0.png", "rotate-0.png", "rotate-1.png", "rotate-1.png", "rotate-1.png", "rotate-2.png", "rotate-2.png", "rotate-2.png", "rotate-3.png", "rotate-3.png", "rotate-3.png", "rotate-4.png", "rotate-4.png", "rotate-4.png", "rotate-4.png",
             "rotate-5.png", "rotate-5.png", "rotate-5.png", "rotate-5.png", "rotate-6.png", "rotate-6.png", "rotate-6.png", "rotate-7.png", "rotate-7.png", "rotate-7.png", "rotate-7.png",
         ],
+        size = [40, 38],
     ],
     :action [
         name = "waking-right",

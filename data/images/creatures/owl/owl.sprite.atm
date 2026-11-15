@@ -15,6 +15,7 @@
             "carry-8.png",
             "carry-9.png",
         ],
+        size = [100, 72],
     ],
     :action [
         name = "carry-right",
@@ -38,6 +39,7 @@
             "fly-8.png",
             "fly-9.png",
         ],
+        size = [100, 72],
     ],
     :action [
         name = "fly-right",
@@ -49,6 +51,7 @@
         name = "iced-left",
         hitbox = [20, 15, 64, 64],
         images = ["carry-8.png"],
+        size = [100, 72],
     ],
     :action [
         name = "iced-right",
@@ -59,6 +62,7 @@
         hitbox = [24, 15, 45, 44],
         name = "burning-left",
         images = ["carry-8.png"],
+        size = [100, 72],
     ],
     :action [
         hitbox = [31, 15, 45, 44],

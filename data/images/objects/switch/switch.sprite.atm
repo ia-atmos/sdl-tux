@@ -1,24 +1,37 @@
 :supertux.sprite [
-    :action [name = "off", hitbox = [0, 0, 32, 48], images = ["switch-0.png"]],
+    :action [
+        name = "off",
+        hitbox = [0, 0, 32, 48],
+        images = ["switch-0.png"],
+        size = [32, 48],
+    ],
     :action [
         name = "turnon",
         fps = 18,
         loops = 1,
         hitbox = [0, 0, 32, 48],
         images = ["switch-1.png", "switch-2.png", "switch-3.png"],
+        size = [32, 48],
     ],
-    :action [name = "on", hitbox = [0, 0, 32, 48], images = ["switch-4.png"]],
+    :action [
+        name = "on",
+        hitbox = [0, 0, 32, 48],
+        images = ["switch-4.png"],
+        size = [32, 48],
+    ],
     :action [
         name = "turnoff",
         fps = 18,
         loops = 1,
         hitbox = [0, 0, 32, 48],
         images = ["switch-3.png", "switch-2.png", "switch-1.png"],
+        size = [32, 48],
     ],
     :action [
         name = "off-left",
         hitbox = [0, 0, 32, 48],
         images = ["left-0.png"],
+        size = [32, 48],
     ],
     :action [
         name = "turnon-left",
@@ -26,11 +39,13 @@
         loops = 1,
         hitbox = [0, 0, 32, 48],
         images = ["left-1.png", "left-2.png", "left-3.png"],
+        size = [32, 48],
     ],
     :action [
         name = "on-left",
         hitbox = [0, 0, 32, 48],
         images = ["left-4.png"],
+        size = [32, 48],
     ],
     :action [
         name = "turnoff-left",
@@ -38,6 +53,7 @@
         loops = 1,
         hitbox = [0, 0, 32, 48],
         images = ["left-3.png", "left-2.png", "left-1.png"],
+        size = [32, 48],
     ],
     :action [
         name = "off-right",
@@ -67,6 +83,7 @@
         name = "off-down",
         hitbox = [0, 0, 32, 48],
         images = ["down-0.png"],
+        size = [48, 32],
     ],
     :action [
         name = "turnon-down",
@@ -74,11 +91,13 @@
         loops = 1,
         hitbox = [0, 0, 32, 48],
         images = ["down-1.png", "down-2.png", "down-3.png"],
+        size = [48, 32],
     ],
     :action [
         name = "on-down",
         hitbox = [0, 0, 32, 48],
         images = ["down-4.png"],
+        size = [48, 32],
     ],
     :action [
         name = "turnoff-down",
@@ -86,6 +105,7 @@
         loops = 1,
         hitbox = [0, 0, 32, 48],
         images = ["down-3.png", "down-2.png", "down-1.png"],
+        size = [48, 32],
     ],
     :action [
         name = "off-up",

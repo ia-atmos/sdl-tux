@@ -3,11 +3,13 @@
         name = "flying-left",
         hitbox = [15, 12, 70, 8],
         images = ["blue_root-left.png"],
+        size = [96, 32],
     ],
     :action [
         name = "flying-up",
         hitbox = [12, 15, 8, 70],
         images = ["blue_root-up.png"],
+        size = [32, 96],
     ],
     :action [
         name = "flying-right",

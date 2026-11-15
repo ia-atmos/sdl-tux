@@ -14,6 +14,7 @@
             "full-0.png",
             "full-0.png",
         ],
+        size = [32, 32],
     ],
     :action [
         name = "empty",
@@ -33,6 +34,7 @@
             "lightblock-2.png",
             "lightblock-3.png",
         ],
+        size = [32, 32],
     ],
-    :action [name = "off", images = ["lightblock_off.png"]],
+    :action [name = "off", images = ["lightblock_off.png"], size = [32, 32]],
 ]

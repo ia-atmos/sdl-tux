@@ -1,5 +1,5 @@
 :supertux.sprite [
-    :action [name = "default", images = ["air.png"]],
-    :action [name = "display", images = ["air.png"]],
-    :action [name = "outline", images = ["n_outline.png"]],
+    :action [name = "default", images = ["air.png"], size = [100, 49]],
+    :action [name = "display", images = ["air.png"], size = [100, 49]],
+    :action [name = "outline", images = ["n_outline.png"], size = [100, 49]],
 ]

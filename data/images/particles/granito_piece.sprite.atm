@@ -3,30 +3,36 @@
         name = "piece-0",
         hitbox = [0, 0, 22, 22],
         images = ["granito_piece-0.png"],
+        size = [22, 22],
     ],
     :action [
         name = "piece-1",
         hitbox = [0, 0, 12, 12],
         images = ["granito_piece-1.png"],
+        size = [12, 12],
     ],
     :action [
         name = "piece-2",
         hitbox = [0, 0, 18, 18],
         images = ["granito_piece-2.png"],
+        size = [18, 18],
     ],
     :action [
         name = "piece-3",
         hitbox = [0, 0, 22, 22],
         images = ["granito_piece-3.png"],
+        size = [22, 22],
     ],
     :action [
         name = "piece-4",
         hitbox = [0, 0, 10, 10],
         images = ["granito_piece-4.png"],
+        size = [10, 10],
     ],
     :action [
         name = "piece-5",
         hitbox = [0, 0, 12, 12],
         images = ["granito_piece-5.png"],
+        size = [12, 12],
     ],
 ]

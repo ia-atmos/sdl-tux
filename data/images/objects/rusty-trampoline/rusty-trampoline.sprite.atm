@@ -3,6 +3,7 @@
         name = "default",
         hitbox = [2, 32, 32, 32],
         images = ["rustytrampoline1.png"],
+        size = [36, 64],
     ],
     :action [
         name = "swinging",
@@ -17,6 +18,7 @@
             "rustytrampoline3.png",
             "rustytrampoline3.png",
         ],
+        size = [36, 64],
     ],
     :action [
         name = "breaking",
@@ -39,5 +41,6 @@
             "rustytrampoline5.png",
             "rustytrampoline5.png",
         ],
+        size = [36, 64],
     ],
 ]

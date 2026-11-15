@@ -3,30 +3,36 @@
         name = "idle",
         hitbox = [8, 8, 64, 64],
         images = ["krush_corrupt_main.png"],
+        size = [80, 80],
     ],
     :action [
         name = "crushing",
         hitbox = [8, 8, 64, 64],
         images = ["krush_corrupt_hit.png"],
+        size = [80, 80],
     ],
     :action [
         name = "recovering",
         hitbox = [8, 8, 64, 64],
         images = ["krush_corrupt_main.png"],
+        size = [80, 80],
     ],
     :action [
         name = "whites",
         hitbox = [8, 8, 64, 64],
         images = ["krush_corrupt_whites.png"],
+        size = [80, 80],
     ],
     :action [
         name = "lefteye",
         hitbox = [8, 8, 64, 64],
         images = ["krush_corrupt_eyes.png"],
+        size = [80, 80],
     ],
     :action [
         name = "righteye",
         hitbox = [8, 8, 64, 64],
         images = ["krush_corrupt_eyes.png"],
+        size = [80, 80],
     ],
 ]

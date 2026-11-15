@@ -3,6 +3,7 @@
         name = "default-right",
         hitbox = [0, 2, 18, 27],
         images = ["right-0.png"],
+        size = [32, 32],
     ],
     :action [
         name = "swinging-right",
@@ -16,6 +17,7 @@
             "right-4.png",
             "right-5.png",
         ],
+        size = [32, 32],
     ],
     :action [
         name = "default-left",

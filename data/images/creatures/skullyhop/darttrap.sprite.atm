@@ -11,6 +11,7 @@
             "empty_left-3.png",
             "empty_left-4.png",
         ],
+        size = [38, 48],
     ],
     :action [
         hitbox = [2, 14, 63, 32],
@@ -24,6 +25,7 @@
             "empty_down-3.png",
             "empty_down-4.png",
         ],
+        size = [48, 38],
     ],
     :action [
         hitbox = [14, 2, 32, 63],
@@ -51,6 +53,7 @@
             "charge_left-2.png",
             "charge_left-3.png",
         ],
+        size = [38, 48],
     ],
     :action [
         hitbox = [2, 14, 63, 32],
@@ -64,6 +67,7 @@
             "charge_down-2.png",
             "charge_down-3.png",
         ],
+        size = [48, 38],
     ],
     :action [
         hitbox = [14, 2, 32, 63],

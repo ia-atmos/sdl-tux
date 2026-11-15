@@ -8,35 +8,45 @@
             ],
         ],
     ],
-    :action [name = "default", images = ["../../tiles/blocks/brick1.png"]],
+    :action [
+        name = "default",
+        images = ["../../tiles/blocks/brick1.png"],
+        size = [32, 32],
+    ],
     :action [
         name = "piece1",
         fps = 1,
         images = ["../../tiles/blocks/brick_piece1.png"],
+        size = [32, 32],
     ],
     :action [
         name = "piece2",
         fps = 1,
         images = ["../../tiles/blocks/brick_piece2.png"],
+        size = [32, 32],
     ],
     :action [
         name = "piece3",
         fps = 1,
         images = ["../../tiles/blocks/brick_piece3.png"],
+        size = [32, 32],
     ],
     :action [
         name = "piece4",
         fps = 1,
         images = ["../../tiles/blocks/brick_piece4.png"],
+        size = [32, 32],
     ],
     :action [
         name = "piece5",
         fps = 1,
         images = ["../../tiles/blocks/brick_piece5.png"],
+        size = [32, 32],
     ],
     :action [
         name = "piece6",
         fps = 1,
         images = ["../../tiles/blocks/brick_piece6.png"],
+        size = [32, 32],
     ],
 ]

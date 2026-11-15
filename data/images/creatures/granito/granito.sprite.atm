@@ -8,6 +8,7 @@
             "granito_stand-2.png", "granito_stand-1.png", "granito_stand-0.png", "granito_stand-5.png", "granito_stand-0.png", "granito_stand-1.png", "granito_stand-2.png", "granito_stand-3.png", "granito_stand-4.png", "granito_stand-3.png", "granito_stand-2.png", "granito_stand-1.png", "granito_stand-0.png", "granito_stand-6.png", "granito_stand-7.png", "granito_stand-8.png",
             "granito_stand-2.png", "granito_stand-3.png", "granito_stand-4.png", "granito_stand-3.png", "granito_stand-2.png", "granito_stand-1.png", "granito_stand-0.png", "granito_stand-5.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "stand-right",
@@ -29,6 +30,7 @@
             "granito_walk-6.png",
             "granito_walk-7.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "right",
@@ -47,6 +49,7 @@
             "granito_jump-2.png",
             "granito_jump-3.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "jump-right",
@@ -66,6 +69,7 @@
             "granito_jump-6.png",
             "granito_jump-7.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "fall-right",
@@ -83,6 +87,7 @@
             "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-1.png", "granito_sit-2.png", "granito_sit-3.png",
             "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png", "granito_sit-0.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "sit-right",
@@ -100,6 +105,7 @@
             "granito_look-2.png", "granito_look-2.png", "granito_look-2.png", "granito_look-2.png", "granito_look-2.png", "granito_look-2.png", "granito_look-2.png", "granito_look-2.png", "granito_look-2.png", "granito_look-2.png", "granito_look-3.png", "granito_look-4.png", "granito_look-5.png", "granito_look-2.png", "granito_look-3.png", "granito_look-4.png",
             "granito_look-5.png", "granito_look-2.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "lookup-right",
@@ -119,6 +125,7 @@
             "granito_look-0.png",
             "granito_stand-0.png",
         ],
+        size = [64, 64],
     ],
     :action [
         name = "lookdown-right",
@@ -135,6 +142,7 @@
             "granito_wave-0.png", "granito_wave-1.png", "granito_wave-2.png", "granito_wave-3.png", "granito_wave-4.png", "granito_wave-5.png", "granito_wave-6.png", "granito_wave-7.png", "granito_wave-4.png", "granito_wave-5.png", "granito_wave-6.png", "granito_wave-7.png", "granito_wave-4.png", "granito_wave-5.png", "granito_wave-6.png", "granito_wave-7.png",
             "granito_wave-4.png", "granito_wave-5.png", "granito_wave-6.png", "granito_wave-7.png", "granito_wave-8.png", "granito_wave-9.png",
         ],
+        size = [70, 70],
     ],
     :action [
         name = "wave-right",
