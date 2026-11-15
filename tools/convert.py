@@ -51,6 +51,15 @@
 #
 # The round trip is checked on the conversion with no translation.
 #
+# An action of a sprite gains the field `size`, the largest width and
+# height of its images, read from the image files: the game derives the
+# hitbox of an action from it when the sprite gives none, and the port
+# must know it with no image loaded.
+#
+#   (action (name "default")        :action [name = "default",
+#       (images "a.png" "b.png"))       images = ["a.png", "b.png"],
+#                                       size = [32, 32]]
+#
 # The tiles of a tilemap stay as in the original, with runs: `-5 0` is
 # five times the tile `0`.
 #
@@ -176,6 +185,8 @@ def sexp_read (src):
 # `map` (a list of pairs, to keep the order).
 ###############################################################################
 
+SRC = ['']              # the source directory
+MISSING = []            # images that a sprite names and do not exist
 TRANSLATE = [True]      # False in the conversion for the round trip
 REPORT = []             # (path, reason) of the scripts not translated
 
@@ -262,9 +273,37 @@ def field_to_atm (name, rest, ext, path):
     body_to_atm(t, name, rest, ext, path)
     return t
 
+def png_size (path):
+    with open(path, 'rb') as f:
+        head = f.read(24)
+    assert head[:8] == b'\x89PNG\r\n\x1a\n', (path, 'not a PNG')
+    return int.from_bytes(head[16:20], 'big'), int.from_bytes(head[20:24], 'big')
+
+# The field `size` of the actions of a sprite.
+def sprite_sizes (t, dir):
+    for a in t.vec:
+        if isinstance(a, Tab) and a.tag == 'action':
+            imgs = [ v for k,v in a.map if k == 'images' ]
+            if imgs:
+                szs = []
+                for i in imgs[0].vec:
+                    f = os.path.join(dir, i)
+                    if os.path.exists(f):
+                        szs.append(png_size(f))
+                    else:
+                        MISSING.append(os.path.relpath(f, SRC[0]))
+                if not szs:
+                    continue
+                sz = Tab()
+                sz.vec = [ max(w for w,_ in szs), max(h for _,h in szs) ]
+                a.map.append(('size', sz))
+
 def file_to_atm (exprs, ext, path):
     assert len(exprs) == 1 and exprs[0][0].startswith('supertux-'), path
-    return obj_to_atm(exprs[0], True, ext, path)
+    t = obj_to_atm(exprs[0], True, ext, path)
+    if TRANSLATE[0] and ext == '.sprite':
+        sprite_sizes(t, os.path.dirname(os.path.join(SRC[0], path)))
+    return t
 
 def atm_str (s):
     out = []
@@ -441,6 +480,7 @@ def files_of (src, dir, ext, rec):
     return sorted(out)
 
 def main (src, dst):
+    SRC[0] = src
     total = 0
     for dir, ext, rec, n in SOURCES:
         files = files_of(src, dir, ext, rec)
@@ -466,6 +506,9 @@ def main (src, dst):
         print('%-14s %-9s %d' % (dir, ext, len(files)))
         total += len(files)
     print('files          ', total)
+    print('images that do not exist:', len(MISSING))
+    for f in MISSING:
+        print('    ' + f)
     print('scripts not translated:', len(REPORT))
     for path, why in REPORT:
         print('    %s : %s' % (path, why))
