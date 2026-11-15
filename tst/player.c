@@ -79,8 +79,9 @@ int main(void)
   tx_player_set_pos(&g_tux, tx_vec(2000.0f, (H - 1) * 32.0f - 40.0f));
 
   /* stand 20 ticks, hold right 150, release 40, hold left 60 with a jump
-     pressed at tick 230 and held 15 ticks */
-  for (tick = 1; tick <= 270; ++tick) {
+     pressed at tick 230 and held 15 ticks; then 30 ticks with nothing held,
+     to see him land */
+  for (tick = 1; tick <= 300; ++tick) {
     /* g_game_time += dtime; */
     tx_game_time += dt;
 
@@ -91,6 +92,7 @@ int main(void)
     if (tick == 211) tx_controller_set_control(&controller, TX_CONTROL_LEFT, true);
     if (tick == 230) tx_controller_set_control(&controller, TX_CONTROL_JUMP, true);
     if (tick == 245) tx_controller_set_control(&controller, TX_CONTROL_JUMP, false);
+    if (tick == 271) tx_controller_set_control(&controller, TX_CONTROL_LEFT, false);
 
     /* Sector::update: the objects, then the collisions */
     tx_player_update(&g_tux, dt);
