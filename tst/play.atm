@@ -28,7 +28,8 @@ if input && (input != "") && (input != "-") {
 
 spawn {
     loop on :stepped {
-        `tg_trace(stdout, 100);`
+        val c = status.coins
+        `tg_trace(stdout, $c.u.i);`
     }
 }
 pin session = spawn Session(path)

@@ -7,6 +7,7 @@
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 mkdir -p out/compare
+tst/play.sh tst/levels/empty.stl 1 > /dev/null 2> out/compare/build.err || { head -5 out/compare/build.err; exit 1; }
 bad=0
 while read -r name level ticks input; do
     case "$name" in ''|\#*) continue ;; esac

@@ -15,6 +15,38 @@ include "data.atm"
 #include "game/tux.h"
 ```
 
+;; The collision groups and the responses to a collision, as in the
+;; original.
+pin COL = [DISABLED=0, MOVING_STATIC=1, MOVING=2, MOVING_ONLY_STATIC=3, STATIC=4, TOUCHABLE=5]
+pin HIT = [ABORT=0, CONTINUE=1, FORCE=2, LEFT=1, RIGHT=2, TOP=4, BOTTOM=8, CRUSH=16]
+
+val PLAYER = 0      ;; the id of the player in a collision
+
+;; What the session keeps across the lives of a level.
+pin status = [coins=100]
+
+;; The objects of a sector are tasks in a pool, in the order of the
+;; level. Each one owns an object of the collisions, with an id, and
+;; receives its collisions as the event
+;;
+;;      :hit [other, bits]      the id of the other, the sides as HIT.*
+;;
+;; The response to a collision is the field `resp` of its `pub`, which
+;; the task changes as its behavior changes.
+
+;; A coin: waits for the player, and is collected. (`Coin`)
+task Coin (life, x, y) {
+    val id = `:number tg_obj_new((float)a_dbl($x), (float)a_dbl($y), 32, 32, TX_COLGROUP_TOUCHABLE)`
+    set pub = [resp=HIT.ABORT]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+    }
+    await :hit until (it@0 == PLAYER) && `:boolean tg_touches_player($id.u.i, -0.1f)`
+    set status.coins += 1
+}
+
 ;; A life in a level: from the spawn of Tux to his death (`:dead`).
 ;; (`GameSession::restart_level` up to the next one.)
 
@@ -27,10 +59,29 @@ task Life (lvl, ts) {
             `tg_sec.tiles.attrs[$id.u.i] = $a.u.i;`
             `tg_sec.tiles.data[$id.u.i]  = $d.u.i;`
         }
+        loop id,_ in ts.objs {
+            `tg_objtile[$id.u.i] = 1;`
+        }
     }
     defer {
         `tg_sector_free();`
     }
+
+    pin objs = tasks()
+    pin life = [byid=[]]
+    ```
+    tg_cb_st = A_OK;
+    ```
+    val func dispatch (self, other, bits) {
+        val t = life.byid@self
+        if t {
+            emit @t :hit [other, bits]
+            t.pub.resp
+        } else {
+            HIT.ABORT
+        }
+    }
+    `tg_dispatch = $dispatch;`
 
     var x, y
     loop _,s in lvl {
@@ -44,11 +95,27 @@ task Life (lvl, ts) {
                     if (o.tag == :spawnpoint) && (o.name == "main") {
                         set x, y = o.x, o.y
                     }
+                    if o.tag == :coin {
+                        spawn @objs Coin(life, o.x, o.y)
+                    }
                 }
             }
         }
     }
     `tg_keys_reset();`
+
+    ;; the tiles that are objects (`Sector::convert_tiles2gameobject`)
+    `tg_convert_start();`
+    loop {
+        val id = `:number tg_convert_next()`
+        until id == 0
+        val tx, ty = `:number tg_conv_px`, `:number tg_conv_py`
+        match ts.objs@id@0 {
+            "coin" => spawn @objs Coin(life, tx, ty)
+        }
+    }
+
+    `tg_flush();`
     `tg_player((float)a_dbl($x), (float)a_dbl($y));`
 
     loop e on :step {
@@ -59,7 +126,12 @@ task Life (lvl, ts) {
                 `tg_key($c.u.i, $v.u.i);`
             }
         }
-        `tg_step_end();`
+        ```
+        tg_step_end();
+        if (tg_cb_st != A_OK) {
+            st = tg_cb_st;
+        }
+        ```
         emit @:global :stepped
         until `:boolean tg_tux.dead`
     }

@@ -13,6 +13,22 @@ static TxPlayer     tg_tux;
 static TxController tg_ctl;
 static TxPlayerHost tg_host;
 static long         tg_tick;
+static uint8_t*     tg_objtile;     /* by tile id: the tile becomes an object */
+
+/* The objects of the sector that are tasks in Atmos, by id (from 1; the
+ * player is 0). As in the original, an object that is created enters
+ * the collisions at the end of the step, and one that is removed is not
+ * valid at once and leaves at the end of the step. */
+static TxObj** tg_objs;
+static int     tg_objs_n;
+static int     tg_objs_cap;
+
+/* The function of the game that receives a collision of an object:
+ * f(self, other, hit) -> response, with `hit` as the bits TG_HIT_*. */
+static AVal    tg_dispatch;
+static AStatus tg_cb_st;
+
+enum { TG_HIT_LEFT=1, TG_HIT_RIGHT=2, TG_HIT_TOP=4, TG_HIT_BOTTOM=8, TG_HIT_CRUSH=16 };
 
 static void tg_on_solid (TxObj* self, const TxHit* hit) {
     if (self->user == &tg_tux) {
@@ -30,7 +46,72 @@ static int tg_on_collision (TxObj* self, TxObj* other, const TxHit* hit) {
     if (self->user == &tg_tux) {
         return tx_player_collision(&tg_tux, TX_OTHER_OTHER, other, hit);
     }
-    return TX_FORCE_MOVE;
+    if (tg_cb_st != A_OK) {
+        return TX_ABORT_MOVE;
+    }
+    int bits = (hit->left   ? TG_HIT_LEFT   : 0) | (hit->right ? TG_HIT_RIGHT : 0)
+             | (hit->top    ? TG_HIT_TOP    : 0) | (hit->bottom ? TG_HIT_BOTTOM : 0)
+             | (hit->crush  ? TG_HIT_CRUSH  : 0);
+    int base = a_top;
+    a_push(a_int(self->id));
+    a_push(a_int(other->id));
+    a_push(a_int(bits));
+    AStatus st = a_call(tg_dispatch, base);
+    int ret = TX_ABORT_MOVE;
+    if (st == A_OK) {
+        if (a_top > base) {
+            ret = (int) a_stk[base].u.i;
+        }
+        a_settop(base);
+    } else {
+        tg_cb_st = st;
+    }
+    return ret;
+}
+
+static int tg_obj_new (float x, float y, float w, float h, int group) {
+    if (tg_objs_n == tg_objs_cap) {
+        tg_objs_cap = tg_objs_cap ? tg_objs_cap*2 : 256;
+        tg_objs = realloc(tg_objs, tg_objs_cap * sizeof(TxObj*));
+    }
+    TxObj* o = malloc(sizeof(TxObj));
+    tx_obj_init(o, group);
+    tx_obj_set_size(o, w, h);
+    tx_obj_set_pos(o, tx_vec(x, y));
+    o->id = tg_objs_n + 1;
+    o->user = NULL;                 /* not in the sector yet */
+    tg_objs[tg_objs_n++] = o;
+    return o->id;
+}
+
+static void tg_obj_del (int id) {
+    tg_objs[id-1]->valid = false;
+}
+
+/* `flush_game_objects`: the removed leave, the created enter. */
+static void tg_flush (void) {
+    for (int i=0; i<tg_objs_n; i++) {
+        TxObj* o = tg_objs[i];
+        if (o == NULL) {
+            /* gone */
+        } else if (!o->valid) {
+            if (o->user != NULL) {
+                tx_sector_remove(&tg_sec, o);
+            }
+            tx_obj_free(o);
+            free(o);
+            tg_objs[i] = NULL;
+        } else if (o->user == NULL) {
+            o->user = o;
+            tx_sector_add(&tg_sec, o);
+        }
+    }
+}
+
+/* `bbox.overlaps(player.bbox.grown(border))` */
+static int tg_touches_player (int id, float border) {
+    TxRect r = tx_rect_grown(&tg_tux.col.bbox, border);
+    return tx_rect_overlaps(&tg_objs[id-1]->bbox, &r);
 }
 
 /* The sector, with the attributes of `n` tiles still to fill. */
@@ -39,6 +120,7 @@ static void tg_sector (int n) {
     tg_sec.tiles.count = n;
     tg_sec.tiles.attrs = calloc(n, sizeof(uint32_t));
     tg_sec.tiles.data  = calloc(n, sizeof(int));
+    tg_objtile = calloc(n, 1);
     tg_sec.collision       = tg_on_collision;
     tg_sec.collision_solid = tg_on_solid;
     tg_sec.collision_tile  = tg_on_tile;
@@ -46,6 +128,13 @@ static void tg_sector (int n) {
 
 /* The end of a sector: its tilemaps, its objects, the player. */
 static void tg_sector_free (void) {
+    for (int i=0; i<tg_objs_n; i++) {
+        if (tg_objs[i] != NULL) {
+            tg_objs[i]->valid = false;
+        }
+    }
+    tg_flush();
+    tg_objs_n = 0;
     tx_sector_remove(&tg_sec, &tg_tux.col);
     tx_player_free(&tg_tux);
     for (int i=0; i<tg_sec.maps_n; i++) {
@@ -56,6 +145,7 @@ static void tg_sector_free (void) {
     }
     free(tg_sec.tiles.attrs);
     free(tg_sec.tiles.data);
+    free(tg_objtile);
     tx_sector_free(&tg_sec);
 }
 
@@ -85,6 +175,36 @@ static void tg_map (AVal tiles, int w, int h) {
     TxMap* m = malloc(sizeof(TxMap));
     tx_map_init(m, w, h, tg_tiles(tiles, w*h));
     tx_sector_add_map(&tg_sec, m);
+}
+
+/* `Sector::convert_tiles2gameobject`: the next tile of a solid tilemap
+ * that is an object (`tg_objtile[id]` is set), column by column. The
+ * tile is removed, and its id and position are returned; 0 at the end. */
+static int tg_conv_map, tg_conv_x, tg_conv_y;
+static float tg_conv_px, tg_conv_py;
+
+static void tg_convert_start (void) {
+    tg_conv_map = tg_conv_x = tg_conv_y = 0;
+}
+
+static int tg_convert_next (void) {
+    for (; tg_conv_map < tg_sec.maps_n; tg_conv_map++, tg_conv_x=0) {
+        TxMap* m = tg_sec.maps[tg_conv_map];
+        for (; tg_conv_x < m->width; tg_conv_x++, tg_conv_y=0) {
+            for (; tg_conv_y < m->height; tg_conv_y++) {
+                uint32_t id = m->tiles[tg_conv_y*m->width + tg_conv_x];
+                if (id < tg_sec.tiles.count && tg_objtile[id]) {
+                    TxVec pos = tx_map_get_tile_position(m, tg_conv_x, tg_conv_y);
+                    tg_conv_px = pos.x;
+                    tg_conv_py = pos.y;
+                    m->tiles[tg_conv_y*m->width + tg_conv_x] = 0;
+                    tg_conv_y++;
+                    return (int) id;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 /* The player at a spawn position, as `Sector::activate` places it. */
@@ -133,6 +253,7 @@ static void tg_step_end (void) {
         tx_map_clear_objects_hit_bottom(tg_sec.maps[i]);
     }
     tx_coll_update(&tg_sec);
+    tg_flush();
 }
 
 /* The line `P` of the trace (tools/bench/README.md). */

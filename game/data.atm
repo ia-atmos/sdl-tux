@@ -18,6 +18,8 @@ func data.load (path) {
 ;; The fields of the tiles of a tileset, by id (`TileSetParser`):
 ;;      attrs   the attributes: solid, unisolid, slope, ice, water, ...
 ;;      datas   the kind of slope, or the directions of a worldmap tile
+;;      objs    the object that a tile becomes when a level loads, as
+;;              [name, data] (a coin, a bonus block, a brick)
 ;; A tile with no entry has no attributes.
 
 pin TILE = [
@@ -31,11 +33,14 @@ pin TILE = [
 
 func data.tileset (path) {
     pin src = data.load(path)
-    pin ts = [attrs=[], datas=[], max=0]
-    val func add (id, a, d) {
+    pin ts = [attrs=[], datas=[], objs=[], max=0]
+    val func add (id, a, d, name, odata) {
         if ts.attrs@(id) == nil {       ;; the first definition stays
             set ts.attrs@(id) = a
             set ts.datas@(id) = d
+            if name {
+                set ts.objs@(id) = [name, odata]
+            }
             if id > ts.max {
                 set ts.max = id
             }
@@ -72,7 +77,7 @@ func data.tileset (path) {
                         set d = t.slope_type
                         set a = a | TILE.SOLID | TILE.SLOPE
                     }
-                    add(t.id, a, d)
+                    add(t.id, a, d, t.object_name, t.object_data)
                 }
                 :tiles => {
                     val off = t.offset || 0

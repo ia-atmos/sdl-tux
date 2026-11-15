@@ -2,7 +2,9 @@
 # Makes a level for the tests from a level of the game: the same
 # tilemaps, spawnpoints, and camera, and only the kinds of objects asked.
 #
-#   tst/mklevel.py SRC.stl DST.stl [KIND ...]
+#   tst/mklevel.py SRC.stl DST.stl [KIND ...] [+KIND:X:Y ...]
+#
+# `+coin:300:640` adds an object of the kind at the position.
 #
 # With no kinds, the level is empty: the ground and Tux. The tiles that
 # the game turns into objects when it loads a level (coins, bonus blocks,
@@ -32,7 +34,9 @@ def write (x, ind=0):
         return '"' + x.replace('\\', '\\\\').replace('"', '\\"') + '"'
     return repr(x)
 
-src, dst, kinds = sys.argv[1], sys.argv[2], set(sys.argv[3:])
+src, dst = sys.argv[1], sys.argv[2]
+kinds = set(a for a in sys.argv[3:] if a[0] != '+')
+extra = [ a[1:].split(':') for a in sys.argv[3:] if a[0] == '+' ]
 
 # the tiles that become objects: id -> kind
 OFFICIAL = os.environ.get('OFFICIAL',
@@ -69,6 +73,8 @@ for x in lvl:
                 or v[0] in KEEP or v[0] in kinds ]
         x = [ (tilemap(v) if isinstance(v, list) and v[0] == 'tilemap' else v)
                 for v in x ]
+        x += [ [Sym(k), [Sym('x'), int(px)], [Sym('y'), int(py)]]
+                for k,px,py in extra ]
     if isinstance(x, list) and x[0] == 'name':
         x = [ Sym('name'), 'test' ]
     out.append(x)
