@@ -1,0 +1,73 @@
+;; Plays a level with no screen, with scripted input, and prints the
+;; trace of the player, as the official game does (tools/bench/README.md).
+;;
+;;      atmos tst/play.atm LEVEL TICKS [INPUT]
+;;
+;;      LEVEL   /levels/world1/journey_begins.stl, or tst/levels/empty.stl
+;;      INPUT   "tick:control:value,...": "50:right:1,150:jump:1,170:jump:0"
+
+include "../game/data.atm"
+
+```:prelude
+#include "game/tux.h"
+```
+
+pin CONTROLS = [left=0, right=1, up=2, down=3, jump=4, action=5, item=6]
+
+val path, ticks, input = ...
+pin lvl = data.load(path)
+pin ts  = data.tileset("/images/tiles.strf")
+
+do {
+    val n = ts.max + 1
+    `tg_sector($n.u.i);`
+    loop id,a in ts.attrs {
+        val d = ts.datas@id
+        `tg_sec.tiles.attrs[$id.u.i] = $a.u.i;`
+        `tg_sec.tiles.data[$id.u.i]  = $d.u.i;`
+    }
+}
+
+var x, y
+loop _,s in lvl {
+    if (type(s) == :table) && (s.tag == :sector) && (s.name == "main") {
+        loop _,o in s {
+            if type(o) == :table {
+                if (o.tag == :tilemap) && o.solid {
+                    val w, h, tiles = o.width, o.height, o.tiles
+                    `tg_map($tiles, $w.u.i, $h.u.i);`
+                }
+                if (o.tag == :spawnpoint) && (o.name == "main") {
+                    set x, y = o.x, o.y
+                }
+            }
+        }
+    }
+}
+`tg_player((float)a_dbl($x), (float)a_dbl($y));`
+
+;; the input: tick -> [[control, value], ...]
+pin keys = []
+if input && (input != "") && (input != "-") {
+    loop _,item in string.split(input, ",") {
+        pin f = string.split(item, ":")
+        val t = tonumber(f@0)
+        val c = CONTROLS@(f@1) || throw :tux.input, "invalid control " ++ f@1
+        if keys@t == nil {
+            set keys@t = []
+        }
+        set keys@t@+ = [c, tonumber(f@2)]
+    }
+}
+
+loop i in (1, tonumber(ticks)) {
+    `tg_step_begin();`
+    if keys@i {
+        loop _,k in keys@i {
+            val c, v = k@0, k@1
+            `tg_key($c.u.i, $v.u.i);`
+        }
+    }
+    `tg_step_end();`
+    `tg_trace(stdout, 100);`
+}
