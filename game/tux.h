@@ -42,8 +42,21 @@ static void tg_sector (int n) {
     tg_sec.collision       = tg_on_collision;
     tg_sec.collision_solid = tg_on_solid;
     tg_sec.collision_tile  = tg_on_tile;
-    tx_game_time = 0;
-    tg_tick = 0;
+}
+
+/* The end of a sector: its tilemaps, its objects, the player. */
+static void tg_sector_free (void) {
+    tx_sector_remove(&tg_sec, &tg_tux.col);
+    tx_player_free(&tg_tux);
+    for (int i=0; i<tg_sec.maps_n; i++) {
+        TxMap* m = tg_sec.maps[i];
+        free(m->tiles);
+        tx_map_free(m);
+        free(m);
+    }
+    free(tg_sec.tiles.attrs);
+    free(tg_sec.tiles.data);
+    tx_sector_free(&tg_sec);
 }
 
 /* The tiles of a tilemap, from the vector of the level, which has runs:
@@ -77,7 +90,6 @@ static void tg_map (AVal tiles, int w, int h) {
 /* The player at a spawn position, as `Sector::activate` places it. */
 static void tg_player (float x, float y) {
     memset(&tg_host, 0, sizeof(tg_host));
-    tx_controller_reset(&tg_ctl);
     tx_player_init(&tg_tux, &tg_sec, &tg_ctl, &tg_host, TX_BONUS_NONE, 0);
     tg_tux.col.user = &tg_tux;
     tx_sector_add(&tg_sec, &tg_tux.col);
@@ -103,6 +115,11 @@ static void tg_step_begin (void) {
     tx_game_time += 1.0f / (1000.0f / 15.0f);
     tg_tick++;
     tx_controller_update(&tg_ctl);
+}
+
+/* `InputManager::reset`, when a level restarts. */
+static void tg_keys_reset (void) {
+    tx_controller_reset(&tg_ctl);
 }
 
 static void tg_key (int control, int value) {

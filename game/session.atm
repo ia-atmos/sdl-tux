@@ -1,0 +1,75 @@
+;; The session of a level: its lives, one after the other.
+;;
+;; The program that includes this file emits, per logical step of 15 ms:
+;;
+;;      :step [[control, value], ...]       the keys that change in the step
+;;
+;; (controls as in the original: 0 left, 1 right, 2 up, 3 down, 4 jump,
+;; 5 action, 6 item), and the session emits back, after each step:
+;;
+;;      :stepped
+
+include "data.atm"
+
+```:prelude
+#include "game/tux.h"
+```
+
+;; A life in a level: from the spawn of Tux to his death (`:dead`).
+;; (`GameSession::restart_level` up to the next one.)
+
+task Life (lvl, ts) {
+    do {
+        val n = ts.max + 1
+        `tg_sector($n.u.i);`
+        loop id,a in ts.attrs {
+            val d = ts.datas@id
+            `tg_sec.tiles.attrs[$id.u.i] = $a.u.i;`
+            `tg_sec.tiles.data[$id.u.i]  = $d.u.i;`
+        }
+    }
+    defer {
+        `tg_sector_free();`
+    }
+
+    var x, y
+    loop _,s in lvl {
+        if (type(s) == :table) && (s.tag == :sector) && (s.name == "main") {
+            loop _,o in s {
+                if type(o) == :table {
+                    if (o.tag == :tilemap) && o.solid {
+                        val w, h, tiles = o.width, o.height, o.tiles
+                        `tg_map($tiles, $w.u.i, $h.u.i);`
+                    }
+                    if (o.tag == :spawnpoint) && (o.name == "main") {
+                        set x, y = o.x, o.y
+                    }
+                }
+            }
+        }
+    }
+    `tg_keys_reset();`
+    `tg_player((float)a_dbl($x), (float)a_dbl($y));`
+
+    loop e on :step {
+        `tg_step_begin();`
+        loop _,k in e {
+            if type(k) == :table {
+                val c, v = k@0, k@1
+                `tg_key($c.u.i, $v.u.i);`
+            }
+        }
+        `tg_step_end();`
+        emit @:global :stepped
+        until `:boolean tg_tux.dead`
+    }
+    :dead
+}
+
+task Session (path) {
+    pin lvl = data.load(path)
+    pin ts  = data.tileset("/images/tiles.strf")
+    loop {
+        await Life(lvl, ts)
+    }
+}

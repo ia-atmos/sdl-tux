@@ -13,7 +13,12 @@ The plan is in `.claude/plans/261113-sdl-tux.md`, and what is pending in
 - [x] T1: the data of World 1 as Atmos data (`tools/convert.py`, `data/`):
       31 levels, the worldmap, 393 sprites, 3 tilesets. The scripts of the
       levels are data too (`tools/squirrel.py`): 193 of 196.
-- [ ] T2: the game over `env-sdl`.
+- [ ] T2, T3: the game over `env-sdl`, and a level drawn (they wait for
+      that environment).
+- [ ] T4, in course: the player and the collisions with no screen
+      (`game/`, `tst/play.sh`). Eleven scripted runs in an empty level,
+      of up to 3000 ticks, death and restart included, give the trace of
+      the official game line by line (`tools/compare.sh`).
 
 ## Tests
 
