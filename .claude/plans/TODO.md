@@ -26,7 +26,7 @@ See C for the decisions taken as recommended.
 | 3 | The trace of the official game has only the player and the badguys. Coins, blocks, powerups, and the end of a level enter it when the port reaches them (T5) | |
 | 5 | The images, sounds, and music are not in the repository (270 MB in the original). Decide at T2 how the game gets them: a script that copies what World 1 uses from the checkout of the official game | |
 | 6 | T2 and T3 wait for `env-sdl`, which has no code yet; the list of what the game needs was sent to its session on 2026-11-14. Meanwhile the order is T4 first: collisions, physics, and the player with no screen | |
-| 7 | T4: the collision kernel is in C (`game/coll.h`, a translation of the C++) and gives the lines of the official trace for Tux falling and landing. Next: the sector and its tick in Atmos, then the player (walk, run, skid, jump), each compared by trace | In course |
+| 7 | T4, in course. Done: the collision kernel and the logic of the player in C (`game/coll.h`, `game/player.h`, translations of the C++), a runner with no screen (`tst/play.sh`), and four scripted runs in an empty level (idle, walk, skid, jump) with the same trace as the official game. Next: more runs (duck and grow need the bonus; slopes; death by falling; the edges of the level), then the sector and the player as tasks in Atmos over these kernels: today the runner calls the kernels in a plain loop | In course |
 | 4 | T3 to T9 | See the plan |
 
 ## C. Reported or decided, and not acknowledged
@@ -48,4 +48,7 @@ See C for the decisions taken as recommended.
 - `game/coll.h`: the collision system and `Physic` in C, with callbacks,
   as in the C++. With 32-bit reals in the language, `Physic` and the
   handlers could be Atmos.
-- The player: its arithmetic in C (to come).
+- `game/player.h`: the whole `Player` in C (3654 lines), with hooks for
+  what reaches outside. Its timers and phases (dying, growing, safe,
+  skidding, the grace times of the jump) are still flags and timers in the
+  struct: they are the first candidates to become tasks.
