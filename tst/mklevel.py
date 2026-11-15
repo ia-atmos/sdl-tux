@@ -4,7 +4,12 @@
 #
 #   tst/mklevel.py SRC.stl DST.stl [KIND ...]
 #
-# With no kinds, the level is empty: the ground and Tux.
+# With no kinds, the level is empty: the ground and Tux. The tiles that
+# the game turns into objects when it loads a level (coins, bonus blocks,
+# bricks) are removed too, unless their kind is asked.
+#
+# The tileset is read from ../official/supertux/data/images/tiles.strf
+# (or $OFFICIAL).
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools'))
 from convert import sexp_read, Sym
@@ -28,12 +33,42 @@ def write (x, ind=0):
     return repr(x)
 
 src, dst, kinds = sys.argv[1], sys.argv[2], set(sys.argv[3:])
+
+# the tiles that become objects: id -> kind
+OFFICIAL = os.environ.get('OFFICIAL',
+    os.path.join(os.path.dirname(__file__), '..', '..', 'official', 'supertux'))
+objtiles = {}
+for t in sexp_read(open(os.path.join(OFFICIAL, 'data/images/tiles.strf'),
+                        encoding='utf-8').read())[0]:
+    if isinstance(t, list) and t[0] == 'tile':
+        f = { v[0]: v[1] for v in t[1:] if isinstance(v, list) and len(v) == 2 }
+        if 'object-name' in f:
+            objtiles[f['id']] = f['object-name']
+
+def tiles (v):
+    out, i = [], 1
+    while i < len(v):
+        n, id = 1, v[i]
+        if id < 0:
+            n, id = -id, v[i+1]
+            i += 1
+        i += 1
+        if id in objtiles and objtiles[id] not in kinds:
+            id = 0
+        out += [id] * n
+    return [v[0]] + out
+
+def tilemap (tm):
+    return [ (tiles(v) if isinstance(v, list) and v[0] == 'tiles' else v)
+                for v in tm ]
 lvl = sexp_read(open(src, encoding='utf-8').read())[0]
 out = []
 for x in lvl:
     if isinstance(x, list) and x[0] == 'sector':
         x = [ v for v in x if not isinstance(v, list)
                 or v[0] in KEEP or v[0] in kinds ]
+        x = [ (tilemap(v) if isinstance(v, list) and v[0] == 'tilemap' else v)
+                for v in x ]
     if isinstance(x, list) and x[0] == 'name':
         x = [ Sym('name'), 'test' ]
     out.append(x)
