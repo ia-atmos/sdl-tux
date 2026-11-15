@@ -39,3 +39,11 @@ ATMOS_CFLAGS="-O2 -I$ROOT" ATMOS_LDFLAGS="-lm" \
     "$ATMOS" tst/fall.atm /levels/world1/journey_begins.stl 12 > "$TMP/fall.txt"
 cmp "$TMP/fall.txt" tst/fall.txt
 echo "fall: ok"
+
+# the logic of the player in C builds clean
+cc -std=c99 -Wall -Wextra -O2 -fsanitize=address,undefined -Igame tst/player.c -lm -o "$TMP/player"
+"$TMP/player" > /dev/null 2>&1
+echo "player: ok"
+
+# the scripted runs give the traces of the official game
+tools/compare.sh
