@@ -9,6 +9,7 @@
 # (tst/env-play.sh), and not through the runner with no environment.
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
+export TUX_TRACE_CAMERA=1   # the traces have the camera
 mkdir -p out/compare
 PLAY=tst/play.sh
 [ "$VIA" = env ] && PLAY=tst/env-play.sh
