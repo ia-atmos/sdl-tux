@@ -326,6 +326,9 @@ task Life (lvl, ts, cont) {
     `tg_flush();`
     `tg_player((float)a_dbl($x), (float)a_dbl($y));`
 
+    ;; the sector is ready: the view, if any, builds what it draws
+    emit @:global :sector
+
     ;; `Sector::activate` runs the init script, up to its first wait
     if init {
         spawn @scripts script.Script(env, init, "init-script")

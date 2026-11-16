@@ -13,6 +13,7 @@
 
 include "../../env-sdl/sdl.atm"
 include "session.atm"
+include "view.atm"
 
 ;; The keys of the original (`KeyboardConfig`), by the name of the scancode.
 pin KEYS = [
@@ -59,6 +60,7 @@ spawn {
     }
 }
 
+pin view_ = spawn View(path)
 pin session = spawn Session(path)
 
 ;; `ScreenManager::loop_iter`: the time of the frames in steps. In the test

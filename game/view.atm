@@ -1,0 +1,159 @@
+;; The view of a sector: what is drawn, and its images (game/draw.h).
+;;
+;; At each life, the session emits `:sector`, once its tilemaps are
+;; built; the view then builds its list of drawables, in the order of the
+;; objects of the sector, and loads the images of the tiles in use. Then
+;; it draws at each frame, with the translation of the camera.
+;;
+;; The images come from the data of the official game:
+;; $TUX_ASSETS (default: ../official/supertux/data).
+
+```:prelude
+#include "game/draw.h"
+```
+
+pin view = [
+    assets = os.getenv("TUX_ASSETS") || "../official/supertux/data",
+    imgs   = [],        ;; path -> image
+    index  = [],        ;; path -> index, for game/draw.h
+    n      = 0,
+]
+
+;; The index of an image of the data (`images/...`), loaded once.
+func view.image (path) {
+    if view.index@path == nil {
+        set view.imgs@path = sdl.image(view.assets ++ "/images/" ++ path)
+        set view.index@path = view.n
+        set view.n += 1
+    }
+    val i, img = view.index@path, view.imgs@path
+    if img {
+        `td_img((int) $i.u.i, $img);`
+    }
+    i
+}
+
+;; A color of the level: [r, g, b] or [r, g, b, a].
+func view.color (c, d) {
+    if c => (c@0, c@1, c@2, c@3 || 1) => (d, d, d, d)
+}
+
+;; The tiles of the tileset in use, with their frames (`TileSetParser`).
+func view.tiles (raw) {
+    loop _,t in raw {
+        if type(t) == :table {
+            match t.tag {
+                :tile => {
+                    val id = t.id
+                    if `:boolean td_is_used((int) $id.u.i)` {
+                        val fps = t.fps || 10
+                        `td_tile((int) $id.u.i, (float) a_dbl($fps));`
+                        val func frame (im) {
+                            val path, x, y, w, h = if type(im) == :table => (im@0, im@1, im@2, im@3, im@4) => (im, 0, 0, nil, nil)
+                            val i = view.image(path)
+                            val img = view.imgs@path
+                            val iw, ih = sdl.size(img)
+                            val fw, fh = w || iw, h || ih
+                            `td_frame((int) $id.u.i, (int) $i.u.i, (int) a_dbl($x), (int) a_dbl($y), (int) a_dbl($fw), (int) a_dbl($fh));`
+                        }
+                        ifs {
+                            t.images == nil  => nil
+                            t.images.region  => frame(t.images.region)
+                            else => {
+                                loop _,im in t.images {
+                                    frame(im)
+                                }
+                            }
+                        }
+                    }
+                }
+                :tiles => {
+                    val off = t.offset || 0
+                    val fps = t.fps || 10
+                    loop k,id0 in t.ids {
+                        val id = id0 + off
+                        if (id0 != 0) && `:boolean td_is_used((int) $id.u.i)` {
+                            `td_tile((int) $id.u.i, (float) a_dbl($fps));`
+                            val x, y = 32 * (k % t.width), 32 * (k // t.width)
+                            val imgs = t.images || t.image
+                            if imgs {
+                                loop _,path in imgs {
+                                    val i = view.image(path)
+                                    `td_frame((int) $id.u.i, (int) $i.u.i, (int) $x.u.i, (int) $y.u.i, 32, 32);`
+                                }
+                            }
+                        }
+                    }
+                }
+                else => nil
+            }
+        }
+    }
+}
+
+;; The drawables of a sector, in the order of its objects.
+func view.build (sec, raw, ntiles) {
+    `td_reset((int) $ntiles.u.i);`
+    var solid = 0
+    loop _,o in sec {
+        if type(o) == :table {
+            match o.tag {
+                :tilemap => {
+                    val w, h = o.width, o.height
+                    val z = o.z_pos || 0
+                    val sx = o.speed_x || o.speed || 1
+                    val sy = o.speed_y || o.speed || sx
+                    val alpha = o.alpha || 1
+                    val r, g, b, a = view.color(o.tint, 1)
+                    if o.solid {
+                        `td_map(tg_sec.maps[$solid.u.i]->tiles, 0, $w.u.i, $h.u.i, (int) a_dbl($z), 1, 1, (float) a_dbl($alpha), (float) a_dbl($r), (float) a_dbl($g), (float) a_dbl($b), (float) a_dbl($a));`
+                        set solid += 1
+                    } else {
+                        val tiles = o.tiles
+                        `td_map(tg_tiles($tiles, $w.u.i * $h.u.i), 1, $w.u.i, $h.u.i, (int) a_dbl($z), (float) a_dbl($sx), (float) a_dbl($sy), (float) a_dbl($alpha), (float) a_dbl($r), (float) a_dbl($g), (float) a_dbl($b), (float) a_dbl($a));`
+                    }
+                }
+                :gradient => {
+                    val t0, t1, t2, t3 = view.color(o.top_color, 0)
+                    val b0, b1, b2, b3 = view.color(o.bottom_color, 0)
+                    val dir = match o.direction {
+                        "horizontal"        => `:number TD_HORIZONTAL`
+                        "horizontal_sector" => `:number TD_HORIZONTAL_SECTOR`
+                        "vertical_sector"   => `:number TD_VERTICAL_SECTOR`
+                        else                => `:number TD_VERTICAL`
+                    }
+                    val z = o.z_pos || -300
+                    ```
+                    float top[4] = { a_dbl($t0), a_dbl($t1), a_dbl($t2), a_dbl($t3) };
+                    float bot[4] = { a_dbl($b0), a_dbl($b1), a_dbl($b2), a_dbl($b3) };
+                    td_gradient(top, bot, (int) $dir.u.i, (int) a_dbl($z));
+                    ```
+                }
+                else => nil
+            }
+        }
+    }
+    view.tiles(raw)
+}
+
+;; The view of a level: rebuilt at each life, drawn at each frame.
+task View (path) {
+    pin lvl = data.load(path)
+    pin raw = data.load("/images/tiles.strf")
+    var sec
+    loop _,s in lvl {
+        if (type(s) == :table) && (s.tag == :sector) && (s.name == "main") {
+            set sec = s
+        }
+    }
+    par {
+        loop on :sector {
+            val n = `:number tg_sec.tiles.count`
+            view.build(sec, raw, n)
+        }
+    } with {
+        loop on :draw {
+            `td_draw(tg_cam.translation);`
+        }
+    }
+}
