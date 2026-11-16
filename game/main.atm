@@ -1,0 +1,88 @@
+;; SuperTux in Atmos: the game over the SDL environment.
+;;
+;;      ./tux.sh LEVEL          (see tux.sh)
+;;
+;; The environment gives a frame at a time (`:frame`); the game turns the
+;; time of the frames into logical steps of 15 ms, as the loop of the
+;; original (`ScreenManager::loop_iter`), and gives the keys of the frame
+;; to the first step. In the test mode of the environment
+;; (`SDL_ATM_FRAMES=n:15`), a frame is exactly one step.
+;;
+;; With `TUX_TRACE=1`, it prints the trace of the player after each step,
+;; as the official game does (tools/bench/README.md).
+
+include "../../env-sdl/sdl.atm"
+include "session.atm"
+
+;; The keys of the original (`KeyboardConfig`), by the name of the scancode.
+pin KEYS = [
+    Left=CONTROLS.left, Right=CONTROLS.right, Up=CONTROLS.up,
+    Down=CONTROLS.down, Space=CONTROLS.jump,
+    @("Left Ctrl")=CONTROLS.action, @("Left Shift")=CONTROLS.item,
+    Escape=CONTROLS.escape, P=CONTROLS.start,
+]
+
+val path = ...
+val trace = os.getenv("TUX_TRACE")
+
+sdl.window [title="SuperTux", width=1280, height=800, logical=[1280,800]]
+
+;; the keys since the last step
+pin input = [keys=[]]
+spawn {
+    par {
+        loop e on :key.dn {
+            val c = KEYS@(e.code)
+            if c != nil {
+                set input.keys@+ = [c, 1]
+            }
+        }
+    } with {
+        loop e on :key.up {
+            val c = KEYS@(e.code)
+            if c != nil {
+                set input.keys@+ = [c, 0]
+            }
+        }
+    }
+}
+
+spawn {
+    if trace {
+        loop on :stepped {
+            val c = status.coins
+            `tg_trace(stdout, $c.u.i);`
+        }
+    }
+}
+
+pin session = spawn Session(path)
+
+;; `ScreenManager::loop_iter`: the time of the frames in steps. In the test
+;; mode, one step per frame.
+```:prelude
+static float tg_elapsed;
+static int tg_steps (double us) {
+    const float sps = 1.0f / (1000.0f / 15.0f);
+    if (SDL_TESTING) {
+        return 1;
+    }
+    tg_elapsed += (float) (us / 1000000.0);
+    if (tg_elapsed > 4 * sps) {
+        tg_elapsed = 4 * sps;
+    }
+    int n = (int) floorf(tg_elapsed / sps);
+    tg_elapsed -= n * sps;
+    return n;
+}
+```
+
+loop e on :frame {
+    val us = e.us
+    val n = `:number tg_steps(a_dbl($us))`
+    loop i in n {
+        emit :step (input.keys)
+        set input.keys = []
+    }
+    until atmos.status(session) == :dead
+}
