@@ -1,0 +1,174 @@
+;; The interpreter of the scripts of the levels.
+;;
+;; A script is data, translated from the Squirrel of the original by
+;; tools/squirrel.py: a vector of statements.
+;;
+;;      [:call, "torch1", :set_burning, true]   a method of a named object
+;;      [:do, :play_sound, "sounds/x.ogg"]      a global function
+;;      [:wait, 2.2]                            waits, in seconds of game time
+;;      [:set, "state.treasure", false]         an assignment
+;;      [:if, cond, [then...], [else...]]       a condition
+;;
+;; and in the expressions: [:get, "a.b"], [:op, "==", a, b], [:op, "!", a],
+;; [:cond, c, a, b], and calls, which give their result.
+;;
+;; A script runs as a task, `Script`, in the pool of scripts of a life. A
+;; `:wait` is an await of the event `:scripts`, which the life emits at
+;; the start of each step, before the objects move: there the original
+;; wakes its scheduled threads (`SquirrelEnvironment::update`). The time
+;; of the wake up is computed as the original does, in 32-bit floats: a
+;; thread that calls `wait(n)` at the game time `t` wakes at the first
+;; step whose time is strictly greater than `t + n`.
+;;
+;; The environment of a script, `env`, has:
+;;
+;;      objects     name -> table of methods, each `func (args)`, where
+;;                  `args` is the vector of the arguments
+;;      funcs       name -> func (args), the global functions
+;;      globals     name -> value (`state`, the constants)
+;;
+;; An error in a script (an unknown object or method) ends that script,
+;; as an error ends its thread in the original, and is reported on the
+;; standard error.
+
+```:prelude
+static AVal tg_wakeup (double secs) {
+    float t = tx_game_time + (float) secs;
+    return a_num((double) t);
+}
+static int tg_awake (double t) {
+    return ((float) t) < tx_game_time;
+}
+```
+
+pin script = []
+
+func script.truthy (v) {
+    (v != nil) && (v != false) && (v != 0)
+}
+
+;; `state.treasure` -> the value at that path, or nil
+func script.lookup (env, path) {
+    pin ks = string.split(path, ".")
+    var v = env.globals@(ks@0)
+    loop i in (1, #ks - 1) {
+        until v == nil
+        set v = if type(v) == :table => v@(ks@i) => nil
+    }
+    v
+}
+
+func script.assign (env, path, v) {
+    pin ks = string.split(path, ".")
+    if #ks == 1 {
+        set env.globals@(ks@0) = v
+    } else {
+        var t = env.globals@(ks@0)
+        loop i in (1, #ks - 2) {
+            set t = t@(ks@i)
+        }
+        if type(t) != :table {
+            throw :tux.script, "cannot assign to " ++ path
+        }
+        set t@(ks@(#ks-1)) = v
+    }
+}
+
+;; The object named in a call: "Tux", "sector.Camera", "sector.settings".
+func script.object (env, name) {
+    val n = if string.sub(name, 0, 6) == "sector." => string.sub(name, 7) => name
+    env.objects@n || throw :tux.script, "unknown object " ++ name
+}
+
+func script.args (env, e, from) {
+    pin args = []
+    loop i in (from, #e - 1) {
+        set args@+ = script.eval(env, e@i)
+    }
+    args
+}
+
+func script.eval (env, e) {
+    if type(e) != :table {
+        return e
+    }
+    match e@0 {
+        "get"  => script.lookup(env, e@1)
+        "call" => {
+            val o = script.object(env, e@1)
+            val m = o@(e@2) || throw :tux.script, "unknown method " ++ e@1 ++ "." ++ e@2
+            m(script.args(env, e, 3))
+        }
+        "do"   => {
+            val f = env.funcs@(e@1) || throw :tux.script, "unknown function " ++ e@1
+            f(script.args(env, e, 2))
+        }
+        "cond" => if script.truthy(script.eval(env, e@1)) => script.eval(env, e@2) => script.eval(env, e@3)
+        "op"   => {
+            val op = e@1
+            ifs {
+                op == "!"   => !script.truthy(script.eval(env, e@2))
+                op == "neg" => -script.eval(env, e@2)
+                op == "&&"  => script.truthy(script.eval(env, e@2)) && script.truthy(script.eval(env, e@3))
+                op == "||"  => script.truthy(script.eval(env, e@2)) || script.truthy(script.eval(env, e@3))
+                else => {
+                    val a = script.eval(env, e@2)
+                    val b = script.eval(env, e@3)
+                    match op {
+                        "==" => a == b
+                        "!=" => a != b
+                        "<"  => a <  b
+                        ">"  => a >  b
+                        "<=" => a <= b
+                        ">=" => a >= b
+                        "+"  => a + b
+                        "-"  => a - b
+                        "*"  => a * b
+                        "/"  => a / b
+                        "|"  => a | b
+                        "&"  => a & b
+                        "in" => (type(b) == :table) && (b@a != nil)
+                        else => throw :tux.script, "unknown operator " ++ op
+                    }
+                }
+            }
+        }
+        else => throw :tux.script, "unknown expression " ++ tostring(e@0)
+    }
+}
+
+;; A sequence of statements.
+task script.Block (env, list) {
+    loop _,s in list {
+        match s@0 {
+            "wait" => {
+                val secs = script.eval(env, s@1)
+                val t = `:value tg_wakeup(a_dbl($secs))`
+                await :scripts until `:boolean tg_awake(a_dbl($t))`
+            }
+            "if" => {
+                if script.truthy(script.eval(env, s@1)) {
+                    await script.Block(env, s@2)
+                } else {
+                    await script.Block(env, s@3)
+                }
+            }
+            "set" => script.assign(env, s@1, script.eval(env, s@2))
+            else  => script.eval(env, s)
+        }
+    }
+}
+
+;; A script, as a thread of the original. One that was not translated
+;; (`:squirrel ["..."]`) does nothing (see the TODO).
+task script.Script (env, prog, place) {
+    if (type(prog) == :table) && (prog.tag != :squirrel) {
+        pin ok, _, msg = catch :tux.script {
+            await script.Block(env, prog)
+        }
+        if !ok {
+            val m = "script error (" ++ place ++ "): " ++ tostring(msg)
+            `fprintf(stderr, "%s\\n", A_STR_OF($m)->s);`
+        }
+    }
+}
