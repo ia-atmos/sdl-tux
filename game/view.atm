@@ -19,10 +19,11 @@ pin view = [
     n      = 0,
 ]
 
-;; The index of an image of the data (`images/...`), loaded once.
+;; The index of an image of the data, by its path in the data
+;; (`images/tiles/...`), loaded once.
 func view.image (path) {
     if view.index@path == nil {
-        set view.imgs@path = sdl.image(view.assets ++ "/images/" ++ path)
+        set view.imgs@path = sdl.image(view.assets ++ "/" ++ path)
         set view.index@path = view.n
         set view.n += 1
     }
@@ -50,8 +51,8 @@ func view.tiles (raw) {
                         `td_tile((int) $id.u.i, (float) a_dbl($fps));`
                         val func frame (im) {
                             val path, x, y, w, h = if type(im) == :table => (im@0, im@1, im@2, im@3, im@4) => (im, 0, 0, nil, nil)
-                            val i = view.image(path)
-                            val img = view.imgs@path
+                            val i = view.image("images/" ++ path)
+                            val img = view.imgs@("images/" ++ path)
                             val iw, ih = sdl.size(img)
                             val fw, fh = w || iw, h || ih
                             `td_frame((int) $id.u.i, (int) $i.u.i, (int) a_dbl($x), (int) a_dbl($y), (int) a_dbl($fw), (int) a_dbl($fh));`
@@ -78,7 +79,7 @@ func view.tiles (raw) {
                             val imgs = t.images || t.image
                             if imgs {
                                 loop _,path in imgs {
-                                    val i = view.image(path)
+                                    val i = view.image("images/" ++ path)
                                     `td_frame((int) $id.u.i, (int) $i.u.i, (int) $x.u.i, (int) $y.u.i, 32, 32);`
                                 }
                             }
@@ -105,6 +106,7 @@ func view.build (sec, raw, ntiles) {
                     val sy = o.speed_y || o.speed || sx
                     val alpha = o.alpha || 1
                     val r, g, b, a = view.color(o.tint, 1)
+                    val ox, oy = map_offset(sec, o)
                     if o.solid {
                         `td_map(tg_sec.maps[$solid.u.i]->tiles, 0, $w.u.i, $h.u.i, (int) a_dbl($z), 1, 1, (float) a_dbl($alpha), (float) a_dbl($r), (float) a_dbl($g), (float) a_dbl($b), (float) a_dbl($a));`
                         set solid += 1
@@ -112,6 +114,34 @@ func view.build (sec, raw, ntiles) {
                         val tiles = o.tiles
                         `td_map(tg_tiles($tiles, $w.u.i * $h.u.i), 1, $w.u.i, $h.u.i, (int) a_dbl($z), (float) a_dbl($sx), (float) a_dbl($sy), (float) a_dbl($alpha), (float) a_dbl($r), (float) a_dbl($g), (float) a_dbl($b), (float) a_dbl($a));`
                     }
+                    `td_maps[td_maps_n-1].offset = tx_vec((float) a_dbl($ox), (float) a_dbl($oy));`
+                }
+                :background => {
+                    val func img (p) {
+                        if p => view.image(if string.sub(p, 0, 0) == "/" => string.sub(p, 1) => p) => -1
+                    }
+                    val main = img(o.image || "images/background/misc/transparent_up.png")
+                    val top, bot = img(o.image_top), img(o.image_bottom)
+                    val al = match o.alignment {
+                        "left"   => `:number TD_LEFT_ALIGNMENT`
+                        "right"  => `:number TD_RIGHT_ALIGNMENT`
+                        "top"    => `:number TD_TOP_ALIGNMENT`
+                        "bottom" => `:number TD_BOTTOM_ALIGNMENT`
+                        else     => `:number TD_NO_ALIGNMENT`
+                    }
+                    val z = o.z_pos || -300
+                    val spx = o.speed_x || o.speed || 0.5
+                    val spy = o.speed_y || spx
+                    val ssx, ssy = o.scroll_speed_x || 0, o.scroll_speed_y || 0
+                    val ox = (o.scroll_offset_x || 0) + (o.x || 0)
+                    val oy = (o.scroll_offset_y || 0) + (o.y || 0)
+                    val c0, c1, c2, c3 = view.color(o.color, 1)
+                    ```
+                    float c[4] = { a_dbl($c0), a_dbl($c1), a_dbl($c2), a_dbl($c3) };
+                    td_background((int) $top.u.i, (int) $main.u.i, (int) $bot.u.i, (int) $al.u.i, (int) a_dbl($z),
+                                  (float) a_dbl($spx), (float) a_dbl($spy), (float) a_dbl($ssx), (float) a_dbl($ssy),
+                                  (float) a_dbl($ox), (float) a_dbl($oy), c);
+                    ```
                 }
                 :gradient => {
                     val t0, t1, t2, t3 = view.color(o.top_color, 0)
@@ -150,6 +180,10 @@ task View (path) {
         loop on :sector {
             val n = `:number tg_sec.tiles.count`
             view.build(sec, raw, n)
+        }
+    } with {
+        loop on :stepped {
+            `td_update(tg_dt);`
         }
     } with {
         loop on :draw {
