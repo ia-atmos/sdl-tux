@@ -32,6 +32,10 @@ val PLAYER = 0      ;; the id of the player in a collision
 pin KIND = [OTHER=`:number TX_OTHER_OTHER`, TRIGGER=`:number TX_OTHER_TRIGGER`]
 pin EVENT = [TOUCH=`:number TX_EVENT_TOUCH`, ACTIVATE=`:number TX_EVENT_ACTIVATE`]
 
+;; The sequences, as in the original (`Sequence`).
+pin SEQ = [END=0, STOPTUX=1, FIREWORKS=2]
+pin SEQS = [endsequence=SEQ.END, stoptux=SEQ.STOPTUX, fireworks=SEQ.FIREWORKS]
+
 ;; A new object of the collisions: its id.
 func obj_new (x, y, w, h, group, kind) {
     `:number tg_obj_new((float)a_dbl($x), (float)a_dbl($y), (float)a_dbl($w), (float)a_dbl($h), (int)$group.u.i, (int)$kind.u.i)`
@@ -107,17 +111,47 @@ pin TUX = [
         set status.coins = math.min(status.coins + a@0, 9999)
     },
     get_coins = func (a) { status.coins },
+    trigger_sequence = func (a) {
+        val seq = SEQS@(a@0)
+        if seq != nil {
+            `tx_player_trigger_sequence(&tg_tux, (int) $seq.u.i, NULL);`
+        }
+    },
 ]
 
+;; The touch of a trigger by the player (`TriggerBase`): calls `f` when the
+;; player starts to touch it. The player touches it in the collisions of a
+;; step, and stops touching it at the update of a step with no collision
+;; since the update before.
+task Touch (f) {
+    loop {
+        await :hit until it@0 == PLAYER
+        f()
+        loop {
+            await :update
+            val again = par :any {
+                await :update
+                false
+            } with {
+                await :hit until it@0 == PLAYER
+                true
+            }
+            while again
+        }
+    }
+}
+
+;; The part of a trigger that every trigger has: its object of the
+;; collisions, which the player touches. Gives the id.
+func trigger_new (life, o) {
+    obj_new(o.x, o.y, o.width || 32, o.height || 32, COL.TOUCHABLE, KIND.TRIGGER)
+}
+
 ;; A trigger that runs a script, when the player touches it, or when he
-;; presses up in it (a "button"). (`ScriptTrigger`, `TriggerBase`)
-;;
-;; The player touches it in the collisions of a step, and stops touching
-;; it at the update of a step with no collision since the update before.
-;; He presses up in it in his own collision with it, which reaches the
-;; trigger as the event `:activate`.
+;; presses up in it (a "button"). (`ScriptTrigger`) He presses up in it in
+;; his own collision with it, which reaches the trigger as `:activate`.
 task ScriptTrigger (life, scripts, env, o) {
-    val id = obj_new(o.x, o.y, o.width || 32, o.height || 32, COL.TOUCHABLE, KIND.TRIGGER)
+    val id = trigger_new(life, o)
     set pub = [resp=HIT.ABORT]
     set life.byid@id = task
     defer {
@@ -133,24 +167,40 @@ task ScriptTrigger (life, scripts, env, o) {
         }
     }
     par {
-        loop {
-            await :hit until it@0 == PLAYER
-            event(EVENT.TOUCH)
-            loop {
-                await :update
-                val again = par :any {
-                    await :update
-                    false
-                } with {
-                    await :hit until it@0 == PLAYER
-                    true
-                }
-                while again
-            }
-        }
+        await Touch(\{ event(EVENT.TOUCH) })
     } with {
-        loop e on :activate {
+        loop on :activate {
             event(EVENT.ACTIVATE)
+        }
+    }
+}
+
+;; A trigger that starts a sequence when the player touches it: the end of
+;; the level, or the stop of Tux at its end. (`SequenceTrigger`)
+task SequenceTrigger (life, o) {
+    val id = trigger_new(life, o)
+    set pub = [resp=HIT.ABORT]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+    }
+    val seq = if o.sequence => SEQS@(o.sequence) => SEQ.END
+    await Touch(\{
+        `tx_player_trigger_sequence(&tg_tux, (int) $seq.u.i, NULL);`
+    })
+}
+
+;; The end of a level, Tux walks out (`EndSequenceWalk`). It moves as an
+;; object of the sector, after the others, or alone, when Tux was stopped.
+;; As every object, it enters the sector at the end of the step in which
+;; it is created (`:flush`), and moves from the next step on.
+task EndSequenceWalk (life) {
+    await :flush
+    loop {
+        await <:update || :endseq>
+        if `:boolean tg_end_running()` {
+            set life.done = true
         }
     }
 }
@@ -158,7 +208,10 @@ task ScriptTrigger (life, scripts, env, o) {
 ;; A life in a level: from the spawn of Tux to his death (`:dead`).
 ;; (`GameSession::restart_level` up to the next one.)
 
-task Life (lvl, ts) {
+;; `cont` is true when the life starts in the middle of a step, at the
+;; restart of the level after a death (`check_end_conditions`). It gives
+;; :restart at a death, and :won at the end of the level.
+task Life (lvl, ts, cont) {
     do {
         val n = ts.max + 1
         `tg_sector($n.u.i);`
@@ -176,7 +229,7 @@ task Life (lvl, ts) {
     }
 
     pin objs = tasks()
-    pin life = [byid=[]]
+    pin life = [byid=[], endseq=false, running=false, done=false, stopped=false]
     ```
     tg_cb_st = A_OK;
     ```
@@ -197,6 +250,33 @@ task Life (lvl, ts) {
         }
     }
     `tg_trigger = $trigger;`
+
+    ;; `GameSession::start_sequence`
+    val func sequence (seq) {
+        if seq == SEQ.STOPTUX {
+            if !life.endseq {
+                sequence(SEQ.END)
+            }
+            if life.endseq {
+                set life.stopped = true
+                `tg_end_stopped = 1;`
+            }
+        } else {
+            `tx_player_set_winning(&tg_tux);`
+            if !life.running {
+                if !life.endseq && (seq == SEQ.END) {
+                    set life.endseq = true
+                    spawn @objs EndSequenceWalk(life)
+                }
+                if life.endseq {
+                    `tg_end_prepare();`
+                    set life.running = true
+                    `tg_end_start();`
+                }
+            }
+        }
+    }
+    `tg_sequence = $sequence;`
 
     ;; the scripts of this life, and what they see
     pin scripts = tasks()
@@ -222,7 +302,8 @@ task Life (lvl, ts) {
                     }
                     match o.tag {
                         :coin          => spawn @objs Coin(life, o.x, o.y)
-                        :scripttrigger => spawn @objs ScriptTrigger(life, scripts, env, o)
+                        :scripttrigger   => spawn @objs ScriptTrigger(life, scripts, env, o)
+                        :sequencetrigger => spawn @objs SequenceTrigger(life, o)
                         else           => nil
                     }
                 }
@@ -250,33 +331,59 @@ task Life (lvl, ts) {
         spawn @scripts script.Script(env, init, "init-script")
     }
 
-    loop e on :step {
-        `tg_step_begin();`
-        loop _,k in e {
-            if type(k) == :table {
-                val c, v = k@0, k@1
-                `tg_key($c.u.i, $v.u.i);`
+    ;; the steps: `GameSession::update`
+    var first = cont
+    var finishing = false
+    val r = loop {
+        if !first {
+            val e = await :step
+            `tg_step_begin();`
+            loop _,k in e {
+                if type(k) == :table {
+                    val c, v = k@0, k@1
+                    `tg_key($c.u.i, $v.u.i);`
+                }
+            }
+            ;; `check_end_conditions`
+            if life.done {
+                set finishing = true
+            } else {
+                if !life.endseq && `:boolean tg_tux.dead` {
+                    break :restart
+                }
             }
         }
-        emit :scripts
-        `tg_step_player();`
-        emit :update
-        ```
-        tg_step_end();
-        if (tg_cb_st != A_OK) {
-            st = tg_cb_st;
+        set first = false
+
+        if life.running && life.stopped {
+            ;; Tux is stopped: only the sequence moves
+            emit :endseq
+        } else {
+            ;; `Sector::update`: the scripts, the objects, the collisions
+            emit :scripts
+            `tg_step_player();`
+            emit :update
+            ```
+            tg_step_end();
+            if (tg_cb_st != A_OK) {
+                st = tg_cb_st;
+            }
+            ```
+            emit :flush
         }
-        ```
         emit @:global :stepped
-        until `:boolean tg_tux.dead`
+        until finishing, :won
     }
-    :dead
+    r
 }
 
 task Session (path) {
     pin lvl = data.load(path)
     pin ts  = data.tileset("/images/tiles.strf")
+    var cont = false
     loop {
-        await Life(lvl, ts)
+        val r = await Life(lvl, ts, cont)
+        until r == :won
+        set cont = true
     }
 }
