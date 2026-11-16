@@ -84,7 +84,7 @@ index e8200a1..4ce24be 100644
    graphicsRandom.seed(0);
    //const char *how = config->random_seed? ", user fixed.": ", from time().";
 diff --git a/src/supertux/screen_manager.cpp b/src/supertux/screen_manager.cpp
-index 5190cc5..2317031 100644
+index 5190cc5..183486d 100644
 --- a/src/supertux/screen_manager.cpp
 +++ b/src/supertux/screen_manager.cpp
 @@ -45,6 +45,8 @@
@@ -119,7 +119,7 @@ index 5190cc5..2317031 100644
      elapsed_time -= seconds_per_step;
    }
  
-@@ -682,8 +692,8 @@ void ScreenManager::loop_iter()
+@@ -682,12 +692,13 @@ void ScreenManager::loop_iter()
    // limit the draw time offset to at most one step.
    float time_offset = m_speed * speed_multiplier * std::min(elapsed_time, seconds_per_step);
  
@@ -130,7 +130,12 @@ index 5190cc5..2317031 100644
      // Draw a frame
      Compositor compositor(m_video_system, g_config->frame_prediction ? time_offset : 0.0f);
      draw(compositor, *m_fps_statistics);
-@@ -712,6 +722,7 @@ void
+     m_fps_statistics->report_frame();
++    TuxTestTrace::shot(m_video_system);
+   }
+ 
+   SoundManager::current()->update();
+@@ -712,6 +723,7 @@ void
  ScreenManager::run()
  {
    Integration::init_all();
@@ -140,10 +145,10 @@ index 5190cc5..2317031 100644
  #ifdef __EMSCRIPTEN__
 diff --git a/src/supertux/tuxtest.cpp b/src/supertux/tuxtest.cpp
 new file mode 100644
-index 0000000..893bf39
+index 0000000..7b81e71
 --- /dev/null
 +++ b/src/supertux/tuxtest.cpp
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,190 @@
 +// Test mode for the port to Atmos (ia-atmos/sdl-tux). See tuxtest.hpp.
 +
 +#include "supertux/tuxtest.hpp"
@@ -159,6 +164,10 @@ index 0000000..893bf39
 +#include "supertux/game_session.hpp"
 +#include "supertux/player_status.hpp"
 +#include "supertux/sector.hpp"
++#include "video/sdl_surface_ptr.hpp"
++#include "video/video_system.hpp"
++
++#include <SDL_image.h>
 +
 +bool  TuxTestTrace::s_fast   = false;
 +bool  TuxTestTrace::s_nodraw = false;
@@ -169,6 +178,9 @@ index 0000000..893bf39
 +bool  TuxTestTrace::s_nointro = false;
 +
 +namespace {
++
++struct Shot { long tick; std::string path; };
++std::vector<Shot> g_shots;
 +
 +struct Input { long tick; Control control; bool value; };
 +std::vector<Input> g_inputs;
@@ -230,6 +242,18 @@ index 0000000..893bf39
 +  s_nointro = getenv("TUX_NOINTRO") != nullptr;
 +  if ((v = getenv("TUX_TICKS")))  s_ticks = atol(v);
 +  if ((v = getenv("TUX_INPUT")))  parse_inputs(v);
++  if ((v = getenv("TUX_SHOT"))) {   // "tick:path,..."
++    std::string src(v);
++    size_t i = 0;
++    while (i < src.size()) {
++      size_t j = src.find(',', i);
++      if (j == std::string::npos) j = src.size();
++      std::string item = src.substr(i, j-i);
++      size_t a = item.find(':');
++      g_shots.push_back({ atol(item.substr(0,a).c_str()), item.substr(a+1) });
++      i = j + 1;
++    }
++  }
 +  if ((v = getenv("TUX_TRACE"))) {
 +    s_trace = (strcmp(v,"-") == 0) ? stdout : fopen(v, "w");
 +    if (!s_trace) {
@@ -292,6 +316,20 @@ index 0000000..893bf39
 +  }
 +}
 +
++// The screen after the frame of the tick `s_tick` is drawn, in a PNG.
++void
++TuxTestTrace::shot(VideoSystem& video)
++{
++  for (const auto& s : g_shots) {
++    if (s.tick == s_tick) {
++      SDLSurfacePtr surface = video.make_screenshot();
++      if (surface) {
++        IMG_SavePNG(surface.get(), s.path.c_str());
++      }
++    }
++  }
++}
++
 +void
 +TuxTestTrace::badguy_state(const BadGuy& b, int from, int to)
 +{
@@ -303,10 +341,10 @@ index 0000000..893bf39
 +}
 diff --git a/src/supertux/tuxtest.hpp b/src/supertux/tuxtest.hpp
 new file mode 100644
-index 0000000..fa2f74f
+index 0000000..56493bd
 --- /dev/null
 +++ b/src/supertux/tuxtest.hpp
-@@ -0,0 +1,32 @@
+@@ -0,0 +1,34 @@
 +// Test mode for the port to Atmos (ia-atmos/sdl-tux): scripted input by
 +// tick, a trace, and a run with no pacing. All of it is off unless one
 +// of the TUX_* environment variables is set. See tools/bench/README.md
@@ -319,6 +357,7 @@ index 0000000..fa2f74f
 +
 +class Controller;
 +class BadGuy;
++class VideoSystem;
 +
 +class TuxTestTrace
 +{
@@ -336,6 +375,7 @@ index 0000000..fa2f74f
 +  static void input(Controller& controller);   // before a logical step
 +  static void step();                          // after a logical step
 +  static void badguy_state(const BadGuy& b, int from, int to);
++  static void shot(VideoSystem& video);         // after a frame is drawn
 +};
 +
 +#endif

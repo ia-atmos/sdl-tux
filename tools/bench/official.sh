@@ -17,6 +17,8 @@
 #   REALTIME=1  keeps the pace of 15 ms per step
 #   NOTRACE=1   no trace (to measure)
 #   INTRO=1     keeps the intro screen of the level, which a key dismisses
+#   SHOT=t:f.png,...  saves the screen after the frame of the tick t (drawn);
+#               t must be lower than TICKS
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 OFFICIAL=${OFFICIAL:-$ROOT/../official/supertux}
 UD=$(mktemp -d)
@@ -26,6 +28,7 @@ export SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy
 export TUX_SEED=1 TUX_TICKS="$2" TUX_INPUT="$3"
 [ -z "$NOTRACE" ]  && export TUX_TRACE=-
 [ -z "$INTRO" ]    && export TUX_NOINTRO=1
+[ -n "$SHOT" ]     && export TUX_SHOT="$SHOT" DRAW=1
 [ -n "$OBJS" ]     && export TUX_TRACE_OBJS=1
 [ -z "$DRAW" ]     && export TUX_NODRAW=1
 [ -z "$REALTIME" ] && export TUX_FAST=1

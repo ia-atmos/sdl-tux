@@ -32,6 +32,7 @@ All of it is off unless a variable is set:
 | `TUX_TRACE_OBJS=1` | the trace also has every badguy, every tick |
 | `TUX_FAST=1` | exactly one logical step per iteration of the loop, with no sleep |
 | `TUX_NODRAW=1` | draws no frame |
+| `TUX_SHOT=t:f.png,...` | saves the screen to `f.png` after the frame of the tick `t` is drawn (`t` lower than `TUX_TICKS`) |
 | `TUX_NOINTRO=1` | a level starts with no intro screen (the one with its name and statistics, which a key dismisses) |
 
 A logical step is 15 ms (`LOGICAL_FPS = 1000/15`). The trace is the
