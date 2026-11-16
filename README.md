@@ -20,7 +20,7 @@ The plan is in `.claude/plans/261113-sdl-tux.md`, and what is pending in
 - [ ] T5, in course: objects as tasks (the coin), and the interpreter of
       the scripts of a level (`game/script.atm`).
 
-Twenty scripted runs, of up to 3000 ticks, give the trace of the official
+Twenty-three scripted runs, of up to 3000 ticks, give the trace of the official
 game line by line (`tools/compare.sh`).
 
 ## Tests
