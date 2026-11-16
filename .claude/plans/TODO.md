@@ -7,7 +7,7 @@ is left open.
 
 The plan is `261113-sdl-tux.md`, in this directory.
 
-Last update: 2026-11-14.
+Last update: 2026-11-16.
 
 ## A. Decisions waiting for an answer
 
@@ -42,7 +42,7 @@ See C for the decisions taken as recommended.
 | 5 | The tiles of a tilemap stay with the runs of the original (`-5 0` is five times the tile `0`), decoded when the level loads. The largest level loads with `X.load` in 18 ms | 2026-11-14 |
 
 | 6 | The order of the milestones changed: T4 (collisions and the player, with no screen) before T2 and T3, which need `env-sdl` | 2026-11-14 |
-| 7 | 32-bit reals: reported to the session of the compiler, which is putting it to the author. Until then the arithmetic of the player and of the badguys goes in C kernels | 2026-11-14 |
+| 7 | 32-bit reals: the author chose on 2026-11-16 that the compiler gains them (a build option where a real is a C `float`, or an explicit type; the form is open). Sent to the session of the compiler with what Tux needs and a test. Until it exists, no badguys nor blocks are written; the player and the collisions stay in C until then | 2026-11-16 |
 
 ### Places where exactness forces the form (candidates to relax later)
 
