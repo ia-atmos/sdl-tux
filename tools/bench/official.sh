@@ -13,6 +13,7 @@
 # Environment:
 #   OFFICIAL    the checkout built by build.sh (default: ../official/supertux)
 #   OBJS=1      the trace also has every badguy, every tick
+#   CAMERA=1    the trace also has the translation of the camera, every tick
 #   DRAW=1      draws the frames (to the dummy video driver)
 #   REALTIME=1  keeps the pace of 15 ms per step
 #   NOTRACE=1   no trace (to measure)
@@ -30,6 +31,7 @@ export TUX_SEED=1 TUX_TICKS="$2" TUX_INPUT="$3"
 [ -z "$INTRO" ]    && export TUX_NOINTRO=1
 [ -n "$SHOT" ]     && export TUX_SHOT="$SHOT" DRAW=1
 [ -n "$OBJS" ]     && export TUX_TRACE_OBJS=1
+[ -n "$CAMERA" ]   && export TUX_TRACE_CAMERA=1
 [ -z "$DRAW" ]     && export TUX_NODRAW=1
 [ -z "$REALTIME" ] && export TUX_FAST=1
 
@@ -38,4 +40,4 @@ LEVEL="$OFFICIAL/data/$1"
 
 "$OFFICIAL/build/supertux2" --renderer sdl --datadir "$OFFICIAL/data" \
     --userdir "$UD" --disable-sound --disable-music -g 1280x800 \
-    "$LEVEL" 2>/dev/null | grep '^[0-9]* [PBE] '
+    "$LEVEL" 2>/dev/null | grep '^[0-9]* [PBEC] '

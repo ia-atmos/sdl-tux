@@ -145,10 +145,10 @@ index 5190cc5..183486d 100644
  #ifdef __EMSCRIPTEN__
 diff --git a/src/supertux/tuxtest.cpp b/src/supertux/tuxtest.cpp
 new file mode 100644
-index 0000000..7b81e71
+index 0000000..37903e1
 --- /dev/null
 +++ b/src/supertux/tuxtest.cpp
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,197 @@
 +// Test mode for the port to Atmos (ia-atmos/sdl-tux). See tuxtest.hpp.
 +
 +#include "supertux/tuxtest.hpp"
@@ -164,6 +164,7 @@ index 0000000..7b81e71
 +#include "supertux/game_session.hpp"
 +#include "supertux/player_status.hpp"
 +#include "supertux/sector.hpp"
++#include "object/camera.hpp"
 +#include "video/sdl_surface_ptr.hpp"
 +#include "video/video_system.hpp"
 +
@@ -176,6 +177,7 @@ index 0000000..7b81e71
 +FILE* TuxTestTrace::s_trace  = nullptr;
 +bool  TuxTestTrace::s_objs   = false;
 +bool  TuxTestTrace::s_nointro = false;
++bool  TuxTestTrace::s_camera = false;
 +
 +namespace {
 +
@@ -240,6 +242,7 @@ index 0000000..7b81e71
 +  s_nodraw = getenv("TUX_NODRAW") != nullptr;
 +  s_objs   = getenv("TUX_TRACE_OBJS") != nullptr;
 +  s_nointro = getenv("TUX_NOINTRO") != nullptr;
++  s_camera = getenv("TUX_TRACE_CAMERA") != nullptr;
 +  if ((v = getenv("TUX_TICKS")))  s_ticks = atol(v);
 +  if ((v = getenv("TUX_INPUT")))  parse_inputs(v);
 +  if ((v = getenv("TUX_SHOT"))) {   // "tick:path,..."
@@ -295,6 +298,10 @@ index 0000000..7b81e71
 +        p->m_dying, p->m_dead, p->m_winning,
 +        p->get_status().coins);
 +    }
++    if (s_camera) {
++      Vector t = sector.get_camera().get_translation();
++      fprintf(s_trace, "%ld C %.9g %.9g\n", s_tick, t.x, t.y);
++    }
 +    if (s_objs) {
 +      for (const auto& obj : sector.get_objects()) {
 +        BadGuy* b = dynamic_cast<BadGuy*>(obj.get());
@@ -341,10 +348,10 @@ index 0000000..7b81e71
 +}
 diff --git a/src/supertux/tuxtest.hpp b/src/supertux/tuxtest.hpp
 new file mode 100644
-index 0000000..56493bd
+index 0000000..0173638
 --- /dev/null
 +++ b/src/supertux/tuxtest.hpp
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,35 @@
 +// Test mode for the port to Atmos (ia-atmos/sdl-tux): scripted input by
 +// tick, a trace, and a run with no pacing. All of it is off unless one
 +// of the TUX_* environment variables is set. See tools/bench/README.md
@@ -369,6 +376,7 @@ index 0000000..56493bd
 +  static FILE* s_trace;    // TUX_TRACE: where the trace goes (nullptr: off)
 +  static bool  s_objs;     // TUX_TRACE_OBJS: the badguys too, every tick
 +  static bool  s_nointro;  // TUX_NOINTRO: a level starts with no intro screen
++  static bool  s_camera;   // TUX_TRACE_CAMERA: the translation of the camera too
 +
 +  static void init();
 +  static int  seed(int def);

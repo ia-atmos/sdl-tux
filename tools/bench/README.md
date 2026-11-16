@@ -30,6 +30,7 @@ All of it is off unless a variable is set:
 | `TUX_TICKS=n` | exits after `n` logical steps |
 | `TUX_TRACE=file` | writes the trace (`-` is the standard output) |
 | `TUX_TRACE_OBJS=1` | the trace also has every badguy, every tick |
+| `TUX_TRACE_CAMERA=1` | the trace also has the translation of the camera, every tick |
 | `TUX_FAST=1` | exactly one logical step per iteration of the loop, with no sleep |
 | `TUX_NODRAW=1` | draws no frame |
 | `TUX_SHOT=t:f.png,...` | saves the screen to `f.png` after the frame of the tick `t` is drawn (`t` lower than `TUX_TICKS`) |
@@ -57,6 +58,8 @@ Numbers are 32-bit floats printed with `%.9g`, which is exact.
   of `BadGuy::State`: 0 init, 1 inactive, 2 active, 3 squished, 4
   squished and fading, 5 falling, 6 burning, 7 melting, 8 ground
   melting, 9 inside melting, 10 gear.
+- `C`, per tick, with `TUX_TRACE_CAMERA`: the translation of the camera,
+  `x y` (the position in the sector of the top left of the screen).
 - `B`, per tick and per badguy, with `TUX_TRACE_OBJS`: its id, its
   class, position, velocity, `s` state, `d` direction.
 
