@@ -8,8 +8,6 @@
 
 include "../game/session.atm"
 
-pin CONTROLS = [left=0, right=1, up=2, down=3, jump=4, action=5, item=6]
-
 val path, ticks, input = ...
 
 ;; the input: tick -> [[control, value], ...]

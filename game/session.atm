@@ -9,11 +9,16 @@
 ;;
 ;;      :stepped
 
-include "data.atm"
-
 ```:prelude
 #include "game/tux.h"
 ```
+
+include "data.atm"
+include "script.atm"
+
+;; The controls, in the order of the original (`Control`).
+pin CONTROLS = [left=0, right=1, up=2, down=3, jump=4, action=5, item=6,
+                start=7, escape=8]
 
 ;; The collision groups and the responses to a collision, as in the
 ;; original.
@@ -23,7 +28,7 @@ pin HIT = [ABORT=0, CONTINUE=1, FORCE=2, LEFT=1, RIGHT=2, TOP=4, BOTTOM=8, CRUSH
 val PLAYER = 0      ;; the id of the player in a collision
 
 ;; What the session keeps across the lives of a level.
-pin status = [coins=100]
+pin status = [coins=100, state=[]]
 
 ;; The objects of a sector are tasks in a pool, in the order of the
 ;; level. Each one owns an object of the collisions, with an id, and
@@ -46,6 +51,53 @@ task Coin (life, x, y) {
     await :hit until (it@0 == PLAYER) && `:boolean tg_touches_player($id.u.i, -0.1f)`
     set status.coins += 1
 }
+
+;; The player, as the scripts see it (`Player::register_class`). Each
+;; method receives the vector of its arguments.
+pin TUX = [
+    walk = func (a) {
+        val x = a@0
+        `tx_player_walk(&tg_tux, (float) a_dbl($x));`
+    },
+    set_velocity = func (a) {
+        val x, y = a@0, a@1
+        `tx_player_set_velocity(&tg_tux, (float) a_dbl($x), (float) a_dbl($y));`
+    },
+    get_velocity_x = func (a) { `:number tg_tux.physic.vx` },
+    get_velocity_y = func (a) { `:number tg_tux.physic.vy` },
+    do_jump = func (a) {
+        val y = a@0
+        `tx_player_do_jump(&tg_tux, (float) a_dbl($y));`
+    },
+    do_duck     = func (a) { `tx_player_do_duck(&tg_tux);` },
+    do_backflip = func (a) { `tx_player_do_backflip(&tg_tux);` },
+    do_cheer    = func (a) { `tx_player_do_cheer(&tg_tux);` },
+    activate    = func (a) { `tx_player_activate(&tg_tux);` },
+    deactivate  = func (a) { `tx_player_deactivate(&tg_tux);` },
+    set_dir = func (a) {
+        val r = script.truthy(a@0)
+        `tx_player_set_dir(&tg_tux, a_truthy($r));`
+    },
+    kill = func (a) {
+        val c = script.truthy(a@0)
+        `tx_player_kill(&tg_tux, a_truthy($c));`
+    },
+    use_scripting_controller = func (a) {
+        val yes = script.truthy(a@0)
+        `tx_player_use_scripting_controller(&tg_tux, a_truthy($yes));`
+    },
+    do_scripting_controller = func (a) {
+        val c = CONTROLS@(a@0)
+        val yes = script.truthy(a@1)
+        if c != nil {
+            `tx_player_do_scripting_controller(&tg_tux, (int) $c.u.i, a_truthy($yes));`
+        }
+    },
+    add_coins = func (a) {
+        set status.coins = math.min(status.coins + a@0, 9999)
+    },
+    get_coins = func (a) { status.coins },
+]
 
 ;; A life in a level: from the spawn of Tux to his death (`:dead`).
 ;; (`GameSession::restart_level` up to the next one.)
@@ -83,9 +135,19 @@ task Life (lvl, ts) {
     }
     `tg_dispatch = $dispatch;`
 
+    ;; the scripts of this life, and what they see
+    pin scripts = tasks()
+    pin env = [
+        objects = [Tux=TUX],
+        funcs   = [],
+        globals = [state=status.state],
+    ]
+
     var x, y
+    var init
     loop _,s in lvl {
         if (type(s) == :table) && (s.tag == :sector) && (s.name == "main") {
+            set init = s.init_script
             loop _,o in s {
                 if type(o) == :table {
                     if (o.tag == :tilemap) && o.solid {
@@ -118,6 +180,11 @@ task Life (lvl, ts) {
     `tg_flush();`
     `tg_player((float)a_dbl($x), (float)a_dbl($y));`
 
+    ;; `Sector::activate` runs the init script, up to its first wait
+    if init {
+        spawn @scripts script.Script(env, init, "init-script")
+    }
+
     loop e on :step {
         `tg_step_begin();`
         loop _,k in e {
@@ -126,6 +193,7 @@ task Life (lvl, ts) {
                 `tg_key($c.u.i, $v.u.i);`
             }
         }
+        emit :scripts
         ```
         tg_step_end();
         if (tg_cb_st != A_OK) {
