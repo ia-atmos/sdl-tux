@@ -47,3 +47,8 @@ echo "player: ok"
 
 # the scripted runs give the traces of the official game
 tools/compare.sh
+
+# the same runs, through the game over the SDL environment
+if [ -d "$ROOT/../env-sdl" ]; then
+    VIA=env tools/compare.sh | grep -c '^same' | sed 's/^/env: same /'
+fi
