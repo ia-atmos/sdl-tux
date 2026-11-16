@@ -47,6 +47,9 @@ spawn {
     }
 }
 
+if os.getenv("TUX_TRACE_CAMERA") {
+    `tg_trace_camera = 1;`
+}
 spawn {
     if trace {
         loop on :stepped {

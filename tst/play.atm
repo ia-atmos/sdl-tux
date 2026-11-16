@@ -24,6 +24,9 @@ if input && (input != "") && (input != "-") {
     }
 }
 
+if os.getenv("TUX_TRACE_CAMERA") {
+    `tg_trace_camera = 1;`
+}
 spawn {
     loop on :stepped {
         val c = status.coins

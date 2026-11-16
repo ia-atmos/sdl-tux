@@ -7,12 +7,15 @@
 
 #include <stdio.h>
 #include "player.h"
+#include "camera.h"
 
 static TxSector     tg_sec;
 static TxPlayer     tg_tux;
 static TxController tg_ctl;
 static TxPlayerHost tg_host;
 static long         tg_tick;
+static TcCamera     tg_cam;
+static int          tg_trace_camera;    /* TUX_TRACE_CAMERA: the lines `C` */
 static uint8_t*     tg_objtile;     /* by tile id: the tile becomes an object */
 
 /* The objects of the sector that are tasks in Atmos, by id (from 1; the
@@ -319,6 +322,14 @@ static void tg_player (float x, float y) {
         npos.y -= 32;
         tx_player_set_pos(&tg_tux, npos);
     }
+
+    /* FIXME: This is a really dirty workaround for this strange camera jump */
+    tc_init(&tg_cam, 1280.0f, 800.0f);
+    tx_player_set_pos(&tg_tux, tx_vec_add(tx_obj_get_pos(&tg_tux.col), tx_vec(-32, 0)));
+    tc_reset(&tg_cam, &tg_sec, tx_obj_get_pos(&tg_tux.col));
+    tc_update(&tg_cam, &tg_sec, &tg_tux, 1);
+    tx_player_set_pos(&tg_tux, tx_vec_add(tx_obj_get_pos(&tg_tux.col), tx_vec(32, 0)));
+    tc_update(&tg_cam, &tg_sec, &tg_tux, 1);
 }
 
 /* A logical step, in the order of the original: the time, the input
@@ -344,6 +355,7 @@ static void tg_key (int control, int value) {
  * manager), then the other objects, which are tasks in Atmos. */
 static void tg_step_player (void) {
     tx_player_update(&tg_tux, tg_dt);
+    tc_update(&tg_cam, &tg_sec, &tg_tux, tg_dt);
 }
 
 /* The collisions, and the objects that come and go. */
@@ -365,6 +377,9 @@ static void tg_trace (FILE* f, int coins) {
         p->bonus, d, p->on_ground_flag, p->jumping, p->duck,
         tx_timer_started(&p->skidding_timer), p->swimming,
         p->dying, p->dead, p->winning, coins);
+    if (tg_trace_camera) {
+        fprintf(f, "%ld C %.9g %.9g\n", tg_tick, tg_cam.translation.x, tg_cam.translation.y);
+    }
 }
 
 #endif
