@@ -28,6 +28,21 @@ static int     tg_objs_cap;
 static AVal    tg_dispatch;
 static AStatus tg_cb_st;
 
+/* `ScreenManager::m_speed`: 0.5 in the end sequence. The length of a
+ * step is `seconds_per_step * m_speed * speed_multiplier`. */
+static float tg_speed = 1.0f;
+static float tg_dt;
+
+/* The end sequence that walks (`EndSequenceWalk`): its controller, its
+ * timer, and the last position of the player. */
+static TxController tg_end_ctl;
+static TxTimer      tg_end_timer;
+static float        tg_end_last_x;
+static int          tg_end_stopped;     /* stop_tux: the player stops */
+
+/* The function of the game that starts a sequence: f(seq) (TX_SEQ_*). */
+static AVal tg_sequence;
+
 /* The kind of each object, for the player (TX_OTHER_*), by id. */
 static int*    tg_kinds;
 
@@ -91,6 +106,53 @@ static void tg_on_trigger (void* user, TxObj* other, int event) {
     } else {
         tg_cb_st = st;
     }
+}
+
+static void tg_on_sequence (void* user, int seq, const void* data) {
+    (void) user; (void) data;
+    if (tg_cb_st != A_OK) {
+        return;
+    }
+    int base = a_top;
+    a_push(a_int(seq));
+    AStatus st = a_call(tg_sequence, base);
+    if (st == A_OK) {
+        a_settop(base);
+    } else {
+        tg_cb_st = st;
+    }
+}
+
+/* `GameSession::start_sequence`, for the player who calls it. */
+static void tg_end_prepare (void) {
+    tx_player_set_ending_direction(&tg_tux, (tg_tux.physic.vx < 0) ? -1 : 1);
+    tx_player_set_controller(&tg_tux, &tg_end_ctl);
+    tx_player_set_speedlimit(&tg_tux, 230); /* MAX_WALK_XM */
+}
+
+/* `EndSequence::start`, `EndSequenceWalk::starting`, and what
+ * `GameSession::start_sequence` does after them. */
+static void tg_end_start (void) {
+    tg_speed = 0.5f;
+    tg_end_last_x = -1;
+    tx_timer_start(&tg_end_timer, 7.3f * tg_speed);
+    tx_player_set_winning(&tg_tux);
+    tx_player_set_controller(&tg_tux, &tg_end_ctl);
+    tx_player_set_speedlimit(&tg_tux, 230); /* MAX_WALK_XM */
+}
+
+/* `EndSequenceWalk::running`: true when the sequence is done. */
+static int tg_end_running (void) {
+    tx_code_controller_update(&tg_end_ctl);
+    int dir = tx_player_get_ending_direction(&tg_tux);
+    if (dir && !tg_end_stopped) {
+        tx_code_controller_press(&tg_end_ctl, dir > 0 ? TX_CONTROL_RIGHT : TX_CONTROL_LEFT, true);
+        if ((int) tg_end_last_x == (int) tg_tux.col.bbox.x1) {
+            tx_code_controller_press(&tg_end_ctl, TX_CONTROL_JUMP, true);
+        }
+        tg_end_last_x = tg_tux.col.bbox.x1;
+    }
+    return tx_timer_check(&tg_end_timer);
 }
 
 static int tg_obj_new (float x, float y, float w, float h, int group, int kind) {
@@ -237,6 +299,10 @@ static int tg_convert_next (void) {
 static void tg_player (float x, float y) {
     memset(&tg_host, 0, sizeof(tg_host));
     tg_host.trigger_event = tg_on_trigger;
+    tg_host.start_sequence = tg_on_sequence;
+    tx_controller_reset(&tg_end_ctl);
+    tx_timer_init(&tg_end_timer);
+    tg_end_stopped = 0;
     tx_player_init(&tg_tux, &tg_sec, &tg_ctl, &tg_host, TX_BONUS_NONE, 0);
     tg_tux.col.user = &tg_tux;
     tx_sector_add(&tg_sec, &tg_tux.col);
@@ -259,7 +325,8 @@ static void tg_player (float x, float y) {
  * (`key`, `val` arrive before it, with tg_key), the objects, the
  * collisions. */
 static void tg_step_begin (void) {
-    tx_game_time += 1.0f / (1000.0f / 15.0f);
+    tg_dt = (1.0f / (1000.0f / 15.0f)) * tg_speed * 1.f;
+    tx_game_time += tg_dt;
     tg_tick++;
     tx_controller_update(&tg_ctl);
 }
@@ -276,8 +343,7 @@ static void tg_key (int control, int value) {
 /* The objects move: the player first (it has the priority of the object
  * manager), then the other objects, which are tasks in Atmos. */
 static void tg_step_player (void) {
-    float dt = 1.0f / (1000.0f / 15.0f);
-    tx_player_update(&tg_tux, dt);
+    tx_player_update(&tg_tux, tg_dt);
 }
 
 /* The collisions, and the objects that come and go. */
