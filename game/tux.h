@@ -28,6 +28,13 @@ static int     tg_objs_cap;
 static AVal    tg_dispatch;
 static AStatus tg_cb_st;
 
+/* The kind of each object, for the player (TX_OTHER_*), by id. */
+static int*    tg_kinds;
+
+/* The function of the game that receives an event that the player gives
+ * to an object: f(id, event), as `TriggerBase::event` (TX_EVENT_*). */
+static AVal    tg_trigger;
+
 enum { TG_HIT_LEFT=1, TG_HIT_RIGHT=2, TG_HIT_TOP=4, TG_HIT_BOTTOM=8, TG_HIT_CRUSH=16 };
 
 static void tg_on_solid (TxObj* self, const TxHit* hit) {
@@ -44,7 +51,8 @@ static void tg_on_tile (TxObj* self, uint32_t attrs) {
 
 static int tg_on_collision (TxObj* self, TxObj* other, const TxHit* hit) {
     if (self->user == &tg_tux) {
-        return tx_player_collision(&tg_tux, TX_OTHER_OTHER, other, hit);
+        int kind = (other->id > 0) ? tg_kinds[other->id-1] : TX_OTHER_OTHER;
+        return tx_player_collision(&tg_tux, kind, other, hit);
     }
     if (tg_cb_st != A_OK) {
         return TX_ABORT_MOVE;
@@ -69,11 +77,29 @@ static int tg_on_collision (TxObj* self, TxObj* other, const TxHit* hit) {
     return ret;
 }
 
-static int tg_obj_new (float x, float y, float w, float h, int group) {
+static void tg_on_trigger (void* user, TxObj* other, int event) {
+    (void) user;
+    if (tg_cb_st != A_OK) {
+        return;
+    }
+    int base = a_top;
+    a_push(a_int(other->id));
+    a_push(a_int(event));
+    AStatus st = a_call(tg_trigger, base);
+    if (st == A_OK) {
+        a_settop(base);
+    } else {
+        tg_cb_st = st;
+    }
+}
+
+static int tg_obj_new (float x, float y, float w, float h, int group, int kind) {
     if (tg_objs_n == tg_objs_cap) {
         tg_objs_cap = tg_objs_cap ? tg_objs_cap*2 : 256;
         tg_objs = realloc(tg_objs, tg_objs_cap * sizeof(TxObj*));
+        tg_kinds = realloc(tg_kinds, tg_objs_cap * sizeof(int));
     }
+    tg_kinds[tg_objs_n] = kind;
     TxObj* o = malloc(sizeof(TxObj));
     tx_obj_init(o, group);
     tx_obj_set_size(o, w, h);
@@ -210,6 +236,7 @@ static int tg_convert_next (void) {
 /* The player at a spawn position, as `Sector::activate` places it. */
 static void tg_player (float x, float y) {
     memset(&tg_host, 0, sizeof(tg_host));
+    tg_host.trigger_event = tg_on_trigger;
     tx_player_init(&tg_tux, &tg_sec, &tg_ctl, &tg_host, TX_BONUS_NONE, 0);
     tg_tux.col.user = &tg_tux;
     tx_sector_add(&tg_sec, &tg_tux.col);
@@ -246,9 +273,15 @@ static void tg_key (int control, int value) {
     tx_controller_set_control(&tg_ctl, control, value);
 }
 
-static void tg_step_end (void) {
+/* The objects move: the player first (it has the priority of the object
+ * manager), then the other objects, which are tasks in Atmos. */
+static void tg_step_player (void) {
     float dt = 1.0f / (1000.0f / 15.0f);
     tx_player_update(&tg_tux, dt);
+}
+
+/* The collisions, and the objects that come and go. */
+static void tg_step_end (void) {
     for (int i=0; i<tg_sec.maps_n; i++) {
         tx_map_clear_objects_hit_bottom(tg_sec.maps[i]);
     }
