@@ -13,8 +13,8 @@ The plan is in `.claude/plans/261113-sdl-tux.md`, and what is pending in
 - [x] T1: the data of World 1 as Atmos data (`tools/convert.py`, `data/`):
       31 levels, the worldmap, 393 sprites, 3 tilesets. The scripts of the
       levels are data too (`tools/squirrel.py`): 193 of 196.
-- [ ] T2, T3: the game over `env-sdl`, and a level drawn (they wait for
-      that environment).
+- [x] T2: the game over `env-sdl` (`game/main.atm`, `./tux.sh LEVEL`).
+- [ ] T3, in course: a level drawn.
 - [x] T4, for the small Tux: the player and the collisions with no
       screen (`game/`, `tst/play.sh`), death and restart included.
 - [ ] T5, in course: objects as tasks (the coin, the triggers), the
@@ -28,7 +28,8 @@ game line by line (`tools/compare.sh`).
 
     tst/run.sh
 
-It needs the compiler in `../lang` (`ia-atmos/lang`), and, to check the
+`tools/deps.sh` fetches the compiler (`../lang`) and the SDL environment
+(`../env-sdl`) at the commits that the game was tested with. To check the
 conversion again, the official game in `../official/supertux` (see
 `tools/bench/README.md`).
 
