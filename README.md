@@ -15,10 +15,13 @@ The plan is in `.claude/plans/261113-sdl-tux.md`, and what is pending in
       levels are data too (`tools/squirrel.py`): 193 of 196.
 - [ ] T2, T3: the game over `env-sdl`, and a level drawn (they wait for
       that environment).
-- [ ] T4, in course: the player and the collisions with no screen
-      (`game/`, `tst/play.sh`). Eleven scripted runs in an empty level,
-      of up to 3000 ticks, death and restart included, give the trace of
-      the official game line by line (`tools/compare.sh`).
+- [x] T4, for the small Tux: the player and the collisions with no
+      screen (`game/`, `tst/play.sh`), death and restart included.
+- [ ] T5, in course: objects as tasks (the coin), and the interpreter of
+      the scripts of a level (`game/script.atm`).
+
+Twenty scripted runs, of up to 3000 ticks, give the trace of the official
+game line by line (`tools/compare.sh`).
 
 ## Tests
 
