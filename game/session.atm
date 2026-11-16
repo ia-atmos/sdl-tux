@@ -36,6 +36,40 @@ pin EVENT = [TOUCH=`:number TX_EVENT_TOUCH`, ACTIVATE=`:number TX_EVENT_ACTIVATE
 pin SEQ = [END=0, STOPTUX=1, FIREWORKS=2]
 pin SEQS = [endsequence=SEQ.END, stoptux=SEQ.STOPTUX, fireworks=SEQ.FIREWORKS]
 
+;; The offset of a tilemap that has a path, with the path stopped at its
+;; starting node (`TileMap::finish_construction`): the position of the
+;; node, less the handle. A path that moves is not done yet.
+func map_offset (sec, o) {
+    var path = o.path
+    if o.path_ref {
+        loop _,p in sec {
+            if (type(p) == :table) && (p.tag == :path) && (p.name == o.path_ref) {
+                set path = p.path
+            }
+        }
+    }
+    var node
+    var k = 0
+    val start = o.starting_node || 0
+    if path {
+        loop _,n in path {
+            if (type(n) == :table) && (n.tag == :node) {
+                if (k <= start) || (node == nil) {
+                    set node = n
+                }
+                set k += 1
+            }
+        }
+    }
+    if node == nil {
+        return (0, 0)
+    }
+    val h = o.handle || []
+    val w32, h32 = o.width * 32, o.height * 32
+    (node.x - w32 * (h.scale_x || 0) - (h.offset_x || 0),
+     node.y - h32 * (h.scale_y || 0) - (h.offset_y || 0))
+}
+
 ;; A new object of the collisions: its id.
 func obj_new (x, y, w, h, group, kind) {
     `:number tg_obj_new((float)a_dbl($x), (float)a_dbl($y), (float)a_dbl($w), (float)a_dbl($h), (int)$group.u.i, (int)$kind.u.i)`
@@ -295,7 +329,9 @@ task Life (lvl, ts, cont) {
                 if type(o) == :table {
                     if (o.tag == :tilemap) && o.solid {
                         val w, h, tiles = o.width, o.height, o.tiles
+                        val ox, oy = map_offset(s, o)
                         `tg_map($tiles, $w.u.i, $h.u.i);`
+                        `tg_sec.maps[tg_sec.maps_n-1]->offset = tx_vec((float) a_dbl($ox), (float) a_dbl($oy));`
                     }
                     if (o.tag == :spawnpoint) && (o.name == "main") {
                         set x, y = o.x, o.y
