@@ -27,6 +27,16 @@ pin HIT = [ABORT=0, CONTINUE=1, FORCE=2, LEFT=1, RIGHT=2, TOP=4, BOTTOM=8, CRUSH
 
 val PLAYER = 0      ;; the id of the player in a collision
 
+;; The kinds of the objects, for the collisions of the player (TX_OTHER_*),
+;; and the events that the player gives to a trigger (TX_EVENT_*).
+pin KIND = [OTHER=`:number TX_OTHER_OTHER`, TRIGGER=`:number TX_OTHER_TRIGGER`]
+pin EVENT = [TOUCH=`:number TX_EVENT_TOUCH`, ACTIVATE=`:number TX_EVENT_ACTIVATE`]
+
+;; A new object of the collisions: its id.
+func obj_new (x, y, w, h, group, kind) {
+    `:number tg_obj_new((float)a_dbl($x), (float)a_dbl($y), (float)a_dbl($w), (float)a_dbl($h), (int)$group.u.i, (int)$kind.u.i)`
+}
+
 ;; What the session keeps across the lives of a level.
 pin status = [coins=100, state=[]]
 
@@ -41,7 +51,7 @@ pin status = [coins=100, state=[]]
 
 ;; A coin: waits for the player, and is collected. (`Coin`)
 task Coin (life, x, y) {
-    val id = `:number tg_obj_new((float)a_dbl($x), (float)a_dbl($y), 32, 32, TX_COLGROUP_TOUCHABLE)`
+    val id = obj_new(x, y, 32, 32, COL.TOUCHABLE, KIND.OTHER)
     set pub = [resp=HIT.ABORT]
     set life.byid@id = task
     defer {
@@ -99,6 +109,52 @@ pin TUX = [
     get_coins = func (a) { status.coins },
 ]
 
+;; A trigger that runs a script, when the player touches it, or when he
+;; presses up in it (a "button"). (`ScriptTrigger`, `TriggerBase`)
+;;
+;; The player touches it in the collisions of a step, and stops touching
+;; it at the update of a step with no collision since the update before.
+;; He presses up in it in his own collision with it, which reaches the
+;; trigger as the event `:activate`.
+task ScriptTrigger (life, scripts, env, o) {
+    val id = obj_new(o.x, o.y, o.width || 32, o.height || 32, COL.TOUCHABLE, KIND.TRIGGER)
+    set pub = [resp=HIT.ABORT]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+    }
+    val mine = if o.button => EVENT.ACTIVATE => EVENT.TOUCH
+    var runs = 0
+    val func event (ev) {
+        if (ev == mine) && !(o.oneshot && (runs >= 1)) {
+            set runs += 1
+            spawn @scripts script.Script(env, o.script, "ScriptTrigger")
+        }
+    }
+    par {
+        loop {
+            await :hit until it@0 == PLAYER
+            event(EVENT.TOUCH)
+            loop {
+                await :update
+                val again = par :any {
+                    await :update
+                    false
+                } with {
+                    await :hit until it@0 == PLAYER
+                    true
+                }
+                while again
+            }
+        }
+    } with {
+        loop e on :activate {
+            event(EVENT.ACTIVATE)
+        }
+    }
+}
+
 ;; A life in a level: from the spawn of Tux to his death (`:dead`).
 ;; (`GameSession::restart_level` up to the next one.)
 
@@ -134,6 +190,13 @@ task Life (lvl, ts) {
         }
     }
     `tg_dispatch = $dispatch;`
+    val func trigger (self, ev) {
+        val t = life.byid@self
+        if t {
+            emit @t :activate [ev]
+        }
+    }
+    `tg_trigger = $trigger;`
 
     ;; the scripts of this life, and what they see
     pin scripts = tasks()
@@ -157,8 +220,10 @@ task Life (lvl, ts) {
                     if (o.tag == :spawnpoint) && (o.name == "main") {
                         set x, y = o.x, o.y
                     }
-                    if o.tag == :coin {
-                        spawn @objs Coin(life, o.x, o.y)
+                    match o.tag {
+                        :coin          => spawn @objs Coin(life, o.x, o.y)
+                        :scripttrigger => spawn @objs ScriptTrigger(life, scripts, env, o)
+                        else           => nil
                     }
                 }
             }
@@ -194,6 +259,8 @@ task Life (lvl, ts) {
             }
         }
         emit :scripts
+        `tg_step_player();`
+        emit :update
         ```
         tg_step_end();
         if (tg_cb_st != A_OK) {
