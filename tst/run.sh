@@ -52,3 +52,16 @@ tools/compare.sh
 if [ -d "$ROOT/../env-sdl" ]; then
     VIA=env tools/compare.sh | grep -c '^same' | sed 's/^/env: same /'
 fi
+
+# a frame of the first level: identical to the one stored, and, as
+# information, how much it differs from the frame of the official game
+# (what the port does not draw yet: Tux, the blocks, the badguys)
+if [ -d "$ROOT/../env-sdl" ] && [ -d "$OFFICIAL/data" ]; then
+    mkdir -p out
+    cc -O2 tools/pngdiff.c -lSDL2 -lSDL2_image -o out/pngdiff
+    SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy SDL_ATM_MUTE=1 SDL_ATM_FRAMES=101:15 \
+    SDL_ATM_KEYS="10:dn:Right" SDL_ATM_SHOT="100:$TMP/jb-100.png" \
+        ./tux.sh /levels/world1/journey_begins.stl
+    out/pngdiff tst/shots/port-jb-100.png "$TMP/jb-100.png" 0 > /dev/null || { echo "shot: differs from tst/shots/port-jb-100.png"; exit 1; }
+    echo "shot: ok, differs from the official game in $(out/pngdiff tst/shots/official-jb-100.png "$TMP/jb-100.png" 0 | awk '{print $3}') of the pixels"
+fi
