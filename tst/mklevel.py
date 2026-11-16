@@ -5,7 +5,8 @@
 #   tst/mklevel.py SRC.stl DST.stl [KIND ...] [+KIND:X:Y ...]
 #
 # `+coin:300:640` adds an object of the kind at the position, and
-# `init=FILE` gives the main sector the init script in FILE.
+# `init=FILE` gives the main sector the init script in FILE, and
+# `objs=FILE` adds the objects written in FILE, as s-expressions.
 #
 # With no kinds, the level is empty: the ground and Tux. The tiles that
 # the game turns into objects when it loads a level (coins, bonus blocks,
@@ -38,6 +39,9 @@ def write (x, ind=0):
 src, dst = sys.argv[1], sys.argv[2]
 kinds = set(a for a in sys.argv[3:] if a[0] != '+' and '=' not in a)
 inits = [ open(a[5:], encoding='utf-8').read() for a in sys.argv[3:] if a.startswith('init=') ]
+objs = [ o for a in sys.argv[3:] if a.startswith('objs=')
+          for o in sexp_read(open(a[5:], encoding='utf-8').read()) ]
+kinds |= { o[0] for o in objs }
 extra = [ a[1:].split(':') for a in sys.argv[3:] if a[0] == '+' ]
 
 # the tiles that become objects: id -> kind
@@ -79,6 +83,7 @@ for x in lvl:
                 for k,px,py in extra ]
         x = [ v for v in x if not (isinstance(v, list) and v[0] == 'init-script') ]
         x[2:2] = [ [Sym('init-script'), src] for src in inits ]
+        x += objs
     if isinstance(x, list) and x[0] == 'name':
         x = [ Sym('name'), 'test' ]
     out.append(x)

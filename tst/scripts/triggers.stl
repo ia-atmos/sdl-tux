@@ -1,0 +1,8 @@
+(scripttrigger (x 300) (y 576) (width 32) (height 96)
+  (script "Tux.set_velocity(0, -350);"))
+(scripttrigger (x 500) (y 704) (width 64) (height 96) (oneshot #t)
+  (script "Tux.add_coins(1); wait(0.3); Tux.walk(-250); wait(0.2); Tux.add_coins(10);"))
+(scripttrigger (x 160) (y 576) (width 64) (height 96) (button #t)
+  (script "Tux.add_coins(100); Tux.do_jump(-300);"))
+(scripttrigger (x 700) (y 736) (width 32) (height 64)
+  (script "Tux.add_coins(1000);"))

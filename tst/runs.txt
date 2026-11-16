@@ -21,3 +21,6 @@ stux1 tst/levels/script1.stl 600 -
 stux1k tst/levels/script1.stl 600 30:left:1,80:jump:1,90:jump:0,200:left:0,300:right:1
 stux2 tst/levels/script2.stl 400 -
 stux2k tst/levels/script2.stl 400 50:jump:1,60:jump:0,100:left:1,300:left:0
+trig1 tst/levels/triggers.stl 800 10:right:1,400:right:0,420:left:1,700:left:0
+trig2 tst/levels/triggers.stl 800 10:right:1,30:right:0,40:up:1,41:up:0,60:up:1,80:up:0,100:right:1,300:right:0,330:left:1,600:left:0,620:up:1,621:up:0
+trig3 tst/levels/triggers.stl 1500 10:right:1,60:jump:1,75:jump:0,300:left:1,305:jump:1,320:jump:0,500:left:0,505:right:1,900:right:0,910:left:1,1400:left:0
