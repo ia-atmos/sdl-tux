@@ -5,6 +5,8 @@
 //
 //      pngdiff a.png b.png [tolerance [diff.png]]
 //
+// With PNGDIFF_SHOW=n, it also prints the first n differing pixels.
+//
 // Prints "<differing pixels> <total> <percent>", and exits with 0 if no
 // pixel differs, 1 otherwise, 2 on error.
 //
@@ -50,6 +52,9 @@ int main (int argc, char** argv) {
                 if (e > d) d = e;
             }
             if (d > tol) {
+                if (getenv("PNGDIFF_SHOW") && n < atoi(getenv("PNGDIFF_SHOW"))) {
+                    printf("(%d,%d) %d,%d,%d %d,%d,%d\n", x, y, pa[0], pa[1], pa[2], pb[0], pb[1], pb[2]);
+                }
                 n++;
                 pb[0] = 255; pb[1] = 0; pb[2] = 0;
             } else {
