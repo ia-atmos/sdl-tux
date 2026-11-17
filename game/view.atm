@@ -15,6 +15,7 @@
 pin view = [
     assets = os.getenv("TUX_ASSETS") || "../official/supertux/data",
     imgs   = [],        ;; path -> image
+    sprs   = [],        ;; path -> the data of a sprite (TsData, in C)
     index  = [],        ;; path -> index, for game/draw.h
     n      = 0,
 ]
@@ -138,6 +139,26 @@ func view.sprite (dir, file, ptr) {
     }
 }
 
+;; The data of a sprite of the data (`images/...sprite`, or an image), once.
+func view.data (path) {
+    val p = if string.sub(path, 0, 0) == "/" => string.sub(path, 1) => path
+    if view.sprs@p == nil {
+        set view.sprs@p = `:value a_nat(calloc(1, sizeof(TsData)), free, "TsData")`
+        val d = view.sprs@p
+        if string.find(p, ".sprite") {
+            pin parts = string.split(p, "/")
+            val file = parts@#
+            val dir = string.sub(p, 0, #p - #file - 1)
+            view.sprite(dir, file, d)
+        } else {
+            val i = view.image(p)
+            val w, h = sdl.size(view.imgs@p)
+            `ts_from_image((TsData*) a_nat_ptr($d), (int) $i.u.i, (int) a_dbl($w), (int) a_dbl($h));`
+        }
+    }
+    view.sprs@p
+}
+
 ;; The drawables of a sector, in the order of its objects.
 func view.build (sec, raw, ntiles) {
     `td_reset((int) $ntiles.u.i);`
@@ -193,6 +214,15 @@ func view.build (sec, raw, ntiles) {
                     td_background((int) $top.u.i, (int) $main.u.i, (int) $bot.u.i, (int) $al.u.i, (int) a_dbl($z),
                                   (float) a_dbl($spx), (float) a_dbl($spy), (float) a_dbl($ssx), (float) a_dbl($ssy),
                                   (float) a_dbl($ox), (float) a_dbl($oy), c);
+                    ```
+                }
+                :decal => {
+                    val d = view.data(o.sprite || "images/decal/explanations/billboard-bigtux.png")
+                    val x, y, z = o.x || 0, o.y || 0, o.z_pos || 50
+                    val act = o.action
+                    ```
+                    TsSprite* s = td_sprite((TsData*) a_nat_ptr($d), (float) a_dbl($x), (float) a_dbl($y), (int) a_dbl($z));
+                    if ($act.type == A_STR) ts_set_action(s, A_STR_OF($act)->s, -1);
                     ```
                 }
                 :gradient => {

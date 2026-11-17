@@ -62,7 +62,7 @@ typedef struct TdBackground {
 enum { TD_NO_ALIGNMENT=0, TD_LEFT_ALIGNMENT, TD_RIGHT_ALIGNMENT, TD_TOP_ALIGNMENT, TD_BOTTOM_ALIGNMENT };
 
 /* A drawable: what, which, its layer, and the order of its object. */
-enum { TD_MAP=0, TD_GRADIENT=1, TD_BACKGROUND=2, TD_PLAYER=3 };
+enum { TD_MAP=0, TD_GRADIENT=1, TD_BACKGROUND=2, TD_PLAYER=3, TD_SPRITE=4 };
 typedef struct TdItem { int kind, index, layer, order; } TdItem;
 
 static TdMap*      td_maps;      static int td_maps_n, td_maps_cap;
@@ -70,6 +70,13 @@ static TdGradient* td_grads;     static int td_grads_n, td_grads_cap;
 static TdBackground* td_bgs;     static int td_bgs_n, td_bgs_cap;
 static TdItem*     td_items;     static int td_items_n, td_items_cap;
 static TdItem*     td_sorted;
+
+#include "sprite.h"
+#include "tuxdraw.h"
+
+/* An object drawn as a sprite at a position (a decal). */
+typedef struct TdSprite { TsSprite s; TxVec pos; } TdSprite;
+static TdSprite* td_sprs; static int td_sprs_n, td_sprs_cap;
 
 #define TD_PUSH(arr, n, cap) do { \
     if ((n) == (cap)) { (cap) = (cap) ? (cap)*2 : 16; (arr) = realloc((arr), (cap)*sizeof(*(arr))); } \
@@ -92,6 +99,7 @@ static void td_reset (int ntiles) {
     free(td_maps); td_maps = NULL; td_maps_n = td_maps_cap = 0;
     free(td_grads); td_grads = NULL; td_grads_n = td_grads_cap = 0;
     free(td_bgs); td_bgs = NULL; td_bgs_n = td_bgs_cap = 0;
+    td_sprs_n = 0;
     free(td_items); td_items = NULL; td_items_n = td_items_cap = 0;
     free(td_sorted); td_sorted = NULL;
 }
@@ -402,8 +410,16 @@ static int td_cmp (const void* a, const void* b) {
     return (x->order < y->order) ? -1 : (x->order > y->order);
 }
 
-#include "sprite.h"
-#include "tuxdraw.h"
+
+static TsSprite* td_sprite (const TsData* d, float x, float y, int layer) {
+    TD_PUSH(td_sprs, td_sprs_n, td_sprs_cap);
+    TdSprite* o = &td_sprs[td_sprs_n];
+    ts_init(&o->s, d);
+    o->pos = tx_vec(x, y);
+    td_item(TD_SPRITE, td_sprs_n, layer);
+    td_sprs_n++;
+    return &o->s;
+}
 
 /* A frame of the sector, with the translation of the camera. The objects
  * draw in their order (the player first), and then the requests are
@@ -428,6 +444,7 @@ static void td_draw (TxVec translation) {
             case TD_GRADIENT: td_draw_gradient(&td_grads[it->index], (float) w, (float) h); break;
             case TD_BACKGROUND: td_draw_background(&td_bgs[it->index], translation, (float) w, (float) h); break;
             case TD_PLAYER:   if (tp_ready) tp_draw(&tg_tux, translation, (float) w, (float) h); break;
+            case TD_SPRITE:   ts_draw(&td_sprs[it->index].s, td_sprs[it->index].pos, translation, (float) w, (float) h); break;
         }
     }
 }
