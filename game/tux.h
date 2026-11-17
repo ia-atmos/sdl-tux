@@ -15,6 +15,9 @@ static TxController tg_ctl;
 static TxPlayerHost tg_host;
 static long         tg_tick;
 static TcCamera     tg_cam;
+
+/* More hooks of the player, from the view, if any (the sprite). */
+static void (*tg_extra_hooks) (TxPlayerHost* h);
 static int          tg_trace_camera;    /* TUX_TRACE_CAMERA: the lines `C` */
 static uint8_t*     tg_objtile;     /* by tile id: the tile becomes an object */
 
@@ -303,6 +306,7 @@ static void tg_player (float x, float y) {
     memset(&tg_host, 0, sizeof(tg_host));
     tg_host.trigger_event = tg_on_trigger;
     tg_host.start_sequence = tg_on_sequence;
+    if (tg_extra_hooks) tg_extra_hooks(&tg_host);
     tx_controller_reset(&tg_end_ctl);
     tx_timer_init(&tg_end_timer);
     tg_end_stopped = 0;
