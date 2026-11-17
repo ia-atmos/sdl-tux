@@ -139,13 +139,25 @@ typedef struct TsSprite {
     float alpha;
 } TsSprite;
 
+/* Sprite::Sprite: the action "default", or else the first one of an
+ * unordered map in the original, which is not known here: the first one
+ * of the file. */
 static void ts_init (TsSprite* s, const TsData* d) {
     memset(s, 0, sizeof(*s));
     s->data = d;
-    s->action = (d->actions_n > 0) ? 0 : -1;
+    const TsAction* a = ts_find(d, "default");
+    s->action = a ? (int) (a - d->actions) : ((d->actions_n > 0) ? 0 : -1);
     s->animation_loops = -1;
     s->color[0] = s->color[1] = s->color[2] = s->color[3] = 1;
     s->alpha = 1;
+    s->last_ticks = tx_game_time;
+}
+
+/* A sprite of one image (SpriteData of an image file): the action
+ * "default", with the size of the image as its hitbox. */
+static void ts_from_image (TsData* d, int img, int w, int h) {
+    TsAction* a = ts_action(d, "default", 0, NULL, 0, 0, 0, 0, 0, 0, NULL);
+    ts_images(d, a, &img, &w, &h, 1);
 }
 
 static const TsAction* ts_act (const TsSprite* s) {
