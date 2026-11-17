@@ -32,8 +32,8 @@ pin TILE = [
 ]
 
 func data.tileset (path) {
-    pin src = data.load(path)
-    pin ts = [attrs=[], datas=[], objs=[], max=0]
+    val src = data.load(path)
+    val ts = [attrs=[], datas=[], objs=[], max=0]
     val func add (id, a, d, name, odata) {
         if ts.attrs@(id) == nil {       ;; the first definition stays
             set ts.attrs@(id) = a

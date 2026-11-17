@@ -49,7 +49,7 @@ func script.truthy (v) {
 
 ;; `state.treasure` -> the value at that path, or nil
 func script.lookup (env, path) {
-    pin ks = string.split(path, ".")
+    val ks = string.split(path, ".")
     var v = env.globals@(ks@0)
     loop i in (1, #ks - 1) {
         until v == nil
@@ -59,7 +59,7 @@ func script.lookup (env, path) {
 }
 
 func script.assign (env, path, v) {
-    pin ks = string.split(path, ".")
+    val ks = string.split(path, ".")
     if #ks == 1 {
         set env.globals@(ks@0) = v
     } else {
@@ -81,7 +81,7 @@ func script.object (env, name) {
 }
 
 func script.args (env, e, from) {
-    pin args = []
+    val args = []
     loop i in (from, #e - 1) {
         set args@+ = script.eval(env, e@i)
     }
@@ -163,7 +163,7 @@ task script.Block (env, list) {
 ;; (`:squirrel ["..."]`) does nothing (see the TODO).
 task script.Script (env, prog, place) {
     if (type(prog) == :table) && (prog.tag != :squirrel) {
-        pin ok, _, msg = catch :tux.script {
+        val ok, _, msg = catch :tux.script {
             await script.Block(env, prog)
         }
         if !ok {
