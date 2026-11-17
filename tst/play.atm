@@ -14,7 +14,7 @@ val path, ticks, input = ...
 pin keys = []
 if input && (input != "") && (input != "-") {
     loop _,item in string.split(input, ",") {
-        pin f = string.split(item, ":")
+        val f = string.split(item, ":")
         val t = tonumber(f@0)
         val c = CONTROLS@(f@1) || throw :tux.input, "invalid control " ++ f@1
         if keys@t == nil {

@@ -96,7 +96,7 @@ func view.tiles (raw) {
 ;; A sprite of the data (`images/...sprite`) into a TsData of C, at `ptr`
 ;; (`SpriteData::parse_action`): images and mirror actions only.
 func view.sprite (dir, file, ptr) {
-    pin spr = data.load("/" ++ dir ++ file)
+    val spr = data.load("/" ++ dir ++ file)
     loop _,a in spr {
         if (type(a) == :table) && (a.tag == :action) {
             assert(!a.flip_action && !a.clone_action && !a.regions, "sprite: not supported in " ++ file)
@@ -146,7 +146,7 @@ func view.data (path) {
         set view.sprs@p = `:value a_nat(calloc(1, sizeof(TsData)), free, "TsData")`
         val d = view.sprs@p
         if string.find(p, ".sprite") {
-            pin parts = string.split(p, "/")
+            val parts = string.split(p, "/")
             val file = parts@#
             val dir = string.sub(p, 0, #p - #file - 1)
             view.sprite(dir, file, d)

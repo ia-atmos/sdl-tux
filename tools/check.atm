@@ -8,13 +8,13 @@
 
 val list = ...
 var n = 0
-pin slow = [path="", s=0]
+pin var slow = [path="", s=0]
 loop path in io.lines(list) {
     pin f = io.open(path) --> assert
     val src = io.read(f, :all)
     io.close(f)
     val t0 = os.clock()
-    pin ok, v = catch true {
+    val ok, v = catch true {
         X.load(src)
     }
     val dt = os.clock() - t0
@@ -24,8 +24,7 @@ loop path in io.lines(list) {
     }
     assert(type(v) == :table, path)
     if dt > slow.s {
-        set slow.path = path
-        set slow.s = dt
+        set slow = [path=path, s=dt]
     }
     set n += 1
 }
