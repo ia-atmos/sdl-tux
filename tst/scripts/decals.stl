@@ -1,0 +1,4 @@
+(decal (x 300) (y 500) (z-pos -10) (sprite "/images/decal/snow/snowman1.png"))
+(decal (x 600) (y 560) (z-pos 100) (sprite "/images/decal/snow/igloo_fg.png"))
+(decal (x 200) (y 300) (sprite "/images/decal/misc/flag.sprite"))
+(decal (x 900) (y 600) (z-pos -20) (sprite "/images/decal/forest/foxsleep.sprite"))

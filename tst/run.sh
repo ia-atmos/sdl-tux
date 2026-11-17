@@ -65,3 +65,16 @@ if [ -d "$ROOT/../env-sdl" ] && [ -d "$OFFICIAL/data" ]; then
     out/pngdiff tst/shots/port-jb-100.png "$TMP/jb-100.png" 0 > /dev/null || { echo "shot: differs from tst/shots/port-jb-100.png"; exit 1; }
     echo "shot: ok, differs from the official game in $(out/pngdiff tst/shots/official-jb-100.png "$TMP/jb-100.png" 0 | awk '{print $3}') of the pixels"
 fi
+
+# frames of a level with no blocks nor badguys, with decals: the same as
+# the official ones (the second one but for a seam of one tilemap, see
+# the TODO)
+if [ -d "$ROOT/../env-sdl" ]; then
+    SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy SDL_ATM_MUTE=1 SDL_ATM_FRAMES=201:15 \
+    SDL_ATM_KEYS="10:dn:Right,120:up:Right" SDL_ATM_SHOT="50:$TMP/dec-50.png,200:$TMP/dec-200.png" \
+        ./tux.sh tst/levels/decals.stl
+    out/pngdiff tst/shots/official-dec-50.png "$TMP/dec-50.png" 0 > /dev/null || { echo "shot: dec-50 differs from the official one"; exit 1; }
+    n=$(out/pngdiff tst/shots/official-dec-200.png "$TMP/dec-200.png" 0 | awk '{print $1}')
+    [ "$n" -le 219 ] || { echo "shot: dec-200 differs from the official one in $n pixels"; exit 1; }
+    echo "shot: decals ok (frame 50 the same as the official one, frame 200 in all but $n pixels)"
+fi
