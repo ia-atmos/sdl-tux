@@ -92,9 +92,58 @@ func view.tiles (raw) {
     }
 }
 
+;; A sprite of the data (`images/...sprite`) into a TsData of C, at `ptr`
+;; (`SpriteData::parse_action`): images and mirror actions only.
+func view.sprite (dir, file, ptr) {
+    pin spr = data.load("/" ++ dir ++ file)
+    loop _,a in spr {
+        if (type(a) == :table) && (a.tag == :action) {
+            assert(!a.flip_action && !a.clone_action && !a.regions, "sprite: not supported in " ++ file)
+            val name = a.name
+            val nhit = if a.hitbox => #a.hitbox => 0
+            val h0, h1, h2, h3 = if a.hitbox => (a.hitbox@0 || 0, a.hitbox@1 || 0, a.hitbox@2 || 0, a.hitbox@3 || 0) => (0, 0, 0, 0)
+            val hf, fps = (a.fps != nil), (a.fps || 0)
+            val hl, loops = (a.loops != nil), (a.loops || 0)
+            val hlf, lf = (a.loop_frame != nil), (a.loop_frame || 0)
+            val fam = a.family_name
+            ```
+            float hit[4] = { a_dbl($h0), a_dbl($h1), a_dbl($h2), a_dbl($h3) };
+            TsAction* act = ts_action((TsData*) a_nat_ptr($ptr) , A_STR_OF($name)->s, (int) $nhit.u.i, hit,
+                a_truthy($hf), (float) a_dbl($fps), a_truthy($hl), (int) a_dbl($loops),
+                a_truthy($hlf), (int) a_dbl($lf), ($fam.type == A_STR) ? A_STR_OF($fam)->s : NULL);
+            ```
+            if a.mirror_action {
+                val other = a.mirror_action
+                `ts_mirror((TsData*) a_nat_ptr($ptr), act, A_STR_OF($other)->s);`
+            } else {
+                if a.images {
+                    val n = #a.images
+                    ```
+                    int* imgs = malloc($n.u.i * sizeof(int));
+                    int* ws = malloc($n.u.i * sizeof(int));
+                    int* hs = malloc($n.u.i * sizeof(int));
+                    ```
+                    loop k,f in a.images {
+                        val i = view.image(dir ++ f)
+                        val iw, ih = sdl.size(view.imgs@(dir ++ f))
+                        `imgs[$k.u.i] = (int) $i.u.i; ws[$k.u.i] = (int) a_dbl($iw); hs[$k.u.i] = (int) a_dbl($ih);`
+                    }
+                    ```
+                    ts_images((TsData*) a_nat_ptr($ptr), act, imgs, ws, hs, (int) $n.u.i);
+                    free(imgs); free(ws); free(hs);
+                    ```
+                }
+            }
+        }
+    }
+}
+
 ;; The drawables of a sector, in the order of its objects.
 func view.build (sec, raw, ntiles) {
     `td_reset((int) $ntiles.u.i);`
+    `td_item(TD_PLAYER, 0, 51);`         ;; the player is the first object
+    var foremost = -300                  ;; Sector::calculate_foremost_layer
+
     var solid = 0
     loop _,o in sec {
         if type(o) == :table {
@@ -107,6 +156,9 @@ func view.build (sec, raw, ntiles) {
                     val alpha = o.alpha || 1
                     val r, g, b, a = view.color(o.tint, 1)
                     val ox, oy = map_offset(sec, o)
+                    if z > foremost {
+                        set foremost = if alpha < 1 => z - 1 => z + 1
+                    }
                     if o.solid {
                         `td_map(tg_sec.maps[$solid.u.i]->tiles, 0, $w.u.i, $h.u.i, (int) a_dbl($z), 1, 1, (float) a_dbl($alpha), (float) a_dbl($r), (float) a_dbl($g), (float) a_dbl($b), (float) a_dbl($a));`
                         set solid += 1
@@ -164,10 +216,18 @@ func view.build (sec, raw, ntiles) {
         }
     }
     view.tiles(raw)
+    `tp_layer_dying = (int) $foremost.u.i + 1;`
 }
 
 ;; The view of a level: rebuilt at each life, drawn at each frame.
 task View (path) {
+    ;; the sprite of Tux, once (its images stay loaded)
+    pin tux = `:value a_nat(&tp_data, NULL, "tp_data")`
+    view.sprite("images/creatures/tux/", "tux.sprite", tux)
+    ```
+    tp_ready = 1;
+    tg_extra_hooks = tp_hooks;
+    ```
     pin lvl = data.load(path)
     pin raw = data.load("/images/tiles.strf")
     var sec

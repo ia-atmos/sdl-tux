@@ -62,7 +62,7 @@ typedef struct TdBackground {
 enum { TD_NO_ALIGNMENT=0, TD_LEFT_ALIGNMENT, TD_RIGHT_ALIGNMENT, TD_TOP_ALIGNMENT, TD_BOTTOM_ALIGNMENT };
 
 /* A drawable: what, which, its layer, and the order of its object. */
-enum { TD_MAP=0, TD_GRADIENT=1, TD_BACKGROUND=2 };
+enum { TD_MAP=0, TD_GRADIENT=1, TD_BACKGROUND=2, TD_PLAYER=3 };
 typedef struct TdItem { int kind, index, layer, order; } TdItem;
 
 static TdMap*      td_maps;      static int td_maps_n, td_maps_cap;
@@ -88,7 +88,7 @@ static void td_reset (int ntiles) {
     td_used  = calloc(ntiles, 1);
     td_tiles_n = ntiles;
     td_frames = NULL; td_frames_n = td_frames_cap = 0;
-    free(td_imgs); td_imgs = NULL; td_imgs_n = 0;
+    /* the images stay: their indices are of the whole program */
     free(td_maps); td_maps = NULL; td_maps_n = td_maps_cap = 0;
     free(td_grads); td_grads = NULL; td_grads_n = td_grads_cap = 0;
     free(td_bgs); td_bgs = NULL; td_bgs_n = td_bgs_cap = 0;
@@ -402,21 +402,32 @@ static int td_cmp (const void* a, const void* b) {
     return (x->order < y->order) ? -1 : (x->order > y->order);
 }
 
-/* A frame of the sector, with the translation of the camera. */
+#include "sprite.h"
+#include "tuxdraw.h"
+
+/* A frame of the sector, with the translation of the camera. The objects
+ * draw in their order (the player first), and then the requests are
+ * sorted by layer. */
 static void td_draw (TxVec translation) {
     int w, h;
     sdl_size(&w, &h);
     if (td_sorted == NULL) {
         td_sorted = malloc((td_items_n ? td_items_n : 1) * sizeof(TdItem));
-        memcpy(td_sorted, td_items, td_items_n * sizeof(TdItem));
-        qsort(td_sorted, td_items_n, sizeof(TdItem), td_cmp);
     }
+    for (int i=0; i<td_items_n; i++) {
+        if (td_items[i].kind == TD_PLAYER) {
+            td_items[i].layer = tp_ready ? tp_choose(&tg_tux) : 51;
+        }
+    }
+    memcpy(td_sorted, td_items, td_items_n * sizeof(TdItem));
+    qsort(td_sorted, td_items_n, sizeof(TdItem), td_cmp);
     for (int i=0; i<td_items_n; i++) {
         const TdItem* it = &td_sorted[i];
         switch (it->kind) {
             case TD_MAP:      td_draw_map(&td_maps[it->index], translation, (float) w, (float) h); break;
             case TD_GRADIENT: td_draw_gradient(&td_grads[it->index], (float) w, (float) h); break;
             case TD_BACKGROUND: td_draw_background(&td_bgs[it->index], translation, (float) w, (float) h); break;
+            case TD_PLAYER:   if (tp_ready) tp_draw(&tg_tux, translation, (float) w, (float) h); break;
         }
     }
 }
