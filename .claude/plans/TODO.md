@@ -15,6 +15,7 @@ Asked one at a time. Each has the option recommended by this session.
 
 | # | Decision | Recommended |
 |---|----------|-------------|
+| 8 | The rules of `pin` changed again on 2026-11-17 (`ia-atmos/lang` `0ba7afc`, `98547d3`): `val`/`var` may hold a fresh value, and a `pin` may be reassigned. The project compiles and gives the same results with the newest compiler (`b463c23`), checked on 2026-11-17. Go back to the direct forms where `pin` was forced (about 10 places, as `set slow = [...]` in `tools/check.atm`)? | Not now: the forced places are few and work; the newer compiler is taken when 32-bit reals arrive, and the direct forms then, in the same move |
 | 7 | One script of World 1 is more than calls, waits, assignments, and conditions: the init script of `between_glaciers.stl` defines a function (`release_treasure`, one line, which sets `state.treasure`). The converter keeps it as `:squirrel ["..."]` and reports it | Leave it so until the second version (the level is not among the first five). Then either write that init script by hand as Atmos code, as the long scenes, or teach the converter to inline a function of one line |
 
 See C for the decisions taken as recommended.
