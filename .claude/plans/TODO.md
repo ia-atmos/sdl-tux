@@ -15,7 +15,6 @@ Asked one at a time. Each has the option recommended by this session.
 
 | # | Decision | Recommended |
 |---|----------|-------------|
-| 8 | The rules of `pin` changed again on 2026-11-17 (`ia-atmos/lang` `0ba7afc`, `98547d3`): `val`/`var` may hold a fresh value, and a `pin` may be reassigned. The project compiles and gives the same results with the newest compiler (`b463c23`), checked on 2026-11-17. Go back to the direct forms where `pin` was forced (about 10 places, as `set slow = [...]` in `tools/check.atm`)? | Not now: the forced places are few and work; the newer compiler is taken when 32-bit reals arrive, and the direct forms then, in the same move |
 | 7 | One script of World 1 is more than calls, waits, assignments, and conditions: the init script of `between_glaciers.stl` defines a function (`release_treasure`, one line, which sets `state.treasure`). The converter keeps it as `:squirrel ["..."]` and reports it | Leave it so until the second version (the level is not among the first five). Then either write that init script by hand as Atmos code, as the long scenes, or teach the converter to inline a function of one line |
 
 See C for the decisions taken as recommended.
@@ -48,6 +47,8 @@ See C for the decisions taken as recommended.
 
 | 6 | The order of the milestones changed: T4 (collisions and the player, with no screen) before T2 and T3, which need `env-sdl` | 2026-11-14 |
 | 7 | 32-bit reals: the author chose on 2026-11-16 that the compiler gains them (a build option where a real is a C `float`, or an explicit type; the form is open). Sent to the session of the compiler with what Tux needs and a test. Until it exists, no badguys nor blocks are written; the player and the collisions stay in C until then | 2026-11-16 |
+
+| 8 | The second migration of `pin` (rules of 2026-11-17, `ia-atmos/lang` `5da4b8e`) is done: two values given away by their block are `val`, and the pins that the first migration forced are back to `val` or to `pin var`. Tests identical. Reported to the session of the compiler | 2026-11-17 |
 
 ### Places where exactness forces the form (candidates to relax later)
 
