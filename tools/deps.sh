@@ -8,7 +8,7 @@
 #   tools/deps.sh
 set -e
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-LANG_COMMIT=1746969
+LANG_COMMIT=7480111
 ENV_COMMIT=2723b34
 
 fetch () {   # dir repository commit
