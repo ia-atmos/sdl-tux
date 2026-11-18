@@ -7,7 +7,45 @@ is left open.
 
 The plan is `261113-sdl-tux.md`, in this directory.
 
-Last update: 2026-11-18.
+Last update: 2026-11-19.
+
+## Index of the items
+
+Every item of this session put to the author has a number, `#N`: unique,
+in order, never reused nor changed (an item that closes or moves keeps
+it). From another session it is `sdl-tux#N`. Rule of the author of
+2026-11-18 (`ia-atmos/lang`, `TODO.md`, "Standing rules"). The ids
+`A1`, `B3`, `C7` used before stay valid for what was written with them;
+below, each old id is mapped to its number.
+
+States: **open** (waits for the author), **work** (known, not started or
+in course, no decision needed), **done**, **closed** (settled with no
+change).
+
+| # | Item | Was | State |
+|---|------|-----|-------|
+| 1 | The form of the 32-bit reals (a build option or a type); blocks, powerups and badguys wait for them | C7 | open (the author's, through `atmos-lang#3`) |
+| 2 | The init script of `between_glaciers.stl` defines a function: keep it as `:squirrel` until the second version | A1 | open (recommended: keep it so) |
+| 3 | The trace of the official game: coins, blocks, powerups and the end of a level enter it with T5 | B1 | work |
+| 4 | Where the images, sounds and music come from (today: the checkout of the official game) | B2 | work |
+| 5 | T3, a level drawn: the snow, the HUD, the fade at the start of a level, the moving paths | B3 | work |
+| 6 | 219 pixels differ at the edge of the tilemap `secret`, a seam at a fraction of a pixel | B4 | work |
+| 7 | `env-sdl` lacks flips, rotation and tint of an image, and music that loops between two points | B5 | work (ask when needed) |
+| 8 | T4: runs with the bonus (grow, duck, fire, hurt), slopes and ice | B6 | work (waits for #1) |
+| 9 | T5: the bonus block, the brick, the powerups, the secret area, the HUD data | B7 | work (in part waits for #1) |
+| 10 | `default.nut` of World 1 becomes Atmos code when a level of the slice calls it | B8 | work |
+| 11 | The order in which scripts that wake in the same step are woken | B9 | work |
+| 12 | T6 to T9 of the plan | B10 | work |
+| 13 | The decisions taken as recommended after "go ahead without stopping": tag, license, slice, scripts as data, SDL renderer | C1 | done, not acknowledged |
+| 14 | Fidelity first, then expressiveness; the list of places where exactness forces the form | C2 | done, not acknowledged |
+| 15 | The scripts as data are a small language (calls, waits, set, if, expressions): 193 of 196 scripts | C3 | done, not acknowledged |
+| 16 | Two scripts of `deep_dive_chill.stl` have a syntax error in the original, and do nothing in both | C4 | done, not acknowledged |
+| 17 | The tiles of a tilemap keep the runs of the original | C5 | done, not acknowledged |
+| 18 | The order of the milestones: T4 before T2 and T3 | C6 | done, not acknowledged |
+| 19 | The two migrations of `pin`, tests identical | C8 | done, not acknowledged |
+| 20 | `atmos-pin` handles what concerns `pin` | C9 | done, not acknowledged |
+
+The details of each item follow, by its old id.
 
 ## A. Decisions waiting for an answer
 
