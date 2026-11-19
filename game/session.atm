@@ -135,7 +135,7 @@ func tile_field (s, key) {
     }
     val j = string.find(s, ")", i)
     val v = string.sub(s, i + #key + 2, j - 1)
-    if string.sub(v, 0, 0) == "\"" => string.sub(v, 1, -2) => tonumber(v)
+    if string.sub(v, 0, 0) == "\"" => string.sub(v, 1, -2) => (tonumber(v) || v)
 }
 
 ;; A coin that leaves a bonus block, or a coin that is collected: it
@@ -180,44 +180,94 @@ pin BONUS_DATA = ["coin", "coin", "firegrow", "star", "1up", "icegrow",
 ;; The hits of a bonus block by its type (`get_default_hit_counter`).
 pin BONUS_HITS = [orange=3, purple=5]
 
-;; A bonus block (`Block`, `BonusBlock`): the player hits it from below,
-;; and it gives what it has, and bounces. `o` has its `contents` (as the
-;; strings of the original), `hits` (0 is infinite), `script`, `sprite`,
-;; and the height `h` of its box: 32.1, as `Block` makes it, or 32, the
-;; hitbox of its sprite, when the type of the block changes the sprite
+;; A block (`Block`): an object of the collisions, static, that the player
+;; hits from below, and that bounces when hit. Its state is the table `b`:
+;; its id, its look, and its bounce.
+func block_new (life, task_, x, y, h, sprite) {
+    val id = obj_new(x, y, 32, h, COL.STATIC, KIND.OTHER)
+    val l = look_new(sprite, x, y, LAYER_OBJECTS + 1)
+    `tg_looks[$l.u.i].obj = $id.u.i;`
+    set life.byid@id = task_
+    [id=id, l=l, original_y=-1, bouncing=false, breaking=false, dir=0]
+}
+
+func block_del (life, b) {
+    val id, l = b.id, b.l
+    set life.byid@id = nil
+    `tg_obj_del($id.u.i);`
+    `tg_look_del($l.u.i);`
+}
+
+;; `Block::start_bounce`, by the player
+func block_bounce (b) {
+    val id, l = b.id, b.l
+    if b.original_y == -1 {
+        set b.original_y = `:number tg_obj_y($id.u.i)`
+    }
+    set b.bouncing = true
+    set b.dir = -90
+    `tg_looks[$l.u.i].angle = tg_block_angle($id.u.i);`
+}
+
+;; `set_action("empty")`: the hitbox of its image
+func block_empty (b) {
+    val id, l = b.id, b.l
+    `tg_look_action($l.u.i, "empty");`
+    `tg_obj_size($id.u.i, 32, 32);`
+}
+
+;; `Block::update`: the bounce, at each step. Ends when the block breaks
+;; (`break_me`), at the top of the bounce of a block that is breaking.
+task Block (b) {
+    val id, l = b.id, b.l
+    loop {
+        await :update
+        if b.bouncing {
+            val dt = step_dt()
+            val offset = b.original_y - `:number tg_obj_y($id.u.i)`
+            ifs {
+                offset > 8 => {
+                    set b.dir = 90
+                    val d = b.dir
+                    `tg_obj_move($id.u.i, 0, (float) a_dbl($d) * (float) a_dbl($dt));`
+                    until b.breaking
+                }
+                (offset < (90 * dt)) && (b.dir > 0) => {
+                    `tg_obj_move($id.u.i, 0, (float) a_dbl($offset));`
+                    set b.dir = 0
+                    set b.bouncing = false
+                    `tg_looks[$l.u.i].angle = 0;`
+                }
+                else => {
+                    val d = b.dir
+                    `tg_obj_move($id.u.i, 0, (float) a_dbl($d) * (float) a_dbl($dt));`
+                }
+            }
+        }
+    }
+}
+
+;; A bonus block (`BonusBlock`): the player hits it from below, and it
+;; gives what it has, and bounces. `o` has its `contents` (as the strings
+;; of the original), `hits` (0 is infinite), `script`, `sprite`, and the
+;; height `h` of its box: 32.1, as `Block` makes it, or 32, the hitbox of
+;; its sprite, when the type of the block changes the sprite
 ;; (`MovingSprite::on_type_change`). The images of the blocks are all of
 ;; 32x32.
 task BonusBlock (life, objs, scripts, env, x, y, o) {
-    val id = obj_new(x, y, 32, o.h, COL.STATIC, KIND.OTHER)
-    val l = look_new(o.sprite, x, y, LAYER_OBJECTS + 1)
-    `tg_looks[$l.u.i].obj = $id.u.i;`
+    pin b = block_new(life, task, x, y, o.h, o.sprite)
     set pub = [resp=HIT.FORCE, empty=false]
-    set life.byid@id = task
     defer {
-        set life.byid@id = nil
-        `tg_obj_del($id.u.i);`
-        `tg_look_del($l.u.i);`
+        block_del(life, b)
     }
     var hits = o.hits
-    var original_y = -1
-    var bouncing = false
-    var bounce_dir = 0
-
-    ;; `Block::start_bounce`, by the player
-    val func start_bounce () {
-        if original_y == -1 {
-            set original_y = `:number tg_obj_y($id.u.i)`
-        }
-        set bouncing = true
-        set bounce_dir = -90
-        `tg_looks[$l.u.i].angle = tg_block_angle($id.u.i);`
-    }
 
     ;; `BonusBlock::try_open`, by the player
     val func try_open () {
         if !pub.empty {
             match o.contents {
                 "coin" => {
+                    val id = b.id
                     spawn @objs BouncyCoin(x, `:number tg_obj_y($id.u.i)`, true, "images/objects/coin/coin.sprite")
                     set status.coins = math.min(status.coins + 1, 9999)
                 }
@@ -230,14 +280,12 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
             if o.script {
                 spawn @scripts script.Script(env, o.script, "BonusBlockScript")
             }
-            start_bounce()
+            block_bounce(b)
             ifs {
                 hits <= 0 => nil        ;; infinite
                 hits == 1 => {
-                    ;; `set_action("empty")`: the hitbox of its image
                     set pub.empty = true
-                    `tg_look_action($l.u.i, "empty");`
-                    `tg_obj_size($id.u.i, 32, 32);`
+                    block_empty(b)
                 }
                 else      => set hits -= 1
             }
@@ -247,10 +295,10 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
     par {
         loop e on :hit {
             if e@0 == PLAYER {
-                val bits = e@1
+                val id, bits = b.id, e@1
                 val r = `:number tg_block_player($id.u.i, (int) $bits.u.i)`
                 ;; a drop (`try_drop`) of a coin opens it, as a hit
-                if (r & 1) != 0 {
+                if (r & 5) != 0 {
                     try_open()
                 }
                 if (r & 2) != 0 {
@@ -259,28 +307,62 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
             }
         }
     } with {
-        ;; `Block::update`
-        loop on :update {
-            if bouncing {
-                val dt = step_dt()
-                val offset = original_y - `:number tg_obj_y($id.u.i)`
-                ifs {
-                    offset > 8 => {
-                        set bounce_dir = 90
-                        `tg_obj_move($id.u.i, 0, (float) a_dbl($bounce_dir) * (float) a_dbl($dt));`
+        await Block(b)
+    }
+}
+
+;; A brick (`Brick`): it has 5 coins and then is empty, or it breaks, when
+;; the player is big (when small, it only bounces). `o` has `breakable`,
+;; `sprite`, and `h`, as a bonus block.
+task Brick (life, objs, x, y, o) {
+    pin b = block_new(life, task, x, y, o.h, o.sprite)
+    set pub = [resp=HIT.FORCE]
+    defer {
+        block_del(life, b)
+    }
+    var empty = false
+    var coins = if o.breakable => 0 => 5
+
+    ;; `Brick::try_break`, by the player
+    val func try_break () {
+        if !empty {
+            ifs {
+                coins > 0 => {
+                    val id = b.id
+                    spawn @objs BouncyCoin(x, `:number tg_obj_y($id.u.i)`, true, "images/objects/coin/coin.sprite")
+                    set coins -= 1
+                    set status.coins = math.min(status.coins + 1, 9999)
+                    if coins == 0 {
+                        set empty = true
+                        block_empty(b)
                     }
-                    (offset < (90 * dt)) && (bounce_dir > 0) => {
-                        `tg_obj_move($id.u.i, 0, (float) a_dbl($offset));`
-                        set bounce_dir = 0
-                        set bouncing = false
-                        `tg_looks[$l.u.i].angle = 0;`
-                    }
-                    else => {
-                        `tg_obj_move($id.u.i, 0, (float) a_dbl($bounce_dir) * (float) a_dbl($dt));`
+                    block_bounce(b)
+                }
+                o.breakable => {
+                    block_bounce(b)
+                    if `:boolean tx_player_is_big(&tg_tux)` {
+                        set b.breaking = true       ;; `start_break`
                     }
                 }
             }
         }
+    }
+
+    par :any {
+        loop e on :hit {
+            if e@0 == PLAYER {
+                val id, bits = b.id, e@1
+                val r = `:number tg_block_player($id.u.i, (int) $bits.u.i)`
+                if (r & 1) != 0 {
+                    try_break()
+                }
+                if (r & 2) != 0 {
+                    try_break()          ;; `Brick::hit`
+                }
+            }
+        }
+    } with {
+        await Block(b)                  ;; it breaks: `break_me`
     }
 }
 
@@ -304,6 +386,19 @@ func bonus_of_tile (d) {
     [contents=BONUS_DATA@(tile_field(d, "data") || 0) || "coin", hits=1,
      sprite=tile_field(d, "sprite") || "images/objects/bonus_block/bonusblock.sprite",
      h=if tile_field(d, "sprite") => 32.1 => 32]
+}
+
+;; A brick of a level, as its fields give it.
+func brick_of_level (o) {
+    [breakable=(o.breakable != false),
+     sprite=o.sprite || "images/objects/bonus_block/brick.sprite", h=if o.sprite => 32.1 => 32]
+}
+
+;; A brick of a tile, as its data gives it.
+func brick_of_tile (d) {
+    val spr = tile_field(d, "sprite")
+    [breakable=(tile_field(d, "breakable") != "#f"),
+     sprite=spr || "images/objects/bonus_block/brick.sprite", h=if spr => 32.1 => 32]
 }
 
 ;; The player, as the scripts see it (`Player::register_class`). Each
@@ -546,6 +641,7 @@ task Life (lvl, ts, cont) {
                         :coin          => spawn @objs Coin(life, objs, o.x, o.y)
                         :scripttrigger   => spawn @objs ScriptTrigger(life, scripts, env, o)
                         :sequencetrigger => spawn @objs SequenceTrigger(life, o)
+                        :brick           => spawn @objs Brick(life, objs, o.x, o.y, brick_of_level(o))
                         :bonusblock      => spawn @objs BonusBlock(life, objs, scripts, env, o.x, o.y, bonus_of_level(o))
                         else           => nil
                     }
@@ -564,6 +660,7 @@ task Life (lvl, ts, cont) {
         match ts.objs@id@0 {
             "coin"       => spawn @objs Coin(life, objs, tx, ty)
             "bonusblock" => spawn @objs BonusBlock(life, objs, scripts, env, tx, ty, bonus_of_tile(ts.objs@id@1))
+            "brick"      => spawn @objs Brick(life, objs, tx, ty, brick_of_tile(ts.objs@id@1))
         }
     }
 

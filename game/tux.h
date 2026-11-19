@@ -220,10 +220,11 @@ static float tg_obj_y (int id) {
     return tg_objs[id-1]->bbox.y1;
 }
 
-/* What a block does in its collision with the player (`Block::collision`
- * and `BonusBlock::collision`), as bits: 1, the player drops on it (a
- * buttjump: `try_drop`); 2, the player hits it from below (`hit`). The
- * two are in the order of the original: the drop first. */
+/* What a block sees in its collision with the player (`Block::collision`,
+ * and the start of `BonusBlock::collision` and `Brick::collision`), as
+ * bits: 1, the player does a buttjump; 4, he swimboosts from above; 2, he
+ * hits the block from below (`hit`). The bonus block drops (`try_drop`)
+ * on 1 or 4, the brick breaks on 1, and both do so before the hit. */
 static int tg_block_player (int id, int bits) {
     const TxObj* b = tg_objs[id-1];
     const TxPlayer* p = &tg_tux;
@@ -232,9 +233,11 @@ static int tg_block_player (int id, int bits) {
     if (!(bits & (TG_HIT_LEFT|TG_HIT_RIGHT|TG_HIT_TOP|TG_HIT_BOTTOM))) {
         return 0;               /* !hit_.has_direction() */
     }
-    if (p->does_buttjump ||
-        (tx_player_is_swimboosting(p) && tx_rect_bottom(pb) < tx_rect_top(&b->bbox) + TX_SHIFT_DELTA)) {
+    if (p->does_buttjump) {
         r |= 1;
+    }
+    if (tx_player_is_swimboosting(p) && tx_rect_bottom(pb) < tx_rect_top(&b->bbox) + TX_SHIFT_DELTA) {
+        r |= 4;
     }
     bool in_line_with_player = ((p->physic.vx > 0.f &&
         tx_rect_right(pb) < tx_rect_left(&b->bbox)) ||

@@ -90,4 +90,11 @@ if [ -d "$ROOT/../env-sdl" ]; then
         out/pngdiff tst/shots/official-bonus-$t.png "$TMP/bonus-$t.png" 0 > /dev/null || { echo "shot: bonus-$t differs from the official one"; exit 1; }
     done
     echo "shot: bonus blocks ok (frames 165 and 370 the same as the official ones)"
+    IN=$(grep '^brick1 ' tst/runs.txt | awk '{print $4}')
+    SDL_ATM_SHOT="165:$TMP/brick-165.png,300:$TMP/brick-300.png" \
+        tst/env-play.sh tst/levels/brick.stl 301 "$IN" > /dev/null
+    for t in 165 300; do
+        out/pngdiff tst/shots/official-brick-$t.png "$TMP/brick-$t.png" 0 > /dev/null || { echo "shot: brick-$t differs from the official one"; exit 1; }
+    done
+    echo "shot: bricks ok (frames 165 and 300 the same as the official ones)"
 fi
