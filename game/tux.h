@@ -208,6 +208,62 @@ static int tg_touches_player (int id, float border) {
     return tx_rect_overlaps(&tg_objs[id-1]->bbox, &r);
 }
 
+/* The movement of an object in this step (`set_movement`), and its
+ * position. */
+static void tg_obj_move (int id, float x, float y) {
+    tx_obj_set_movement(tg_objs[id-1], tx_vec(x, y));
+}
+static void tg_obj_size (int id, float w, float h) {
+    tx_obj_set_size(tg_objs[id-1], w, h);
+}
+static float tg_obj_y (int id) {
+    return tg_objs[id-1]->bbox.y1;
+}
+
+/* What a block does in its collision with the player (`Block::collision`
+ * and `BonusBlock::collision`), as bits: 1, the player drops on it (a
+ * buttjump: `try_drop`); 2, the player hits it from below (`hit`). The
+ * two are in the order of the original: the drop first. */
+static int tg_block_player (int id, int bits) {
+    const TxObj* b = tg_objs[id-1];
+    const TxPlayer* p = &tg_tux;
+    const TxRect* pb = &p->col.bbox;
+    int r = 0;
+    if (!(bits & (TG_HIT_LEFT|TG_HIT_RIGHT|TG_HIT_TOP|TG_HIT_BOTTOM))) {
+        return 0;               /* !hit_.has_direction() */
+    }
+    if (p->does_buttjump ||
+        (tx_player_is_swimboosting(p) && tx_rect_bottom(pb) < tx_rect_top(&b->bbox) + TX_SHIFT_DELTA)) {
+        r |= 1;
+    }
+    bool in_line_with_player = ((p->physic.vx > 0.f &&
+        tx_rect_right(pb) < tx_rect_left(&b->bbox)) ||
+        (p->physic.vx < 0.f &&
+        tx_rect_left(pb) > tx_rect_right(&b->bbox)));
+    if (tx_player_is_swimboosting(p) ||
+        ((tx_player_is_sliding(p) || tx_player_is_stone(p)) && in_line_with_player)) {
+        r |= 2;
+    } else if (!tx_player_is_water_jumping(p) && !tx_player_is_swimming(p)) {
+        bool x_coordinates_intersect =
+            tx_rect_right(pb) >= tx_rect_left(&b->bbox) &&
+            tx_rect_left(pb) <= tx_rect_right(&b->bbox);
+        if (tx_rect_top(pb) > tx_rect_bottom(&b->bbox) - TX_SHIFT_DELTA && x_coordinates_intersect) {
+            r |= 2;
+        }
+    }
+    return r;
+}
+
+/* `Block::start_bounce(player)`: the angle of the sprite. */
+static float tg_block_angle (int id) {
+    const TxObj* b = tg_objs[id-1];
+    float center_of_hitter = tx_rect_middle(&tg_tux.col.bbox).x;
+    float offset = (tx_rect_middle(&b->bbox).x - center_of_hitter)*2 / tx_rect_width(&b->bbox);
+    if (offset > 2 || offset < -2)
+        offset = 0;
+    return 10 * offset;         /* BUMP_ROTATION_ANGLE */
+}
+
 /* The sector, with the attributes of `n` tiles still to fill. */
 static void tg_sector (int n) {
     tx_sector_init(&tg_sec);

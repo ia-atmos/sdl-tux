@@ -100,6 +100,175 @@ task Coin (life, x, y) {
     set status.coins += 1
 }
 
+;; The game time, in seconds (`g_game_time`).
+func game_time () {
+    `:number tx_game_time`
+}
+
+;; The length of the step, in seconds.
+func step_dt () {
+    `:number tg_dt`
+}
+
+;; A field of the data of an object of a tile, a string of the original:
+;; `(sprite "images/x.sprite") (data 1)` -> "images/x.sprite", 1.
+func tile_field (s, key) {
+    val i = string.find(s || "", "(" ++ key ++ " ")
+    if i == nil {
+        return nil
+    }
+    val j = string.find(s, ")", i)
+    val v = string.sub(s, i + #key + 2, j - 1)
+    if string.sub(v, 0, 0) == "\"" => string.sub(v, 1, -2) => tonumber(v)
+}
+
+;; A coin that leaves a bonus block: it rises, and fades out. It is only
+;; seen; it does not collide. (`BouncyCoin`)
+task BouncyCoin (x, y, emerge) {
+    val t0 = game_time()
+    set pub = [x=x, y=y, emerge=if emerge => 32 => 0]
+    await :flush
+    loop {
+        await :update
+        val dist = -200 * step_dt()
+        set pub.y += dist
+        set pub.emerge += dist
+        until (game_time() - t0) >= 0.5
+    }
+}
+
+;; The contents of a bonus block by the data of its tile
+;; (`get_content_by_data`); an invalid one is a coin.
+pin BONUS_DATA = ["coin", "coin", "firegrow", "star", "1up", "icegrow",
+                  "light", "trampoline", "portabletrampoline", "rock", "rain",
+                  "explode", "potion", "airgrow", "earthgrow", "light-on",
+                  "retrogrow", "retrostar"]
+
+;; The hits of a bonus block by its type (`get_default_hit_counter`).
+pin BONUS_HITS = [orange=3, purple=5]
+
+;; A bonus block (`Block`, `BonusBlock`): the player hits it from below,
+;; and it gives what it has, and bounces. `o` has its `contents` (as the
+;; strings of the original), `hits` (0 is infinite), `script`, `sprite`,
+;; and the height `h` of its box: 32.1, as `Block` makes it, or 32, the
+;; hitbox of its sprite, when the type of the block changes the sprite
+;; (`MovingSprite::on_type_change`). The images of the blocks are all of
+;; 32x32.
+task BonusBlock (life, objs, scripts, env, x, y, o) {
+    val id = obj_new(x, y, 32, o.h, COL.STATIC, KIND.OTHER)
+    set pub = [resp=HIT.FORCE, sprite=o.sprite, empty=false, angle=0]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+    }
+    var hits = o.hits
+    var original_y = -1
+    var bouncing = false
+    var bounce_dir = 0
+
+    ;; `Block::start_bounce`, by the player
+    val func start_bounce () {
+        if original_y == -1 {
+            set original_y = `:number tg_obj_y($id.u.i)`
+        }
+        set bouncing = true
+        set bounce_dir = -90
+        set pub.angle = `:number tg_block_angle($id.u.i)`
+    }
+
+    ;; `BonusBlock::try_open`, by the player
+    val func try_open () {
+        if !pub.empty {
+            match o.contents {
+                "coin" => {
+                    spawn @objs BouncyCoin(x, `:number tg_obj_y($id.u.i)`, true)
+                    set status.coins = math.min(status.coins + 1, 9999)
+                }
+                "script" => nil
+                else => {
+                    val c = o.contents
+                    `fprintf(stderr, "bonus block: contents not done: %s\n", A_STR_OF($c)->s);`
+                }
+            }
+            if o.script {
+                spawn @scripts script.Script(env, o.script, "BonusBlockScript")
+            }
+            start_bounce()
+            ifs {
+                hits <= 0 => nil        ;; infinite
+                hits == 1 => {
+                    ;; `set_action("empty")`: the hitbox of its image
+                    set pub.empty = true
+                    `tg_obj_size($id.u.i, 32, 32);`
+                }
+                else      => set hits -= 1
+            }
+        }
+    }
+
+    par {
+        loop e on :hit {
+            if e@0 == PLAYER {
+                val bits = e@1
+                val r = `:number tg_block_player($id.u.i, (int) $bits.u.i)`
+                ;; a drop (`try_drop`) of a coin opens it, as a hit
+                if (r & 1) != 0 {
+                    try_open()
+                }
+                if (r & 2) != 0 {
+                    try_open()
+                }
+            }
+        }
+    } with {
+        ;; `Block::update`
+        loop on :update {
+            if bouncing {
+                val dt = step_dt()
+                val offset = original_y - `:number tg_obj_y($id.u.i)`
+                ifs {
+                    offset > 8 => {
+                        set bounce_dir = 90
+                        `tg_obj_move($id.u.i, 0, (float) a_dbl($bounce_dir) * (float) a_dbl($dt));`
+                    }
+                    (offset < (90 * dt)) && (bounce_dir > 0) => {
+                        `tg_obj_move($id.u.i, 0, (float) a_dbl($offset));`
+                        set bounce_dir = 0
+                        set bouncing = false
+                        set pub.angle = 0
+                    }
+                    else => {
+                        `tg_obj_move($id.u.i, 0, (float) a_dbl($bounce_dir) * (float) a_dbl($dt));`
+                    }
+                }
+            }
+        }
+    }
+}
+
+;; A bonus block of a level, as its fields give it.
+func bonus_of_level (o) {
+    var c = "coin"
+    if o.data != nil {
+        set c = BONUS_DATA@(o.data) || "coin"
+    }
+    if o.contents {
+        set c = o.contents
+    }
+    val spr = if o.type => ("images/objects/bonus_block/" ++ o.type ++ "block.sprite")
+                        => "images/objects/bonus_block/bonusblock.sprite"
+    [contents=c, hits=o.count || BONUS_HITS@(o.type) || 1,
+     script=o.script, sprite=o.sprite || spr, h=if o.sprite => 32.1 => 32]
+}
+
+;; A bonus block of a tile, as its data gives it.
+func bonus_of_tile (d) {
+    [contents=BONUS_DATA@(tile_field(d, "data") || 0) || "coin", hits=1,
+     sprite=tile_field(d, "sprite") || "images/objects/bonus_block/bonusblock.sprite",
+     h=if tile_field(d, "sprite") => 32.1 => 32]
+}
+
 ;; The player, as the scripts see it (`Player::register_class`). Each
 ;; method receives the vector of its arguments.
 pin TUX = [
@@ -340,6 +509,7 @@ task Life (lvl, ts, cont) {
                         :coin          => spawn @objs Coin(life, o.x, o.y)
                         :scripttrigger   => spawn @objs ScriptTrigger(life, scripts, env, o)
                         :sequencetrigger => spawn @objs SequenceTrigger(life, o)
+                        :bonusblock      => spawn @objs BonusBlock(life, objs, scripts, env, o.x, o.y, bonus_of_level(o))
                         else           => nil
                     }
                 }
@@ -355,7 +525,8 @@ task Life (lvl, ts, cont) {
         until id == 0
         val tx, ty = `:number tg_conv_px`, `:number tg_conv_py`
         match ts.objs@id@0 {
-            "coin" => spawn @objs Coin(life, tx, ty)
+            "coin"       => spawn @objs Coin(life, tx, ty)
+            "bonusblock" => spawn @objs BonusBlock(life, objs, scripts, env, tx, ty, bonus_of_tile(ts.objs@id@1))
         }
     }
 

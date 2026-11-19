@@ -168,7 +168,7 @@ task script.Script (env, prog, place) {
         }
         if !ok {
             val m = "script error (" ++ place ++ "): " ++ tostring(msg)
-            `fprintf(stderr, "%s\\n", A_STR_OF($m)->s);`
+            `fprintf(stderr, "%s\n", A_STR_OF($m)->s);`
         }
     }
 }
