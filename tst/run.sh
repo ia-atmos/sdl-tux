@@ -56,7 +56,7 @@ fi
 
 # a frame of the first level: identical to the one stored, and, as
 # information, how much it differs from the frame of the official game
-# (what the port does not draw yet: Tux, the blocks, the badguys)
+# (what the port does not draw yet: the badguys)
 if [ -d "$ROOT/../env-sdl" ] && [ -d "$OFFICIAL/data" ]; then
     mkdir -p out
     cc -O2 tools/pngdiff.c -lSDL2 -lSDL2_image -o out/pngdiff
@@ -78,4 +78,16 @@ if [ -d "$ROOT/../env-sdl" ]; then
     n=$(out/pngdiff tst/shots/official-dec-200.png "$TMP/dec-200.png" 0 | awk '{print $1}')
     [ "$n" -le 219 ] || { echo "shot: dec-200 differs from the official one in $n pixels"; exit 1; }
     echo "shot: decals ok (frame 50 the same as the official one, frame 200 in all but $n pixels)"
+fi
+
+# frames of a level with bonus blocks: blocks that bounce, turned, and
+# empty, and coins that rise; the same as the official ones
+if [ -d "$ROOT/../env-sdl" ]; then
+    IN=$(grep '^bonus1 ' tst/runs.txt | awk '{print $4}')
+    SDL_ATM_SHOT="165:$TMP/bonus-165.png,370:$TMP/bonus-370.png" \
+        tst/env-play.sh tst/levels/bonus.stl 371 "$IN" > /dev/null
+    for t in 165 370; do
+        out/pngdiff tst/shots/official-bonus-$t.png "$TMP/bonus-$t.png" 0 > /dev/null || { echo "shot: bonus-$t differs from the official one"; exit 1; }
+    done
+    echo "shot: bonus blocks ok (frames 165 and 370 the same as the official ones)"
 fi

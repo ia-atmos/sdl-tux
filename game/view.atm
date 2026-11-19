@@ -113,18 +113,21 @@ func view.sprite (dir, file, ptr) {
                 a_truthy($hf), (float) a_dbl($fps), a_truthy($hl), (int) a_dbl($loops),
                 a_truthy($hlf), (int) a_dbl($lf), ($fam.type == A_STR) ? A_STR_OF($fam)->s : NULL);
             ```
+            ;; (surfaces (surface (diffuse-texture (file "x.png")) ...)): the
+            ;; images of the surfaces, with no other texture (not drawn)
+            val imgs = if a.surfaces => [a.surfaces.surface.diffuse_texture.file] => a.images
             if a.mirror_action {
                 val other = a.mirror_action
                 `ts_mirror((TsData*) a_nat_ptr($ptr), act, A_STR_OF($other)->s);`
             } else {
-                if a.images {
-                    val n = #a.images
+                if imgs {
+                    val n = #imgs
                     ```
                     int* imgs = malloc($n.u.i * sizeof(int));
                     int* ws = malloc($n.u.i * sizeof(int));
                     int* hs = malloc($n.u.i * sizeof(int));
                     ```
-                    loop k,f in a.images {
+                    loop k,f in imgs {
                         val i = view.image(dir ++ f)
                         val iw, ih = sdl.size(view.imgs@(dir ++ f))
                         `imgs[$k.u.i] = (int) $i.u.i; ws[$k.u.i] = (int) a_dbl($iw); hs[$k.u.i] = (int) a_dbl($ih);`
@@ -216,6 +219,8 @@ func view.build (sec, raw, ntiles) {
                                   (float) a_dbl($ox), (float) a_dbl($oy), c);
                     ```
                 }
+                :coin       => `td_look_level();`
+                :bonusblock => `td_look_level();`
                 :decal => {
                     val d = view.data(o.sprite || "images/decal/explanations/billboard-bigtux.png")
                     val x, y, z = o.x || 0, o.y || 0, o.z_pos || 50
@@ -277,6 +282,13 @@ task View (path) {
         }
     } with {
         loop on :draw {
+            ;; the looks of the objects that are new: their sprites
+            loop {
+                val i = `:number td_look_next()`
+                until i < 0
+                val d = view.data(`:value a_strz(tg_looks[$i.u.i].sprite)`)
+                `td_look_bind($i.u.i, (TsData*) a_nat_ptr($d));`
+            }
             `td_draw(tg_cam.translation);`
         }
     }

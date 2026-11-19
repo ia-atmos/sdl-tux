@@ -62,14 +62,15 @@ typedef struct TdBackground {
 enum { TD_NO_ALIGNMENT=0, TD_LEFT_ALIGNMENT, TD_RIGHT_ALIGNMENT, TD_TOP_ALIGNMENT, TD_BOTTOM_ALIGNMENT };
 
 /* A drawable: what, which, its layer, and the order of its object. */
-enum { TD_MAP=0, TD_GRADIENT=1, TD_BACKGROUND=2, TD_PLAYER=3, TD_SPRITE=4 };
+enum { TD_MAP=0, TD_GRADIENT=1, TD_BACKGROUND=2, TD_PLAYER=3, TD_SPRITE=4, TD_LOOK=5 };
 typedef struct TdItem { int kind, index, layer, order; } TdItem;
 
 static TdMap*      td_maps;      static int td_maps_n, td_maps_cap;
 static TdGradient* td_grads;     static int td_grads_n, td_grads_cap;
 static TdBackground* td_bgs;     static int td_bgs_n, td_bgs_cap;
 static TdItem*     td_items;     static int td_items_n, td_items_cap;
-static TdItem*     td_sorted;
+static TdItem*     td_sorted;    static int td_sorted_cap;
+static int         td_order;     /* the order of the next object */
 
 #include "sprite.h"
 #include "tuxdraw.h"
@@ -77,6 +78,15 @@ static TdItem*     td_sorted;
 /* An object drawn as a sprite at a position (a decal). */
 typedef struct TdSprite { TsSprite s; TxVec pos; } TdSprite;
 static TdSprite* td_sprs; static int td_sprs_n, td_sprs_cap;
+
+/* The sprites of the looks of the objects (game/tux.h), by index: a look
+ * is bound to the data of its sprite once, and has the order of its
+ * object. The objects of the level take their order when the view is
+ * built, in the order of the level (`td_look_level`); the others, when
+ * they are bound. */
+typedef struct TdLook { TsSprite s; int bound; int order; } TdLook;
+static TdLook* td_looks; static int td_looks_cap;
+static int     td_looks_level;      /* the looks of the level that have an order */
 
 #define TD_PUSH(arr, n, cap) do { \
     if ((n) == (cap)) { (cap) = (cap) ? (cap)*2 : 16; (arr) = realloc((arr), (cap)*sizeof(*(arr))); } \
@@ -101,7 +111,12 @@ static void td_reset (int ntiles) {
     free(td_bgs); td_bgs = NULL; td_bgs_n = td_bgs_cap = 0;
     td_sprs_n = 0;
     free(td_items); td_items = NULL; td_items_n = td_items_cap = 0;
-    free(td_sorted); td_sorted = NULL;
+    td_order = 0;
+    td_looks_level = 0;
+    for (int i=0; i<td_looks_cap; i++) {
+        td_looks[i].bound = 0;
+        td_looks[i].order = -1;
+    }
 }
 
 static int td_is_used (int id) {
@@ -135,7 +150,7 @@ static void td_img (int index, AVal img) {
 
 static void td_item (int kind, int index, int layer) {
     TD_PUSH(td_items, td_items_n, td_items_cap);
-    td_items[td_items_n] = (TdItem) { kind, index, layer, td_items_n };
+    td_items[td_items_n] = (TdItem) { kind, index, layer, td_order++ };
     td_items_n++;
 }
 
@@ -421,14 +436,67 @@ static TsSprite* td_sprite (const TsData* d, float x, float y, int layer) {
     return &o->s;
 }
 
+static TdLook* td_look (int i) {
+    if (i >= td_looks_cap) {
+        int n = td_looks_cap ? td_looks_cap : 256;
+        while (n <= i) n *= 2;
+        td_looks = realloc(td_looks, n * sizeof(TdLook));
+        for (int k=td_looks_cap; k<n; k++) {
+            td_looks[k].bound = 0;
+            td_looks[k].order = -1;
+        }
+        td_looks_cap = n;
+    }
+    return &td_looks[i];
+}
+
+/* The next object of the level that has a look takes its order. */
+static void td_look_level (void) {
+    td_look(td_looks_level)->order = td_order++;
+    td_looks_level++;
+}
+
+/* The next look to bind, or -1. */
+static int td_look_next (void) {
+    for (int i=0; i<tg_looks_n; i++) {
+        if (!td_look(i)->bound) return i;
+    }
+    return -1;
+}
+
+static void td_look_bind (int i, const TsData* d) {
+    TdLook* l = td_look(i);
+    ts_init(&l->s, d);
+    l->s.last_ticks = tg_looks[i].born;
+    l->bound = 1;
+    if (l->order < 0) {
+        l->order = td_order++;
+    }
+}
+
+static void td_draw_look (int i, TxVec translation, float sw, float sh) {
+    TgLook* g = &tg_looks[i];
+    TdLook* l = &td_looks[i];
+    if (g->changed) {
+        ts_set_action(&l->s, g->action, -1);
+        g->changed = 0;
+    }
+    l->s.angle = g->angle;
+    l->s.alpha = g->alpha;
+    TxVec pos = (g->obj > 0) ? tx_obj_get_pos(tg_objs[g->obj-1]) : tx_vec(g->x, g->y);
+    ts_draw(&l->s, pos, translation, sw, sh);
+}
+
 /* A frame of the sector, with the translation of the camera. The objects
  * draw in their order (the player first), and then the requests are
  * sorted by layer. */
 static void td_draw (TxVec translation) {
     int w, h;
     sdl_size(&w, &h);
-    if (td_sorted == NULL) {
-        td_sorted = malloc((td_items_n ? td_items_n : 1) * sizeof(TdItem));
+    int n = td_items_n + tg_looks_n;
+    if (n > td_sorted_cap) {
+        td_sorted_cap = n;
+        td_sorted = realloc(td_sorted, td_sorted_cap * sizeof(TdItem));
     }
     for (int i=0; i<td_items_n; i++) {
         if (td_items[i].kind == TD_PLAYER) {
@@ -436,8 +504,14 @@ static void td_draw (TxVec translation) {
         }
     }
     memcpy(td_sorted, td_items, td_items_n * sizeof(TdItem));
-    qsort(td_sorted, td_items_n, sizeof(TdItem), td_cmp);
-    for (int i=0; i<td_items_n; i++) {
+    n = td_items_n;
+    for (int i=0; i<tg_looks_n; i++) {
+        if (tg_looks[i].alive && i < td_looks_cap && td_looks[i].bound) {
+            td_sorted[n++] = (TdItem) { TD_LOOK, i, tg_looks[i].layer, td_looks[i].order };
+        }
+    }
+    qsort(td_sorted, n, sizeof(TdItem), td_cmp);
+    for (int i=0; i<n; i++) {
         const TdItem* it = &td_sorted[i];
         switch (it->kind) {
             case TD_MAP:      td_draw_map(&td_maps[it->index], translation, (float) w, (float) h); break;
@@ -445,6 +519,7 @@ static void td_draw (TxVec translation) {
             case TD_BACKGROUND: td_draw_background(&td_bgs[it->index], translation, (float) w, (float) h); break;
             case TD_PLAYER:   if (tp_ready) tp_draw(&tg_tux, translation, (float) w, (float) h); break;
             case TD_SPRITE:   ts_draw(&td_sprs[it->index].s, td_sprs[it->index].pos, translation, (float) w, (float) h); break;
+            case TD_LOOK:     td_draw_look(it->index, translation, (float) w, (float) h); break;
         }
     }
 }

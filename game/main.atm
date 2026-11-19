@@ -26,6 +26,10 @@ pin KEYS = [
 val path = ...
 val trace = os.getenv("TUX_TRACE")
 
+;; the textures that are scaled or rotated are filtered, as the original
+;; sets (`SDLVideoSystem`)
+`SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2");`
+
 sdl.window [title="SuperTux", width=1280, height=800, logical=[1280,800]]
 
 ;; the keys since the last step

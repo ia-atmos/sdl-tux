@@ -87,17 +87,33 @@ pin status = [coins=100, state=[]]
 ;; The response to a collision is the field `resp` of its `pub`, which
 ;; the task changes as its behavior changes.
 
-;; A coin: waits for the player, and is collected. (`Coin`)
-task Coin (life, x, y) {
+;; The look of an object (game/tux.h): its sprite, at a position, in a
+;; layer. Gives its index.
+func look_new (sprite, x, y, layer) {
+    `:number tg_look_new(A_STR_OF($sprite)->s, (float) a_dbl($x), (float) a_dbl($y), (int) $layer.u.i)`
+}
+
+;; The layers of the original (`LAYER_OBJECTS`).
+val LAYER_OBJECTS = 50
+
+;; A coin: waits for the player, and is collected: it leaves a coin that
+;; rises. (`Coin`)
+task Coin (life, objs, x, y) {
     val id = obj_new(x, y, 32, 32, COL.TOUCHABLE, KIND.OTHER)
+    val sprite = "images/objects/coin/coin.sprite"
+    val l = look_new(sprite, x, y, LAYER_OBJECTS - 1)
+    `tg_looks[$l.u.i].obj = $id.u.i;`
     set pub = [resp=HIT.ABORT]
     set life.byid@id = task
     defer {
         set life.byid@id = nil
         `tg_obj_del($id.u.i);`
+        `tg_look_del($l.u.i);`
     }
     await :hit until (it@0 == PLAYER) && `:boolean tg_touches_player($id.u.i, -0.1f)`
-    set status.coins += 1
+    set status.coins = math.min(status.coins + 1, 9999)
+    val px, py = `:number tg_objs[$id.u.i-1]->bbox.x1`, `:number tg_objs[$id.u.i-1]->bbox.y1`
+    spawn @objs BouncyCoin(px, py, false, sprite)
 }
 
 ;; The game time, in seconds (`g_game_time`).
@@ -122,18 +138,35 @@ func tile_field (s, key) {
     if string.sub(v, 0, 0) == "\"" => string.sub(v, 1, -2) => tonumber(v)
 }
 
-;; A coin that leaves a bonus block: it rises, and fades out. It is only
-;; seen; it does not collide. (`BouncyCoin`)
-task BouncyCoin (x, y, emerge) {
+;; A coin that leaves a bonus block, or a coin that is collected: it
+;; rises, and fades out. It is only seen; it does not collide.
+;; (`BouncyCoin`)
+task BouncyCoin (x, y, emerge, sprite) {
     val t0 = game_time()
-    set pub = [x=x, y=y, emerge=if emerge => 32 => 0]
+    var py = y
+    var emerge_distance = if emerge => 32 => 0     ;; the height of its sprite
+    val l = look_new(sprite, x, y, LAYER_OBJECTS - 5)
+    defer {
+        `tg_look_del($l.u.i);`
+    }
+    ;; `BouncyCoin::draw`: its layer, and its alpha
+    val func look () {
+        val layer = if emerge_distance > 0 => LAYER_OBJECTS - 5 => LAYER_OBJECTS + 5
+        val time_left = 0.5 - (game_time() - t0)
+        val alpha = if time_left < 0.2 => time_left / 0.2 => 1
+        `tg_looks[$l.u.i].y = (float) a_dbl($py);`
+        `tg_looks[$l.u.i].layer = (int) $layer.u.i;`
+        `tg_looks[$l.u.i].alpha = (float) a_dbl($alpha);`
+    }
+    look()
     await :flush
     loop {
         await :update
         val dist = -200 * step_dt()
-        set pub.y += dist
-        set pub.emerge += dist
+        set py += dist
+        set emerge_distance += dist
         until (game_time() - t0) >= 0.5
+        look()
     }
 }
 
@@ -156,11 +189,14 @@ pin BONUS_HITS = [orange=3, purple=5]
 ;; 32x32.
 task BonusBlock (life, objs, scripts, env, x, y, o) {
     val id = obj_new(x, y, 32, o.h, COL.STATIC, KIND.OTHER)
-    set pub = [resp=HIT.FORCE, sprite=o.sprite, empty=false, angle=0]
+    val l = look_new(o.sprite, x, y, LAYER_OBJECTS + 1)
+    `tg_looks[$l.u.i].obj = $id.u.i;`
+    set pub = [resp=HIT.FORCE, empty=false]
     set life.byid@id = task
     defer {
         set life.byid@id = nil
         `tg_obj_del($id.u.i);`
+        `tg_look_del($l.u.i);`
     }
     var hits = o.hits
     var original_y = -1
@@ -174,7 +210,7 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
         }
         set bouncing = true
         set bounce_dir = -90
-        set pub.angle = `:number tg_block_angle($id.u.i)`
+        `tg_looks[$l.u.i].angle = tg_block_angle($id.u.i);`
     }
 
     ;; `BonusBlock::try_open`, by the player
@@ -182,7 +218,7 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
         if !pub.empty {
             match o.contents {
                 "coin" => {
-                    spawn @objs BouncyCoin(x, `:number tg_obj_y($id.u.i)`, true)
+                    spawn @objs BouncyCoin(x, `:number tg_obj_y($id.u.i)`, true, "images/objects/coin/coin.sprite")
                     set status.coins = math.min(status.coins + 1, 9999)
                 }
                 "script" => nil
@@ -200,6 +236,7 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
                 hits == 1 => {
                     ;; `set_action("empty")`: the hitbox of its image
                     set pub.empty = true
+                    `tg_look_action($l.u.i, "empty");`
                     `tg_obj_size($id.u.i, 32, 32);`
                 }
                 else      => set hits -= 1
@@ -236,7 +273,7 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
                         `tg_obj_move($id.u.i, 0, (float) a_dbl($offset));`
                         set bounce_dir = 0
                         set bouncing = false
-                        set pub.angle = 0
+                        `tg_looks[$l.u.i].angle = 0;`
                     }
                     else => {
                         `tg_obj_move($id.u.i, 0, (float) a_dbl($bounce_dir) * (float) a_dbl($dt));`
@@ -506,7 +543,7 @@ task Life (lvl, ts, cont) {
                         set x, y = o.x, o.y
                     }
                     match o.tag {
-                        :coin          => spawn @objs Coin(life, o.x, o.y)
+                        :coin          => spawn @objs Coin(life, objs, o.x, o.y)
                         :scripttrigger   => spawn @objs ScriptTrigger(life, scripts, env, o)
                         :sequencetrigger => spawn @objs SequenceTrigger(life, o)
                         :bonusblock      => spawn @objs BonusBlock(life, objs, scripts, env, o.x, o.y, bonus_of_level(o))
@@ -525,7 +562,7 @@ task Life (lvl, ts, cont) {
         until id == 0
         val tx, ty = `:number tg_conv_px`, `:number tg_conv_py`
         match ts.objs@id@0 {
-            "coin"       => spawn @objs Coin(life, tx, ty)
+            "coin"       => spawn @objs Coin(life, objs, tx, ty)
             "bonusblock" => spawn @objs BonusBlock(life, objs, scripts, env, tx, ty, bonus_of_tile(ts.objs@id@1))
         }
     }

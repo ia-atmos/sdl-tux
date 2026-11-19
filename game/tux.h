@@ -264,9 +264,50 @@ static float tg_block_angle (int id) {
     return 10 * offset;         /* BUMP_ROTATION_ANGLE */
 }
 
+/* The looks of the objects: what the view draws of each one, a sprite
+ * at a position. The objects that are tasks in Atmos keep their looks
+ * here, by index, in the order in which they are created; the view, if
+ * any, binds each new look to the data of its sprite, and draws the
+ * looks that are alive (game/draw.h). With no view, they are only kept. */
+typedef struct TgLook {
+    char  sprite[96];
+    char  action[32];
+    int   changed;                  /* the action changed */
+    float x, y, angle, alpha;
+    int   layer;
+    int   alive;
+    int   obj;                      /* at the box of this object, if > 0 */
+    float born;                     /* the game time of its creation */
+} TgLook;
+static TgLook* tg_looks;
+static int     tg_looks_n, tg_looks_cap;
+
+static int tg_look_new (const char* sprite, float x, float y, int layer) {
+    if (tg_looks_n == tg_looks_cap) {
+        tg_looks_cap = tg_looks_cap ? tg_looks_cap*2 : 256;
+        tg_looks = realloc(tg_looks, tg_looks_cap * sizeof(TgLook));
+    }
+    TgLook* l = &tg_looks[tg_looks_n];
+    memset(l, 0, sizeof(*l));
+    snprintf(l->sprite, sizeof(l->sprite), "%s", sprite);
+    l->x = x; l->y = y; l->layer = layer;
+    l->alpha = 1;
+    l->alive = 1;
+    l->born = tx_game_time;
+    return tg_looks_n++;
+}
+static void tg_look_action (int i, const char* action) {
+    snprintf(tg_looks[i].action, sizeof(tg_looks[i].action), "%s", action);
+    tg_looks[i].changed = 1;
+}
+static void tg_look_del (int i) {
+    tg_looks[i].alive = 0;
+}
+
 /* The sector, with the attributes of `n` tiles still to fill. */
 static void tg_sector (int n) {
     tx_sector_init(&tg_sec);
+    tg_looks_n = 0;
     tg_sec.tiles.count = n;
     tg_sec.tiles.attrs = calloc(n, sizeof(uint32_t));
     tg_sec.tiles.data  = calloc(n, sizeof(int));
