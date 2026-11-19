@@ -11,6 +11,7 @@
 set -e
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 ATMOS=${ATMOS:-$ROOT/../lang/atmos}
+export ATMOS_REAL=float     # reals are 32-bit floats, as in the original
 OFFICIAL=${OFFICIAL:-$ROOT/../official/supertux}
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT

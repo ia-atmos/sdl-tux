@@ -4,6 +4,7 @@
 #   tst/play.sh LEVEL TICKS [INPUT]         (see tst/play.atm)
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 ATMOS=${ATMOS:-$ROOT/../lang/atmos}
+export ATMOS_REAL=float     # reals are 32-bit floats, as in the original
 BIN=$ROOT/out/play
 cd "$ROOT"
 if [ ! -x "$BIN" ] || [ -n "$(find game tst/play.atm -newer "$BIN" 2>/dev/null)" ]; then
