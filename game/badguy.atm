@@ -26,7 +26,7 @@ pin DIRS = [auto=DIR.AUTO, left=DIR.LEFT, right=DIR.RIGHT]
 pin DIR_NAME = [@(DIR.LEFT)="left", @(DIR.RIGHT)="right"]
 
 ;; The badguys, by the name of their class: their kind (a walking badguy,
-;; a jumpy, or a stalactite), their sprite; for the walking ones, their speed, and how far they let themselves fall from a ledge
+;; a jumpy, a bouncing or a flying snowball, or a stalactite), their sprite; for the walking ones, their speed, and how far they let themselves fall from a ledge
 ;; (`max_drop_height`, -1: they always fall), whether the player squishes
 ;; them (`collision_squished`), and whether they sleep until the player
 ;; comes near (`SSpiky`).
@@ -41,6 +41,10 @@ pin BADGUYS = [
                  walk_speed=80, max_drop=600, squish=false, sleeps=true, freezable=true],
     jumpy     = [kind=:jumpy, name="jumpy", sprite="images/creatures/jumpy/snowjumpy.sprite",
                  squish=false, freezable=true],
+    bouncingsnowball = [kind=:bouncing, name="bouncingsnowball",
+                 sprite="images/creatures/bouncing_snowball/bouncing_snowball.sprite", squish=true],
+    flyingsnowball = [kind=:flying, name="flyingsnowball",
+                 sprite="images/creatures/flying_snowball/flying_snowball.sprite", squish=true],
     stalactite = [kind=:stalactite, name="stalactite", sprite="images/creatures/stalactite/stalactite_ice.sprite",
                  squish=false, layer=-1],
 ]
@@ -80,6 +84,7 @@ task BadGuy (life, objs, o, cls, uid) {
         initialized = false, on_ground = false, nx = 0, ny = 0,
         colgroup_active = if cls.kind == :stalactite => COL.TOUCHABLE => COL.MOVING,
         st = :hanging, shake_timer = timer(),               ;; Stalactite
+        elapsed = 0, puff_timer = timer(),                  ;; FlyingSnowBall
         in_water = false, removed = false,
         state_timer = timer(), turn_timer = timer(), turn_counter = 0,
         alpha = 1, alpha_before = 1,
@@ -88,6 +93,9 @@ task BadGuy (life, objs, o, cls, uid) {
         ground_y = 0, ground_set = false,                   ;; Jumpy
         anim = anim_new(),
     ]
+    if cls.kind == :flying {
+        `TG_PHYS($id.u.i).gravity_enabled_flag = 0;`
+    }
     val bdir = b.dir
     `tg_bg_new($id.u.i, (uint32_t) $uid.u.i, A_STR_OF($name)->s, (int) $bdir.u.i);`
 
@@ -186,7 +194,7 @@ task BadGuy (life, objs, o, cls, uid) {
     ;; `WalkingBadguy::turn_around`
     val func turn_around () {
         set_dir(if b.dir == DIR.LEFT => DIR.RIGHT => DIR.LEFT)
-        if (b.state == BG.INIT) || (b.state == BG.INACTIVE) || (b.state == BG.ACTIVE) {
+        if (cls.kind == :bouncing) || (b.state == BG.INIT) || (b.state == BG.INACTIVE) || (b.state == BG.ACTIVE) {
             set_action(DIR_NAME@(b.dir))
         }
         `TG_PHYS($id.u.i).vx = -TG_PHYS($id.u.i).vx;`
@@ -213,6 +221,15 @@ task BadGuy (life, objs, o, cls, uid) {
 
     ;; `initialize`: `SSpiky::initialize`, for one that sleeps
     val func initialize () {
+        if cls.kind == :bouncing {
+            set_vx(if b.dir == DIR.LEFT => -80 => 80)
+            set_action(DIR_NAME@(b.dir))
+            return nil
+        }
+        if cls.kind == :flying {
+            set_action(DIR_NAME@(b.dir))
+            return nil
+        }
         if cls.kind != :walker {
             return nil              ;; `BadGuy::initialize`
         }
@@ -235,6 +252,10 @@ task BadGuy (life, objs, o, cls, uid) {
                 }
                 initialize()
                 set b.initialized = true
+            }
+            ;; `FlyingSnowBall::activate`
+            if cls.kind == :flying {
+                timer_start(b.puff_timer, `:number tr_randf(&tg_rand, 4.0f, 8.0f)`)
             }
         }
     }
@@ -366,8 +387,58 @@ task BadGuy (life, objs, o, cls, uid) {
         }
     }
 
+    ;; `BouncingSnowball::active_update`
+    val func bouncing_active_update () {
+        base_active_update()
+        val d = DIR_NAME@(b.dir)
+        val act = b.anim.name
+        if ((act == "left-up") || (act == "right-up")) && anim_done(b.anim) {
+            set_action(d)
+        }
+        val ground = `:boolean !tg_bsnow_free_below($id.u.i)`
+        if ground && (vy() >= 64.0) {
+            set_action(d ++ "-down")
+        }
+        if !ground && ((b.anim.name == "left-down") || (b.anim.name == "right-down")) {
+            set_action(d)
+        }
+        ;; left-right faux collision
+        val bd = b.dir
+        if !`:boolean tg_bsnow_free_side($id.u.i, (int) $bd.u.i)` {
+            set_dir(if b.dir == DIR.LEFT => DIR.RIGHT => DIR.LEFT)
+            set_action(DIR_NAME@(b.dir))
+            `TG_PHYS($id.u.i).vx = -TG_PHYS($id.u.i).vx;`
+        }
+    }
+
+    ;; `FlyingSnowBall::active_update`
+    val func flying_active_update () {
+        val el = b.elapsed
+        set b.elapsed = `:number tg_fly_update($id.u.i, (float) a_dbl($el))`
+        if `:boolean tg_player_alive()` {
+            set_dir(if `:boolean tg_tux.col.bbox.x1 > tg_objs[$id.u.i-1]->bbox.x1` => DIR.RIGHT => DIR.LEFT)
+            set_action(DIR_NAME@(b.dir))
+        }
+        ;; puffs of smoke
+        if timer_check(b.puff_timer) {
+            val px = `:number tx_rect_middle(&tg_objs[$id.u.i-1]->bbox).x`
+            val py = `:number tx_rect_middle(&tg_objs[$id.u.i-1]->bbox).y`
+            val sx = `:number tr_randf(&tg_grand, -10, 10)`
+            spawn @objs SpriteParticle("images/particles/smoke.sprite", "default", px, py, sx, 150, 0, 0, LAYER_OBJECTS - 1)
+            timer_start(b.puff_timer, `:number tr_randf(&tg_rand, 4.0f, 8.0f)`)
+        }
+    }
+
     ;; `active_update`: `SSpiky::active_update`, for one that sleeps
     val func active_update () {
+        if cls.kind == :bouncing {
+            bouncing_active_update()
+            return nil
+        }
+        if cls.kind == :flying {
+            flying_active_update()
+            return nil
+        }
         if cls.kind == :stalactite {
             stalactite_active_update()
             return nil
@@ -465,6 +536,35 @@ task BadGuy (life, objs, o, cls, uid) {
     ;; `WalkingBadguy::collision_solid` (`BadGuy::collision_solid` for one
     ;; that is not walking)
     val func collision_solid (bits, nx, ny) {
+        if cls.kind == :flying {
+            if (bits & (HIT.TOP | HIT.BOTTOM)) != 0 {
+                set_vy(0)
+            }
+            return nil
+        }
+        if cls.kind == :bouncing {
+            ;; `BouncingSnowball::collision_solid`
+            if !pub.active {
+                set_vx(0)
+                set_vy(0)
+                on_ground_hit(bits, nx, ny)
+                return nil
+            }
+            ifs {
+                (bits & HIT.BOTTOM) != 0 => {
+                    if b.state == BG.ACTIVE {
+                        val bounce = -vy() * 0.8
+                        set_vy(math.min(-450, bounce))
+                        set_action(DIR_NAME@(b.dir) ++ "-up", 1)
+                    } else {
+                        set_vy(0)
+                    }
+                }
+                (bits & HIT.TOP) != 0 => set_vy(0)
+                else => nil
+            }
+            return nil
+        }
         if cls.kind == :stalactite {
             if (b.st == :falling) && ((bits & HIT.BOTTOM) != 0) {
                 squish()
@@ -547,6 +647,20 @@ task BadGuy (life, objs, o, cls, uid) {
                 if cls.kind == :jumpy {
                     return jumpy_hit(bits, 0, 0)
                 }
+                if cls.kind == :flying {
+                    return HIT.FORCE        ;; `BadGuy::collision_badguy`
+                }
+                if cls.kind == :bouncing {
+                    ;; `BouncingSnowball::collision_badguy`
+                    if (((bits & HIT.LEFT) != 0) && (b.dir == DIR.LEFT)) ||
+                       (((bits & HIT.RIGHT) != 0) && (b.dir == DIR.RIGHT))
+                    {
+                        turn_around()
+                    } else {
+                        collision_solid(bits, 0, 0)
+                    }
+                    return HIT.CONTINUE
+                }
                 if b.sleep != :walking {
                     return HIT.FORCE        ;; `BadGuy::collision_badguy`
                 }
@@ -570,6 +684,11 @@ task BadGuy (life, objs, o, cls, uid) {
                 }
                 if cls.squish {
                     set_action("squished-" ++ DIR_NAME@(b.dir))
+                    if cls.kind == :flying {
+                        `TG_PHYS($id.u.i).gravity_enabled_flag = 1;`
+                        set_ay(0)
+                        set_vy(0)
+                    }
                     kill_squished()
                     return HIT.FORCE
                 }

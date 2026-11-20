@@ -61,6 +61,7 @@ static char    (*tg_bg_cls)[24];
 static int*      tg_bg_state;
 static int*      tg_bg_dir;             /* TX_DIR_* */
 static int*      tg_bg_slope;           /* m_detected_slope of might_fall */
+static float*    tg_bg_start_y;         /* m_start_position.y */
 static int       tg_bg_cap;
 
 /* The physic of each object, by id, for the objects that move by it. */
@@ -172,10 +173,16 @@ static void tg_on_trigger (void* user, TxObj* other, int event) {
 static TrRandom tg_grand;
 static int      tg_grand_ready;
 
+/* `gameRandom`: seeded once, at the start of the game, with TUX_SEED
+ * (the random seed of the configuration), or else with the time. */
+static TrRandom tg_rand;
+
 static void tg_grand_init (void) {
     if (!tg_grand_ready) {
         const char* v = getenv("TUX_GSEED");
         tr_seed(&tg_grand, v ? atoi(v) : 0);
+        v = getenv("TUX_SEED");
+        tr_seed(&tg_rand, v ? atoi(v) : 0);
         tg_grand_ready = 1;
     }
 }
@@ -452,6 +459,7 @@ static void tg_bg_new (int id, uint32_t uid, const char* cls, int dir) {
         tg_bg_state = realloc(tg_bg_state, n * sizeof(int));
         tg_bg_dir   = realloc(tg_bg_dir, n * sizeof(int));
         tg_bg_slope = realloc(tg_bg_slope, n * sizeof(int));
+        tg_bg_start_y = realloc(tg_bg_start_y, n * sizeof(float));
         for (int i=tg_bg_cap; i<n; i++) tg_bg_uid[i] = 0;
         tg_bg_cap = n;
     }
@@ -460,6 +468,7 @@ static void tg_bg_new (int id, uint32_t uid, const char* cls, int dir) {
     tg_bg_state[id] = 0;
     tg_bg_dir[id] = dir;
     tg_bg_slope[id] = 0;
+    tg_bg_start_y[id] = tg_objs[id-1]->bbox.y1;
 }
 
 static int tg_is_bg (int id) {
@@ -549,6 +558,41 @@ static int tg_stalactite_reach (int id) {
     if (tx_free_line_of_sight(&tg_sec, eye, tx_vec(tx_rect_left(pb), tx_rect_bottom(pb)), false, me)) return 1;
     if (tx_free_line_of_sight(&tg_sec, eye, tx_rect_middle(pb), false, me)) return 1;
     return 0;
+}
+
+/* BouncingSnowball::active_update: the ground below, and a solid at its
+ * side */
+static int tg_bsnow_free_below (int id) {
+    const TxRect* bb = &tg_objs[id-1]->bbox;
+    TxRect lookbelow = *bb;
+    tx_rect_set_bottom(&lookbelow, tx_rect_bottom(bb) + 48);
+    tx_rect_set_left(&lookbelow, tx_rect_left(bb) + 10);
+    tx_rect_set_right(&lookbelow, tx_rect_right(bb) - 10);
+    tx_rect_set_top(&lookbelow, tx_rect_top(bb) + 31);
+    return tx_is_free_of_statics(&tg_sec, &lookbelow, NULL, false, TX_TILE_SOLID);
+}
+static int tg_bsnow_free_side (int id, int dir) {
+    const TxRect* bb = &tg_objs[id-1]->bbox;
+    TxRect side = tx_rect_grown(bb, -1.f);
+    tx_rect_set_left(&side, tx_rect_left(bb) + (dir == TX_DIR_LEFT ? -1.f : 1.f));
+    tx_rect_set_right(&side, tx_rect_right(bb) + (dir == TX_DIR_LEFT ? -1.f : 1.f));
+    return tx_is_free_of_statics(&tg_sec, &side, NULL, true, TX_TILE_SOLID);
+}
+
+/* FlyingSnowBall::active_update: the height it flies to, and its
+ * movement; gives the new total_time_elapsed */
+static float tg_fly_update (int id, float total_time_elapsed) {
+    const float GLOBAL_SPEED_MULT = 0.8f;
+    const float TAU = 6.28318530717958647692f, PI = 3.14159265358979323846f;
+    TxObj* o = tg_objs[id-1];
+    TxPhysic* ph = &tg_physs[id-1];
+    total_time_elapsed = fmodf(total_time_elapsed + tg_dt, TAU / GLOBAL_SPEED_MULT);
+    float delta = total_time_elapsed * GLOBAL_SPEED_MULT;
+    float targetHgt = powf(sinf(delta), 3.f) + sinf(3.f * ((delta - PI) / 3.f)) / 3.f;
+    targetHgt = targetHgt * 100.f + tg_bg_start_y[id];
+    ph->vy = targetHgt - o->bbox.y1;
+    tx_obj_set_movement(o, tx_physic_get_movement(ph, tg_sec.gravity, 1.f));
+    return total_time_elapsed;
 }
 
 /* The part of BadGuy::update on the sector: out of it (1: the badguy is

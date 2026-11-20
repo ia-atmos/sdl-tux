@@ -12,4 +12,6 @@ if [ ! -x "$BIN" ] || [ -n "$(find game tst/play.atm -newer "$BIN" 2>/dev/null)"
     ATMOS_CFLAGS="${ATMOS_CFLAGS:--O2} -I$ROOT" ATMOS_LDFLAGS="-lm" \
         "$ATMOS" -o "$BIN" tst/play.atm || exit 1
 fi
+# the seeds of the random numbers, as tools/bench/official.sh gives them
+export TUX_SEED=${TUX_SEED:-1} TUX_GSEED=${TUX_GSEED:-1}
 exec "$BIN" "$@"
