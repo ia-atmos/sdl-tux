@@ -1,0 +1,171 @@
+;; The sprites as the logic of the game sees them: the hitboxes of their
+;; actions, and their animation, which ends some behaviors in the original
+;; (`Sprite::animation_done`); and the timers of the original.
+
+pin sprites = []
+
+;; A timer of the original (`Timer`), in game time.
+func timer () {
+    [period=0, start=0]
+}
+func timer_start (t, period) {
+    set t.period = period
+    set t.start = game_time()
+}
+func timer_check (t) {
+    if (t.period != 0) && ((game_time() - t.start) >= t.period) {
+        set t.period = 0
+        true
+    } else {
+        false
+    }
+}
+func timer_started (t) {
+    (t.period != 0) && ((t.period - (game_time() - t.start)) > 0)
+}
+func timer_progress (t) {
+    (game_time() - t.start) / t.period
+}
+
+;; The box of an action of a sprite: [x, y, w, h], the hitbox and its
+;; offset, or nil if there is no such action.
+func sprite_box (path, action) {
+    val p = if string.sub(path, 0, 0) == "/" => path => ("/" ++ path)
+    if sprites@p == nil {
+        set sprites@p = data.load(p)
+    }
+    val spr = sprites@p
+    var act
+    loop _,a in spr {
+        if (type(a) == :table) && (a.tag == :action) && (a.name == action) {
+            set act = a
+        }
+    }
+    if act && !act.hitbox && act.mirror_action {
+        loop _,a in spr {
+            if (type(a) == :table) && (a.tag == :action) && (a.name == act.mirror_action) {
+                set act = a
+            }
+        }
+    }
+    ifs {
+        act == nil => nil
+        act.hitbox && (#act.hitbox == 4) => [act.hitbox@0, act.hitbox@1, act.hitbox@2, act.hitbox@3]
+        else => {
+            val sz = act.size || [32, 32]
+            val x, y = if act.hitbox => (act.hitbox@0, act.hitbox@1) => (0, 0)
+            [x, y, sz@0 - x, sz@1 - y]
+        }
+    }
+}
+
+;; The hitbox of an action of a sprite: its width and height. The action
+;; nil is the one that a new sprite has: "default", or else the first one.
+func sprite_hitbox (path, action) {
+    val p = if string.sub(path, 0, 0) == "/" => path => ("/" ++ path)
+    if sprites@p == nil {
+        set sprites@p = data.load(p)
+    }
+    val spr = sprites@p
+    var act
+    loop _,a in spr {
+        if (type(a) == :table) && (a.tag == :action) {
+            if (action == nil) && (act == nil) {
+                set act = a
+            }
+            if a.name == (action || "default") {
+                set act = a
+            }
+        }
+    }
+    ;; a mirror action has the hitbox of the other, if not its own
+    if act && !act.hitbox && act.mirror_action {
+        loop _,a in spr {
+            if (type(a) == :table) && (a.tag == :action) && (a.name == act.mirror_action) {
+                set act = a
+            }
+        }
+    }
+    ifs {
+        act == nil   => (nil, nil)       ;; no such action: no change
+        act.hitbox && (#act.hitbox == 4) => (act.hitbox@2, act.hitbox@3)
+        else => {
+            val sz = act.size || [32, 32]
+            val x, y = if act.hitbox => (act.hitbox@0, act.hitbox@1) => (0, 0)
+            (sz@0 - x, sz@1 - y)
+        }
+    }
+}
+
+;; An action of a sprite, as its data has it (a mirror action has the
+;; frames of the other): its number of frames, fps, loops, and loop frame.
+func sprite_action (path, name) {
+    val p = if string.sub(path, 0, 0) == "/" => path => ("/" ++ path)
+    if sprites@p == nil {
+        set sprites@p = data.load(p)
+    }
+    val spr = sprites@p
+    var act
+    loop _,a in spr {
+        if (type(a) == :table) && (a.tag == :action) && (a.name == name) {
+            set act = a
+        }
+    }
+    if act == nil {
+        return nil
+    }
+    var imgs = act.images
+    if act.mirror_action {
+        loop _,a in spr {
+            if (type(a) == :table) && (a.tag == :action) && (a.name == act.mirror_action) {
+                set imgs = a.images
+            }
+        }
+    }
+    [n=if imgs => #imgs => 1, fps=act.fps || 10,
+     loops=if act.loops != nil => act.loops => nil, loop_frame=math.max(act.loop_frame || 1, 1)]
+}
+
+;; The animation of a sprite, as the logic of the original sees it
+;; (`Sprite::set_action`, `Sprite::update`, `Sprite::animation_done`):
+;; the sprite advances when it is drawn, which is after each step.
+func anim_new () {
+    [act=nil, frame=0, idx=0, loops=-1, last=game_time()]
+}
+func anim_set (a, path, name, loops) {
+    val act = sprite_action(path, name)
+    if act {
+        set a.loops = if act.loops != nil => act.loops => loops
+        set a.frame = 0
+        set a.idx = 0
+        set a.act = act
+        set a.last = game_time()
+    }
+}
+func anim_update (a) {
+    val act = a.act
+    if act {
+        val now = game_time()
+        val inc = if a.last > 0 => act.fps * (now - a.last) => 0
+        set a.last = now
+        set a.frame += inc
+        loop {
+            until a.frame < 1
+            set a.frame -= 1
+            set a.idx += 1
+        }
+        loop {
+            until (a.idx < act.n) || (a.loops == 0)
+            set a.idx -= act.n - (act.loop_frame - 1)
+            set a.loops -= 1
+        }
+        if a.loops == 0 {
+            set a.frame = 0
+            set a.idx = act.n - 1
+        }
+    }
+}
+func anim_done (a) {
+    a.loops == 0
+}
+

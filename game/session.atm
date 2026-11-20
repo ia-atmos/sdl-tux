@@ -131,6 +131,8 @@ func step_dt () {
     `:number tg_dt`
 }
 
+include "sprites.atm"
+
 ;; A field of the data of an object of a tile, a string of the original:
 ;; `(sprite "images/x.sprite") (data 1)` -> "images/x.sprite", 1.
 func tile_field (s, key) {
@@ -477,25 +479,25 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
 
 ;; A particle that is a sprite (`SpriteParticle`), with no timeout: it
 ;; moves by its velocity and acceleration, until the animation of its
-;; action ends (once), or it leaves the view of the camera. `x`, `y` is its
-;; middle (`ANCHOR_MIDDLE`); `w`, `h` the hitbox of the action. The
-;; animation is the one of an action of one frame at `fps`, which the
-;; sprite advances when it is drawn, after each step.
-task SpriteParticle (sprite, action, x, y, w, h, vx, vy, ax, ay, layer, fps) {
-    var px = x - (0 + ((w - 0) / 2))
-    var py = y - (0 + ((h - 0) / 2))
+;; action ends (once), or it leaves the view of the camera. `x`, `y` is the
+;; middle of the hitbox of the action (`ANCHOR_MIDDLE`).
+task SpriteParticle (sprite, action, x, y, vx, vy, ax, ay, layer) {
+    val box = sprite_box(sprite, action)
+    var px = x - (box@0 + (((box@0 + box@2) - box@0) / 2))
+    var py = y - (box@1 + (((box@1 + box@3) - box@1) / 2))
     var vx_, vy_ = vx, vy
     val l = look_new(sprite, px, py, layer)
     `tg_look_action_loops($l.u.i, A_STR_OF($action)->s, 1);`
     defer {
         `tg_look_del($l.u.i);`
     }
-    var frame = 0
-    var last = game_time()
+    pin a = anim_new()
+    anim_set(a, sprite, action, 1)
+    set a.loops = 1                     ;; `set_animation_loops(1)`
     await :flush
     loop {
         await :update
-        until frame >= 1               ;; `sprite->animation_done()`
+        until anim_done(a)
         val dt = step_dt()
         set px += vx_ * dt
         set py += vy_ * dt
@@ -504,10 +506,8 @@ task SpriteParticle (sprite, action, x, y, w, h, vx, vy, ax, ay, layer, fps) {
         until !`:boolean tg_cam_contains((float) a_dbl($px), (float) a_dbl($py))`
         `tg_looks[$l.u.i].x = (float) a_dbl($px);`
         `tg_looks[$l.u.i].y = (float) a_dbl($py);`
-        ;; `Sprite::update`, when it is drawn after the step
-        val now = game_time()
-        set frame += fps * (now - last)
-        set last = now
+        ;; the sprite advances when it is drawn, after the step
+        anim_update(a)
     }
 }
 
@@ -522,7 +522,7 @@ func block_break (objs, b, sprite) {
     loop _,act in ["piece1", "piece2", "piece3", "piece4", "piece5", "piece6"] {
         val vy = `:number tr_randf(&tg_grand, -400, -300)`
         val vx = `:number tr_randf(&tg_grand, -100, 100)`
-        spawn @objs SpriteParticle(sprite, act, x, y, 32, 32, vx, vy, 0, gravity, LAYER_OBJECTS + 1, 1)
+        spawn @objs SpriteParticle(sprite, act, x, y, vx, vy, 0, gravity, LAYER_OBJECTS + 1)
     }
 }
 
