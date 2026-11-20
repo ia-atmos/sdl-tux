@@ -488,6 +488,7 @@ static void td_draw_look (int i, TxVec translation, float sw, float sh) {
     l->s.alpha = g->alpha;
     l->s.flip = g->vflip ? SDL_FLIP_VERTICAL : 0;
     TxVec pos = (g->obj > 0) ? tx_obj_get_pos(tg_objs[g->obj-1]) : tx_vec(g->x, g->y);
+    if (g->dx != 0) pos = tx_vec_add(pos, tx_vec(g->dx, 0.0f));
     ts_draw(&l->s, pos, tx_vec_add(translation, tx_vec(0, g->ty)), sw, sh);
 }
 

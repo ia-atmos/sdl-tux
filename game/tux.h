@@ -392,6 +392,7 @@ typedef struct TgLook {
     int   vflip;                    /* drawn flipped upside down */
     int   obj;                      /* at the box of this object, if > 0 */
     float ty;                       /* added to the translation of the camera */
+    float dx;                       /* added to the position (a shake) */
     float born;                     /* the game time of its creation */
 } TgLook;
 static TgLook* tg_looks;
@@ -526,6 +527,28 @@ static int tg_sspiky_reach (int id, int dir) {
     int inReach_top = (tx_rect_bottom(pb) >= tx_rect_top(bb));
     int inReach_bottom = (tx_rect_top(pb) <= tx_rect_bottom(bb));
     return inReach_left && inReach_right && inReach_top && inReach_bottom;
+}
+
+/* Stalactite::active_update: the player near, and seen
+ * (`Sector::can_see_player` from the middle of the stalactite) */
+static int tg_stalactite_reach (int id) {
+    const float SHAKE_RANGE_X = 40, SHAKE_RANGE_Y = 400;
+    const TxRect* pb = &tg_tux.col.bbox;
+    const TxRect* bb = &tg_objs[id-1]->bbox;
+    if (!(tx_rect_right(pb) > tx_rect_left(bb) - SHAKE_RANGE_X
+       && tx_rect_left(pb) < tx_rect_right(bb) + SHAKE_RANGE_X
+       && tx_rect_bottom(pb) > tx_rect_top(bb)
+       && tx_rect_top(pb) < tx_rect_bottom(bb) + SHAKE_RANGE_Y)) {
+        return 0;
+    }
+    TxVec eye = tx_rect_middle(bb);
+    const TxObj* me = &tg_tux.col;
+    if (tx_free_line_of_sight(&tg_sec, eye, tx_vec(pb->x1, pb->y1), false, me)) return 1;
+    if (tx_free_line_of_sight(&tg_sec, eye, tx_vec(tx_rect_right(pb), tx_rect_top(pb)), false, me)) return 1;
+    if (tx_free_line_of_sight(&tg_sec, eye, tx_vec(tx_rect_right(pb), tx_rect_bottom(pb)), false, me)) return 1;
+    if (tx_free_line_of_sight(&tg_sec, eye, tx_vec(tx_rect_left(pb), tx_rect_bottom(pb)), false, me)) return 1;
+    if (tx_free_line_of_sight(&tg_sec, eye, tx_rect_middle(pb), false, me)) return 1;
+    return 0;
 }
 
 /* The part of BadGuy::update on the sector: out of it (1: the badguy is

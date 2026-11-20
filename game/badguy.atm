@@ -160,7 +160,7 @@ func anim_done (a) {
 }
 
 ;; The badguys, by the name of their class: their kind (a walking badguy,
-;; or a jumpy), their sprite; for the walking ones, their speed, and how far they let themselves fall from a ledge
+;; a jumpy, or a stalactite), their sprite; for the walking ones, their speed, and how far they let themselves fall from a ledge
 ;; (`max_drop_height`, -1: they always fall), whether the player squishes
 ;; them (`collision_squished`), and whether they sleep until the player
 ;; comes near (`SSpiky`).
@@ -170,11 +170,13 @@ pin BADGUYS = [
     smartball = [kind=:walker, name="smartball", sprite="images/creatures/snowball/smart-snowball.sprite",
                  walk_speed=80, max_drop=16, squish=true],
     spiky     = [kind=:walker, name="spiky", sprite="images/creatures/spiky/spiky.sprite",
-                 walk_speed=80, max_drop=600, squish=false],
+                 walk_speed=80, max_drop=600, squish=false, freezable=true],
     sspiky    = [kind=:walker, name="sspiky", sprite="images/creatures/spiky/sleepingspiky.sprite",
-                 walk_speed=80, max_drop=600, squish=false, sleeps=true],
+                 walk_speed=80, max_drop=600, squish=false, sleeps=true, freezable=true],
     jumpy     = [kind=:jumpy, name="jumpy", sprite="images/creatures/jumpy/snowjumpy.sprite",
-                 squish=false],
+                 squish=false, freezable=true],
+    stalactite = [kind=:stalactite, name="stalactite", sprite="images/creatures/stalactite/stalactite_ice.sprite",
+                 squish=false, layer=-1],
 ]
 
 ;; The uid of an object of a sector, as the original numbers them
@@ -192,11 +194,13 @@ task BadGuy (life, objs, o, cls, uid) {
     val name = cls.name
     val sprite = o.sprite || cls.sprite
     val w, h = sprite_hitbox(sprite, nil)
-    val id = obj_new(o.x, o.y, w, h, COL.DISABLED, KIND.BADGUY)
-    val l = look_new(sprite, o.x, o.y, LAYER_OBJECTS)
+    ;; a stalactite is MOVING from the start (`StickyBadguy`)
+    val id = obj_new(o.x, o.y, w, h, if cls.kind == :stalactite => COL.MOVING => COL.DISABLED, KIND.BADGUY)
+    val l = look_new(sprite, o.x, o.y, if cls.layer => cls.layer => LAYER_OBJECTS)
     `tg_looks[$l.u.i].obj = $id.u.i;`
     `tg_looks[$l.u.i].hidden = 1;`
-    set pub = [resp=HIT.FORCE, kind=:badguy, active=false]
+    set pub = [resp=HIT.FORCE, kind=:badguy, active=false, cls=cls.kind,
+               freezable=cls.freezable]
     set life.byid@id = task
     defer {
         set life.byid@id = nil
@@ -208,6 +212,8 @@ task BadGuy (life, objs, o, cls, uid) {
     pin b = [
         state = BG.INIT, dir = if start_dir == DIR.AUTO => DIR.LEFT => start_dir,
         initialized = false, on_ground = false, nx = 0, ny = 0,
+        colgroup_active = if cls.kind == :stalactite => COL.TOUCHABLE => COL.MOVING,
+        st = :hanging, shake_timer = timer(),               ;; Stalactite
         in_water = false, removed = false,
         state_timer = timer(), turn_timer = timer(), turn_counter = 0,
         alpha = 1, alpha_before = 1,
@@ -262,7 +268,7 @@ task BadGuy (life, objs, o, cls, uid) {
                 BG.SQUISHED => timer_start(b.state_timer, 2)
                 BG.FADING   => timer_start(b.state_timer, 0.2 * b.alpha)
                 BG.ACTIVE   => {
-                    group(COL.MOVING)
+                    group(b.colgroup_active)
                     `tg_looks[$l.u.i].hidden = 0;`
                 }
                 BG.INACTIVE => {
@@ -288,7 +294,7 @@ task BadGuy (life, objs, o, cls, uid) {
 
     ;; `BadGuy::kill_fall`
     val func kill_fall () {
-        if pub.active {
+        if pub.active && (cls.kind != :stalactite) {
             set_vy(0)
             set_ay(0)
             `TG_PHYS($id.u.i).gravity_enabled_flag = 1;`
@@ -341,7 +347,7 @@ task BadGuy (life, objs, o, cls, uid) {
 
     ;; `initialize`: `SSpiky::initialize`, for one that sleeps
     val func initialize () {
-        if cls.kind == :jumpy {
+        if cls.kind != :walker {
             return nil              ;; `BadGuy::initialize`
         }
         if cls.sleeps {
@@ -411,6 +417,46 @@ task BadGuy (life, objs, o, cls, uid) {
         }
     }
 
+    ;; `Stalactite::active_update`
+    val func stalactite_active_update () {
+        match b.st {
+            :hanging => {
+                if `:boolean tg_player_alive()` && `:boolean tg_stalactite_reach($id.u.i)` {
+                    timer_start(b.shake_timer, 0.8)
+                    set b.st = :shaking
+                }
+            }
+            :shaking => {
+                val dx = `:number tr_rand(&tg_grand, -3, 3)`
+                `tg_looks[$l.u.i].dx = (float) a_dbl($dx);`
+                if timer_check(b.shake_timer) {
+                    set b.st = :falling
+                    `TG_PHYS($id.u.i).gravity_enabled_flag = 1;`
+                    set b.colgroup_active = COL.MOVING          ;; `set_colgroup_active`
+                    if b.state == BG.ACTIVE {
+                        group(COL.MOVING)
+                    }
+                    `tg_looks[$l.u.i].dx = 0;`
+                }
+            }
+            :falling => `tg_obj_physic_move($id.u.i);`
+            else => nil
+        }
+    }
+
+    ;; `Stalactite::squish`
+    val func squish () {
+        set b.st = :squished
+        `TG_PHYS($id.u.i).gravity_enabled_flag = 1;`
+        set_vx(0)
+        set_vy(0)
+        set_state(BG.SQUISHED)
+        set_action("squished")
+        `tg_looks[$l.u.i].layer = 50;`      ;; drawn in LAYER_OBJECTS
+        group(COL.MOVING_ONLY_STATIC)
+        run_dead_script()
+    }
+
     ;; `update_on_ground_flag`
     val func on_ground_hit (bits, nx, ny) {
         if (bits & HIT.BOTTOM) != 0 {
@@ -456,6 +502,10 @@ task BadGuy (life, objs, o, cls, uid) {
 
     ;; `active_update`: `SSpiky::active_update`, for one that sleeps
     val func active_update () {
+        if cls.kind == :stalactite {
+            stalactite_active_update()
+            return nil
+        }
         if cls.kind == :jumpy {
             jumpy_active_update()
             return nil
@@ -493,6 +543,10 @@ task BadGuy (life, objs, o, cls, uid) {
         }
         ;; deactivate, if off screen and not falling down
         if pub.active && `:boolean tg_bg_offscreen($id.u.i)` && (vy() <= 0) {
+            ;; `Stalactite::deactivate`: one that is not hanging is gone
+            if (cls.kind == :stalactite) && (b.st != :hanging) {
+                set b.removed = true
+            }
             set_state(BG.INACTIVE)
         }
         val water = b.in_water
@@ -545,6 +599,12 @@ task BadGuy (life, objs, o, cls, uid) {
     ;; `WalkingBadguy::collision_solid` (`BadGuy::collision_solid` for one
     ;; that is not walking)
     val func collision_solid (bits, nx, ny) {
+        if cls.kind == :stalactite {
+            if (b.st == :falling) && ((bits & HIT.BOTTOM) != 0) {
+                squish()
+            }
+            return nil
+        }
         if cls.kind == :jumpy {
             jumpy_hit(bits, nx, ny)
             return nil
@@ -602,6 +662,22 @@ task BadGuy (life, objs, o, cls, uid) {
         val t = life.byid@other
         if t && (t.pub.kind == :badguy) {
             if t.pub.active && `:boolean tg_objs[$other.u.i-1]->group == TX_COLGROUP_MOVING` {
+                if cls.kind == :stalactite {
+                    ;; `Stalactite::collision_badguy`
+                    ifs {
+                        b.st == :squished => return HIT.ABORT
+                        t.pub.cls == :stalactite => return HIT.FORCE
+                        b.st != :falling => return HIT.FORCE
+                        else => {
+                            if t.pub.freezable {
+                                `fprintf(stderr, "stalactite: freeze not done\n");`
+                            } else {
+                                emit @t :kill_fall
+                            }
+                            return HIT.FORCE
+                        }
+                    }
+                }
                 if cls.kind == :jumpy {
                     return jumpy_hit(bits, 0, 0)
                 }
@@ -631,6 +707,13 @@ task BadGuy (life, objs, o, cls, uid) {
                     kill_squished()
                     return HIT.FORCE
                 }
+            }
+            if cls.kind == :stalactite {
+                ;; `Stalactite::collision_player`
+                if b.st != :squished {
+                    `tx_player_kill(&tg_tux, 0);`
+                }
+                return HIT.FORCE
             }
             ;; `BadGuy::collision_player`
             if `:boolean tx_player_is_invincible(&tg_tux)` {
@@ -667,6 +750,10 @@ task BadGuy (life, objs, o, cls, uid) {
     } with {
         loop e on :hit {
             set pub.resp = collision(e@0, e@1)
+        }
+    } with {
+        loop on :kill_fall {
+            kill_fall()
         }
     }
 }
