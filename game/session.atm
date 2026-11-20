@@ -871,15 +871,14 @@ task Life (lvl, ts, cont, n) {
                     if (o.tag == :spawnpoint) && (o.name == "main") {
                         set x, y = o.x, o.y
                     }
+                    if BADGUYS@(o.tag) {
+                        spawn @objs BadGuy(life, objs, o, BADGUYS@(o.tag), uid_of(life, k))
+                    }
                     match o.tag {
                         :coin          => spawn @objs Coin(life, objs, o.x, o.y)
                         :scripttrigger   => spawn @objs ScriptTrigger(life, scripts, env, o)
                         :sequencetrigger => spawn @objs SequenceTrigger(life, o)
                         :brick           => spawn @objs Brick(life, objs, o.x, o.y, brick_of_level(o))
-                        :snowball        => spawn @objs WalkingBadGuy(life, objs, o, WALKERS.snowball, "snowball", uid_of(life, k))
-                        :smartball       => spawn @objs WalkingBadGuy(life, objs, o, WALKERS.smartball, "smartball", uid_of(life, k))
-                        :spiky           => spawn @objs WalkingBadGuy(life, objs, o, WALKERS.spiky, "spiky", uid_of(life, k))
-                        :sspiky          => spawn @objs WalkingBadGuy(life, objs, o, WALKERS.sspiky, "sspiky", uid_of(life, k))
                         :bonusblock      => spawn @objs BonusBlock(life, objs, scripts, env, o.x, o.y, bonus_of_level(o))
                         else           => nil
                     }

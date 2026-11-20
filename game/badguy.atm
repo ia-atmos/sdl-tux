@@ -77,7 +77,7 @@ func sprite_hitbox (path, action) {
         }
     }
     ifs {
-        act == nil   => (32, 32)
+        act == nil   => (nil, nil)       ;; no such action: no change
         act.hitbox && (#act.hitbox == 4) => (act.hitbox@2, act.hitbox@3)
         else => {
             val sz = act.size || [32, 32]
@@ -159,16 +159,22 @@ func anim_done (a) {
     a.loops == 0
 }
 
-;; The walking badguys, by the name of their class: their sprite, their
-;; speed, and how far they let themselves fall from a ledge
+;; The badguys, by the name of their class: their kind (a walking badguy,
+;; or a jumpy), their sprite; for the walking ones, their speed, and how far they let themselves fall from a ledge
 ;; (`max_drop_height`, -1: they always fall), whether the player squishes
 ;; them (`collision_squished`), and whether they sleep until the player
 ;; comes near (`SSpiky`).
-pin WALKERS = [
-    snowball  = [sprite="images/creatures/snowball/snowball.sprite", walk_speed=80, max_drop=-1, squish=true],
-    smartball = [sprite="images/creatures/snowball/smart-snowball.sprite", walk_speed=80, max_drop=16, squish=true],
-    spiky     = [sprite="images/creatures/spiky/spiky.sprite", walk_speed=80, max_drop=600, squish=false],
-    sspiky    = [sprite="images/creatures/spiky/sleepingspiky.sprite", walk_speed=80, max_drop=600, squish=false, sleeps=true],
+pin BADGUYS = [
+    snowball  = [kind=:walker, name="snowball", sprite="images/creatures/snowball/snowball.sprite",
+                 walk_speed=80, max_drop=-1, squish=true],
+    smartball = [kind=:walker, name="smartball", sprite="images/creatures/snowball/smart-snowball.sprite",
+                 walk_speed=80, max_drop=16, squish=true],
+    spiky     = [kind=:walker, name="spiky", sprite="images/creatures/spiky/spiky.sprite",
+                 walk_speed=80, max_drop=600, squish=false],
+    sspiky    = [kind=:walker, name="sspiky", sprite="images/creatures/spiky/sleepingspiky.sprite",
+                 walk_speed=80, max_drop=600, squish=false, sleeps=true],
+    jumpy     = [kind=:jumpy, name="jumpy", sprite="images/creatures/jumpy/snowjumpy.sprite",
+                 squish=false],
 ]
 
 ;; The uid of an object of a sector, as the original numbers them
@@ -180,9 +186,10 @@ func uid_of (life, k) {
     (((2 * life.n) - 1) * 16777216) + k + 4
 }
 
-;; A walking badguy of the level (`WalkingBadguy`, `SnowBall`, `SmartBall`,
-;; `Spiky`, `SSpiky`).
-task WalkingBadGuy (life, objs, o, cls, name, uid) {
+;; A badguy of the level: a walking one (`WalkingBadguy`, `SnowBall`,
+;; `SmartBall`, `Spiky`, `SSpiky`) or a `Jumpy`.
+task BadGuy (life, objs, o, cls, uid) {
+    val name = cls.name
     val sprite = o.sprite || cls.sprite
     val w, h = sprite_hitbox(sprite, nil)
     val id = obj_new(o.x, o.y, w, h, COL.DISABLED, KIND.BADGUY)
@@ -206,6 +213,7 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
         alpha = 1, alpha_before = 1,
         walk_speed = cls.walk_speed, max_drop = cls.max_drop,
         sleep = if cls.sleeps => :sleeping => :walking,     ;; SSpiky
+        ground_y = 0, ground_set = false,                   ;; Jumpy
         anim = anim_new(),
     ]
     val bdir = b.dir
@@ -223,18 +231,25 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
 
     ;; `MovingSprite::set_action(name, dir)`: the action, and its hitbox
     val func set_action (act, loops) {
+        val aw, ah = sprite_hitbox(sprite, act)
+        if aw == nil {
+            return nil              ;; no such action: no change
+        }
         val lp = loops || -1
         if (b.anim.act == nil) || (b.anim.name != act) {
             anim_set(b.anim, sprite, act, lp)
             set b.anim.name = act
         }
         `tg_look_action_loops($l.u.i, A_STR_OF($act)->s, (int) $lp.u.i);`
-        val aw, ah = sprite_hitbox(sprite, act)
         `tg_obj_size($id.u.i, (float) a_dbl($aw), (float) a_dbl($ah));`
     }
     val func set_dir (d) {
         set b.dir = d
         `tg_bg_dir[$id.u.i] = (int) $d.u.i;`
+    }
+
+    if cls.kind == :jumpy {
+        set_action(DIR_NAME@(b.dir) ++ "-middle")     ;; `Jumpy::Jumpy`
     }
 
     ;; `BadGuy::set_state`
@@ -326,6 +341,9 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
 
     ;; `initialize`: `SSpiky::initialize`, for one that sleeps
     val func initialize () {
+        if cls.kind == :jumpy {
+            return nil              ;; `BadGuy::initialize`
+        }
         if cls.sleeps {
             set b.sleep = :sleeping
             set_vx(0)
@@ -393,8 +411,55 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
         }
     }
 
+    ;; `update_on_ground_flag`
+    val func on_ground_hit (bits, nx, ny) {
+        if (bits & HIT.BOTTOM) != 0 {
+            set b.on_ground = true
+            set b.nx, b.ny = nx, ny
+        }
+    }
+
+    ;; `Jumpy::hit`
+    val func jumpy_hit (bits, nx, ny) {
+        if (bits & HIT.BOTTOM) != 0 {
+            set b.ground_y = `:number tg_objs[$id.u.i-1]->bbox.y1`
+            set b.ground_set = true
+            set_vy(if b.state != BG.ACTIVE => 0 => -600)
+            on_ground_hit(bits, nx, ny)
+        } else {
+            if (bits & HIT.TOP) != 0 {
+                set_vy(0)
+            }
+        }
+        HIT.CONTINUE
+    }
+
+    ;; `Jumpy::active_update`
+    val func jumpy_active_update () {
+        base_active_update()
+        if `:boolean tg_player_alive()` {
+            set_dir(if `:boolean tg_tux.col.bbox.x1 > tg_objs[$id.u.i-1]->bbox.x1` => DIR.RIGHT => DIR.LEFT)
+        }
+        val d = DIR_NAME@(b.dir)
+        if !b.ground_set {
+            set_action("editor-" ++ d)
+            return nil
+        }
+        val y = `:number tg_objs[$id.u.i-1]->bbox.y1`
+        ifs {
+            y > b.ground_y => set_action(d ++ "-down")
+            y < (b.ground_y - 4) => set_action(d ++ "-up")
+            (y >= (b.ground_y - 4)) && (y < (b.ground_y - 2)) => set_action(d ++ "-middle")
+            else => set_action(d ++ "-down")
+        }
+    }
+
     ;; `active_update`: `SSpiky::active_update`, for one that sleeps
     val func active_update () {
+        if cls.kind == :jumpy {
+            jumpy_active_update()
+            return nil
+        }
         if b.sleep == :walking {
             walk_active_update()
             return nil
@@ -477,17 +542,13 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
         set b.on_ground = false
     }
 
-    ;; `update_on_ground_flag`
-    val func on_ground_hit (bits, nx, ny) {
-        if (bits & HIT.BOTTOM) != 0 {
-            set b.on_ground = true
-            set b.nx, b.ny = nx, ny
-        }
-    }
-
     ;; `WalkingBadguy::collision_solid` (`BadGuy::collision_solid` for one
     ;; that is not walking)
     val func collision_solid (bits, nx, ny) {
+        if cls.kind == :jumpy {
+            jumpy_hit(bits, nx, ny)
+            return nil
+        }
         if b.sleep != :walking {
             set_vx(0)
             set_vy(0)
@@ -541,6 +602,9 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
         val t = life.byid@other
         if t && (t.pub.kind == :badguy) {
             if t.pub.active && `:boolean tg_objs[$other.u.i-1]->group == TX_COLGROUP_MOVING` {
+                if cls.kind == :jumpy {
+                    return jumpy_hit(bits, 0, 0)
+                }
                 if b.sleep != :walking {
                     return HIT.FORCE        ;; `BadGuy::collision_badguy`
                 }
