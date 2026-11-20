@@ -45,6 +45,7 @@ change).
 | 19 | The two migrations of `pin`, tests identical | C8 | done, not acknowledged |
 | 20 | `atmos-pin` handles what concerns `pin` | C9 | done, not acknowledged |
 | 21 | In the original, the drawing changes the game: Tux stops growing when the animation of his sprite ends, which advances only when he is drawn, and until then he cannot duck. The traces of the official game are now recorded drawing (`DRAW=1` in `tools/official-all.sh`; the 36 traces before are unchanged), and `graphicsRandom`, seeded by the time in the original, gets a fixed seed in the tests (`TUX_GSEED`, added to the test mode). The runner with no screen (`tst/play.sh`) ends the growing at once: it can differ in the steps of a growth; the runs through `env-sdl` draw, as the original | | done, not acknowledged |
+| 22 | `game/badguy.atm` as one task with 32 tests of `cls.kind`: atmos-oo (its #5) proposes its form B, a function per class that fills a record of methods (an override replaces a field, the call to the parent uses the saved field), each kind in its own file. Recommended: do it after mrbomb, with the runs as the check | | work (by the session) |
 
 The details of each item follow, by its old id.
 
