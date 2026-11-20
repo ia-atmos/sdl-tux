@@ -1,7 +1,7 @@
 # The port against the original
 
 Measured on 2026-11-20 in the container (4 cores), compiler `ia-atmos/lang`
-692af43 with `ATMOS_REAL=float`, `env-sdl` 85b23cc, the official game at
+8c46149 with `ATMOS_REAL=float`, `env-sdl` 85b23cc, the official game at
 v0.7.0 built with the SDL renderer (tools/bench/README.md). Both run the first
 level, `journey_begins`, with the same input (right held from tick 10), at
 no pacing.
@@ -26,20 +26,29 @@ itself replace.
 
 ## CPU and memory
 
-| Run | Original | Port |
-|-----|----------|------|
-| 1 tick, no drawing (the start up) | 0.74 s, 143 MB | 0.02 s, 13 MB |
-| 2000 ticks, no drawing | 0.98 s, 143 MB | 0.15 s, 13 MB |
-| the 2000 ticks alone (difference) | 0.25 s | 0.13 s |
-| 1 tick, drawing | (see 2000) | 0.30 s, 71 MB |
-| 2000 ticks, drawing (software renderer, dummy video driver) | 18.8 s, 143 MB | 18.2 s, 72 MB |
+The CPU time of the process (user + system), median of 3 runs, per frame:
+the run minus its start up (the same run of 1 tick), divided by the
+frames. The game logic alone is the run with no drawing at all (the
+original with `TUX_NODRAW`, the port with `tst/play.sh`, which has no SDL),
+over 20000 ticks, as the logic of a tick is too small to measure over fewer.
+The whole frame is the run that draws (software renderer, dummy video
+driver: the original with `DRAW=1`, the port over `env-sdl`), over 2000
+ticks.
 
-CPU is user + system time; memory is the maximum resident set. The port
-without drawing is `tst/play.sh` (no SDL at all); with drawing it is the game
-over `env-sdl` (`./tux.sh`). The original loads all of its data at start up
-(sprites, tilesets, the Squirrel machine), which is most of its time and
-memory; the drawing costs about the same in both, as both draw through the
-SDL renderer in software.
+| Measure | Original | Port | Ratio |
+|---------|----------|------|-------|
+| game logic alone, per frame | 0.0145 ms | 0.0614 ms | 4.2 |
+| whole frame, per frame | 8.62 ms | 8.11 ms | 0.94 |
+| start up, no drawing | 0.82 s, 143 MB | 0.02 s, 13 MB | |
+| start up, drawing | | 0.30 s, 71 MB | |
+
+Memory is the maximum resident set. The logic of the port, Atmos with the
+collision system and the player in C, takes about four times the CPU of
+the original's C++; it is still under a tenth of a millisecond per frame,
+and the drawing, through the SDL renderer in software in both, is almost
+all of a frame. The original loads all of its data at start up (sprites,
+tilesets, the Squirrel machine), which is most of its start up time and
+memory.
 
 ## Floats
 
