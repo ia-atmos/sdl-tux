@@ -96,3 +96,30 @@ See C for the decisions taken as recommended.
   what reaches outside. Its timers and phases (dying, growing, safe,
   skidding, the grace times of the jump) are still flags and timers in the
   struct: they are the first candidates to become tasks.
+
+## Overrides of the base of the badguys (for atmos-oo)
+
+In the original, `BadGuy` is a C++ base with virtual methods; `WalkingBadguy`
+derives from it, and each badguy class derives from one of them. In the port
+(`game/badguy.atm`) one task `BadGuy` holds the base, and each method that a
+class overrides is a local function that tests `cls.kind` (the class is a
+table of `BADGUYS`) and then does the override or goes on to the base:
+
+- `initialize`: walking (`WalkingBadguy`), sleeping spiky (`SSpiky`), bouncing
+  and flying snowball; the base does nothing (jumpy, stalactite).
+- `active_update`: walking, sleeping spiky (calls `WalkingBadguy::active_update`
+  or `BadGuy::active_update`), jumpy, bouncing, flying, ice block (calls both),
+  stalactite (no base call).
+- `collision_solid`: walking, sleeping spiky (`BadGuy::collision_solid` while
+  not walking), jumpy, bouncing, flying, ice block (falls to the walking one in
+  its normal state), stalactite.
+- `collision_badguy`: walking, sleeping spiky, jumpy, bouncing, flying (the
+  base), ice block, stalactite.
+- `collision_squished`: snowball, smartball, bouncing and flying snowball
+  (`cls.squish`), ice block; the base answers false (spiky, jumpy, stalactite).
+- `collision_player`: ice block (kicked from a side, else the base),
+  stalactite; the base for the others.
+- `kill_fall`: stalactite (does nothing).
+- `deactivate`: stalactite (a fallen one is gone).
+- `turn_around`: walking, bouncing (no check of the state).
+- `activate`: flying snowball.
