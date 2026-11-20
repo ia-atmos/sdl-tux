@@ -1,7 +1,7 @@
 # The port against the original
 
 Measured on 2026-11-20 in the container (4 cores), compiler `ia-atmos/lang`
-8c46149 with `ATMOS_REAL=float`, `env-sdl` 85b23cc, the official game at
+8c46149 with `ATMOS_FLOAT=32`, `env-sdl` 85b23cc, the official game at
 v0.7.0 built with the SDL renderer (tools/bench/README.md). Both run the first
 level, `journey_begins`, with the same input (right held from tick 10), at
 no pacing.
@@ -53,7 +53,7 @@ memory.
 ## Floats
 
 The original computes in 32-bit floats. With the build option
-`ATMOS_REAL=float` (compiler 4565af1 and later), the reals of Atmos are C
+`ATMOS_FLOAT=32` (compiler 4565af1 and later), the reals of Atmos are C
 floats, and the arithmetic of the objects written in Atmos (the coins, the
 blocks and their bounce, the powerups, the badguys and their classes, the
 timers in game time, the animation of the sprites as the logic sees them)

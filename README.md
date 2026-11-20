@@ -32,7 +32,7 @@ game line by line (`tools/compare.sh`), the badguys included.
 How it was written: the parts of the original that the trace depends on
 most finely (the collision system, the player, the camera) were first
 translated to C statement by statement; the rest (the session, the
-objects, the badguys) is Atmos, with 32-bit reals (`ATMOS_REAL=float`), and
+objects, the badguys) is Atmos, with 32-bit reals (`ATMOS_FLOAT=32`), and
 each piece was compared with the official game, tick by tick and pixel by
 pixel, before the next. Its size, CPU and memory against the original are
 in `doc/bench.md`.
