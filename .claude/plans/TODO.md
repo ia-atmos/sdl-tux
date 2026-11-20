@@ -28,7 +28,7 @@ change).
 | 2 | The init script of `between_glaciers.stl` defines a function (`release_treasure`), which two triggers of the level call: keep it as `:squirrel` until the second version | A1 | decided 2026-11-20: keep it so until the second version, then #2a (write that init script by hand in Atmos, `release_treasure` as a global function of the scripts) |
 | 3 | The trace of the official game: coins, blocks, powerups and the end of a level enter it with T5. The badguys are in every trace now (`OBJS=1`), with the uid of the original (`UIDGenerator`: the n-th life has the generator 2n-1) | B1 | work |
 | 4 | Where the images, sounds and music come from (today: the checkout of the official game) | B2 | work |
-| 5 | T3, a level drawn: the snow, the HUD, the fade at the start of a level, the moving paths | B3 | work |
+| 5 | T3, a level drawn: the snow, the HUD, the fade at the start of a level and at the death of Tux, the moving paths | B3 | work |
 | 6 | 219 pixels differ at the edge of the tilemap `secret`, a seam at a fraction of a pixel; the same seam, 207 pixels, at the bottom of a tilemap when the camera is at a fraction of a pixel (`tst/levels/snow.stl`) | B4 | work |
 | 7 | `env-sdl` lacks flips, rotation and tint of an image, and music that loops between two points | B5 | work (ask when needed) |
 | 8 | T4: runs with the bonus: grow, duck, fire and the break of bricks are done (`grow1..4`); hurt, slopes and ice remain | B6 | work |

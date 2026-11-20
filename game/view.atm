@@ -99,7 +99,7 @@ func view.sprite (dir, file, ptr) {
     val spr = data.load("/" ++ dir ++ file)
     loop _,a in spr {
         if (type(a) == :table) && (a.tag == :action) {
-            assert(!a.flip_action && !a.clone_action && !a.regions, "sprite: not supported in " ++ file)
+            assert(!a.flip_action && !a.regions, "sprite: not supported in " ++ file)
             val name = a.name
             val nhit = if a.hitbox => #a.hitbox => 0
             val h0, h1, h2, h3 = if a.hitbox => (a.hitbox@0 || 0, a.hitbox@1 || 0, a.hitbox@2 || 0, a.hitbox@3 || 0) => (0, 0, 0, 0)
@@ -116,10 +116,16 @@ func view.sprite (dir, file, ptr) {
             ;; (surfaces (surface (diffuse-texture (file "x.png")) ...)): the
             ;; images of the surfaces, with no other texture (not drawn)
             val imgs = if a.surfaces => [a.surfaces.surface.diffuse_texture.file] => a.images
-            if a.mirror_action {
+            ifs {
+              a.mirror_action => {
                 val other = a.mirror_action
                 `ts_mirror((TsData*) a_nat_ptr($ptr), act, A_STR_OF($other)->s);`
-            } else {
+              }
+              a.clone_action => {
+                val other = a.clone_action
+                `ts_clone((TsData*) a_nat_ptr($ptr), act, A_STR_OF($other)->s);`
+              }
+              else => {
                 if imgs {
                     val n = #imgs
                     ```
@@ -137,6 +143,7 @@ func view.sprite (dir, file, ptr) {
                     free(imgs); free(ws); free(hs);
                     ```
                 }
+              }
             }
         }
     }

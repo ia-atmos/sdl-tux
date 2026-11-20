@@ -4,7 +4,7 @@
  * action, in the order of its file (an action that mirrors another comes
  * after it). An image is an index of game/draw.h.
  *
- * Only images and mirror actions are done: no regions, flip, or clone
+ * Only images, mirror and clone actions are done: no regions or flip
  * actions, which the sprites of the slice do not use (checked when they
  * are read).
  *
@@ -118,6 +118,26 @@ static int ts_mirror (TsData* d, TsAction* a, const char* other) {
     snprintf(own, sizeof(own), "::%s", a->name);
     if (strcmp(a->family, own) == 0) {
         snprintf(a->family, sizeof(a->family), "%s", tmp.family);
+    }
+    return 1;
+}
+
+/* (clone-action name): everything of the other but the name (and the
+ * family, unless it is the default one) */
+static int ts_clone (TsData* d, TsAction* a, const char* other) {
+    const TsAction* src = ts_find(d, other);
+    if (src == NULL) return 0;
+    char name[TS_NAME], fam[TS_NAME + 2];
+    snprintf(name, sizeof(name), "%s", a->name);
+    snprintf(fam, sizeof(fam), "%s", a->family);
+    *a = *src;
+    snprintf(a->name, sizeof(a->name), "%s", name);
+    char own[TS_NAME + 2];
+    snprintf(own, sizeof(own), "::%s", name);
+    if (strcmp(fam, own) == 0) {
+        snprintf(a->family, sizeof(a->family), "%s", src->family);
+    } else {
+        snprintf(a->family, sizeof(a->family), "%s", fam);
     }
     return 1;
 }
