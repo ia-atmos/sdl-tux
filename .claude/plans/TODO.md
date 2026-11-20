@@ -30,7 +30,7 @@ change).
 | 4 | Where the images, sounds and music come from (today: the checkout of the official game) | B2 | work |
 | 5 | T3, a level drawn: the snow, the HUD, the fade at the start of a level and at the death of Tux, the moving paths | B3 | work |
 | 6 | 219 pixels differ at the edge of the tilemap `secret`, a seam at a fraction of a pixel; the same seam, 207 pixels, at the bottom of a tilemap when the camera is at a fraction of a pixel (`tst/levels/snow.stl`) | B4 | work |
-| 7 | `env-sdl` lacks flips, rotation and tint of an image, and music that loops between two points | B5 | work (ask when needed) |
+| 7 | `env-sdl` lacked flips, rotation and tint of an image, and music that loops between two points: done there at `1202dff` (`sdl.draw_ex`, `sdl.music(path, -1, from, to)`, per frame). The port draws through the C door (`game/draw.h`) and does not need `draw_ex`; the music loop points are for when the music is done | B5 | work (the music) |
 | 8 | T4: runs with the bonus: grow, duck, fire and the break of bricks are done (`grow1..4`); hurt, slopes and ice remain | B6 | work |
 | 9 | T5: the other contents of the bonus block (star, 1up, rain, trampoline, ...), the drop of a powerup on a buttjump (`drop_growup_bonus`), the fireballs, the secret area, the HUD data | B7 | work |
 | 10 | `default.nut` of World 1 becomes Atmos code when a level of the slice calls it | B8 | work |
