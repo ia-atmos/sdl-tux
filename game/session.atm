@@ -23,7 +23,8 @@ pin CONTROLS = [left=0, right=1, up=2, down=3, jump=4, action=5, item=6,
 ;; The collision groups and the responses to a collision, as in the
 ;; original.
 pin COL = [DISABLED=0, MOVING_STATIC=1, MOVING=2, MOVING_ONLY_STATIC=3, STATIC=4, TOUCHABLE=5]
-pin HIT = [ABORT=0, CONTINUE=1, FORCE=2, LEFT=1, RIGHT=2, TOP=4, BOTTOM=8, CRUSH=16]
+pin HIT = [ABORT=0, CONTINUE=1, FORCE=2, LEFT=1, RIGHT=2, TOP=4, BOTTOM=8, CRUSH=16,
+           FLAT=32, SIDES=15]   ;; FLAT: the normal of the slope has no x
 
 val PLAYER = 0      ;; the id of the player in a collision
 
@@ -115,6 +116,9 @@ task Coin (life, objs, x, y) {
     val px, py = `:number tg_objs[$id.u.i-1]->bbox.x1`, `:number tg_objs[$id.u.i-1]->bbox.y1`
     spawn @objs BouncyCoin(px, py, false, sprite)
 }
+
+;; The bonus of the player, as in the original (`BonusType`).
+pin BONUS = [NONE=0, GROWUP=1, FIRE=2, ICE=3, AIR=4, EARTH=5]
 
 ;; The game time, in seconds (`g_game_time`).
 func game_time () {
@@ -247,6 +251,151 @@ task Block (b) {
     }
 }
 
+;; What a block does to another object that touches it while it bounces
+;; (`Block::collision`): an egg above it jumps.
+func block_other (life, b, other, bits) {
+    if b.bouncing && ((bits & HIT.SIDES) != 0) {
+        val t = life.byid@other
+        val id = b.id
+        if t && (t.pub.kind == :growup) &&
+           `:boolean tx_rect_bottom(&tg_objs[$other.u.i-1]->bbox) < tx_rect_top(&tg_objs[$id.u.i-1]->bbox) + TX_SHIFT_DELTA`
+        {
+            `TG_PHYS($other.u.i).vy = -300;`     ;; `GrowUp::do_jump`
+        }
+    }
+}
+
+;; A powerup that rises out of a bonus block (`SpecialRiser`): the looks
+;; `ls` of the object it carries are drawn moved up by `offset`, which
+;; grows by 50 per second, until it passes 32. As every object, it enters
+;; the sector at the end of the step in which it is created. Then the
+;; object enters the sector, at the end of the step in which it ends.
+task Riser (ls) {
+    var offset = 0
+    val func move () {
+        loop _,l in ls {
+            `tg_looks[$l.u.i].ty = -32.0f + (float) a_dbl($offset);`
+        }
+    }
+    move()
+    await :flush
+    loop {
+        await :update
+        set offset += 50 * step_dt()
+        until offset > 32
+        move()
+    }
+    loop _,l in ls {
+        `tg_looks[$l.u.i].ty = 0;`
+    }
+}
+
+;; An egg (`GrowUp`): it rises out of the block at `x`, `y`, rolls to the
+;; side away from the player, and makes him big.
+task GrowUp (life, x, y, left) {
+    val sprite = "images/powerups/egg/egg.sprite"
+    val px, py = x, y - 32
+    val l  = look_new(sprite, px, py, LAYER_OBJECTS)
+    val sh = look_new(sprite, px, py, LAYER_OBJECTS)
+    `tg_look_action($sh.u.i, "shadow");`
+    `tg_looks[$l.u.i].angle = (float) a_dbl($px) * 360.0f / (32.0f * 3.14159265358979323846f);`
+    defer {
+        `tg_look_del($l.u.i);`
+        `tg_look_del($sh.u.i);`
+    }
+    await Riser([l, sh])
+
+    val id = obj_new(px, py, 32, 32, COL.MOVING, KIND.OTHER)
+    `tg_looks[$l.u.i].obj = $id.u.i;`
+    `tg_looks[$sh.u.i].obj = $id.u.i;`
+    `TG_PHYS($id.u.i).vx = a_truthy($left) ? -100.0f : 100.0f;`
+    set pub = [resp=HIT.FORCE, kind=:growup]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+    }
+
+    ;; `GrowUp::collision_solid`
+    val func solid (bits) {
+        if (bits & HIT.TOP) != 0 {
+            `TG_PHYS($id.u.i).vy = 0;`
+        }
+        if ((bits & HIT.BOTTOM) != 0) && `:boolean TG_PHYS($id.u.i).vy > 0` {
+            `TG_PHYS($id.u.i).vy = 0;`
+        }
+        val vx = `:number TG_PHYS($id.u.i).vx`
+        if ((bits & HIT.FLAT) != 0) &&
+           ((((bits & HIT.LEFT) != 0) && (vx < 0)) || (((bits & HIT.RIGHT) != 0) && (vx > 0)))
+        {
+            `TG_PHYS($id.u.i).vx = -TG_PHYS($id.u.i).vx;`
+            `TG_PHYS($id.u.i).ax = -TG_PHYS($id.u.i).ax;`
+        }
+    }
+
+    par :any {
+        loop e on :solid {
+            solid(e@0)
+        }
+    } with {
+        ;; `GrowUp::collision`
+        loop e on :hit {
+            if e@0 == PLAYER {
+                set pub.resp = HIT.ABORT
+                until `:boolean tx_player_add_bonus(&tg_tux, TX_BONUS_GROWUP, 1)`
+                solid(e@1)          ;; Tux cannot grow now
+            } else {
+                set pub.resp = HIT.FORCE
+            }
+        }
+    } with {
+        ;; `GrowUp::update`
+        loop on :update {
+            `if (TG_PHYS($id.u.i).vx != 0) tg_looks[$l.u.i].angle = tg_objs[$id.u.i-1]->bbox.x1 * 360.0f / (32.0f * 3.14159265358979323846f);`
+            `tg_obj_physic_move($id.u.i);`
+        }
+    }
+}
+
+;; The sprites of the flowers, by bonus.
+pin FLOWERS = [
+    @(BONUS.FIRE)  = "images/powerups/fireflower/fireflower.sprite",
+    @(BONUS.ICE)   = "images/powerups/iceflower/iceflower.sprite",
+    @(BONUS.AIR)   = "images/powerups/airflower/airflower.sprite",
+    @(BONUS.EARTH) = "images/powerups/earthflower/earthflower.sprite",
+]
+
+;; A flower (`Flower`): it rises out of the block at `x`, `y`, and waits
+;; for the player, to give him its bonus.
+task Flower (life, x, y, bonus) {
+    val px, py = x, y - 32
+    val l = look_new(FLOWERS@bonus, px, py, LAYER_OBJECTS)
+    defer {
+        `tg_look_del($l.u.i);`
+    }
+    await Riser([l])
+
+    val id = obj_new(px, py, 32, 32, COL.TOUCHABLE, KIND.OTHER)
+    set pub = [resp=HIT.ABORT, kind=:flower]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+    }
+    loop e on :hit {
+        if e@0 == PLAYER {
+            set pub.resp = HIT.ABORT
+            until `:boolean tx_player_add_bonus(&tg_tux, (int) $bonus.u.i, 1)`
+            set pub.resp = HIT.FORCE
+        } else {
+            set pub.resp = HIT.ABORT
+        }
+    }
+}
+
+;; The bonus of the contents of a bonus block that raise a powerup.
+pin GROWS = [firegrow=BONUS.FIRE, icegrow=BONUS.ICE, airgrow=BONUS.AIR, earthgrow=BONUS.EARTH]
+
 ;; A bonus block (`BonusBlock`): the player hits it from below, and it
 ;; gives what it has, and bounces. `o` has its `contents` (as the strings
 ;; of the original), `hits` (0 is infinite), `script`, `sprite`, and the
@@ -273,8 +422,20 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
                 }
                 "script" => nil
                 else => {
-                    val c = o.contents
-                    `fprintf(stderr, "bonus block: contents not done: %s\n", A_STR_OF($c)->s);`
+                    val bonus = GROWS@(o.contents)
+                    if bonus {
+                        ;; `raise_growup_bonus`, away from the player
+                        val id = b.id
+                        val left = `:boolean tx_rect_middle(&tg_tux.col.bbox).x > tx_rect_middle(&tg_objs[$id.u.i-1]->bbox).x`
+                        if `:boolean tg_tux.bonus == TX_BONUS_NONE` {
+                            spawn @objs GrowUp(life, x, `:number tg_obj_y($id.u.i)`, left)
+                        } else {
+                            spawn @objs Flower(life, x, `:number tg_obj_y($id.u.i)`, bonus)
+                        }
+                    } else {
+                        val c = o.contents
+                        `fprintf(stderr, "bonus block: contents not done: %s\n", A_STR_OF($c)->s);`
+                    }
                 }
             }
             if o.script {
@@ -304,10 +465,63 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
                 if (r & 2) != 0 {
                     try_open()
                 }
+            } else {
+                block_other(life, b, e@0, e@1)
             }
         }
     } with {
         await Block(b)
+    }
+}
+
+;; A particle that is a sprite (`SpriteParticle`), with no timeout: it
+;; moves by its velocity and acceleration, until the animation of its
+;; action ends (once), or it leaves the view of the camera. `x`, `y` is its
+;; middle (`ANCHOR_MIDDLE`); `w`, `h` the hitbox of the action. The
+;; animation is the one of an action of one frame at `fps`, which the
+;; sprite advances when it is drawn, after each step.
+task SpriteParticle (sprite, action, x, y, w, h, vx, vy, ax, ay, layer, fps) {
+    var px = x - (0 + ((w - 0) / 2))
+    var py = y - (0 + ((h - 0) / 2))
+    var vx_, vy_ = vx, vy
+    val l = look_new(sprite, px, py, layer)
+    `tg_look_action_loops($l.u.i, A_STR_OF($action)->s, 1);`
+    defer {
+        `tg_look_del($l.u.i);`
+    }
+    var frame = 0
+    var last = game_time()
+    await :flush
+    loop {
+        await :update
+        until frame >= 1               ;; `sprite->animation_done()`
+        val dt = step_dt()
+        set px += vx_ * dt
+        set py += vy_ * dt
+        set vx_ += ax * dt
+        set vy_ += ay * dt
+        until !`:boolean tg_cam_contains((float) a_dbl($px), (float) a_dbl($py))`
+        `tg_looks[$l.u.i].x = (float) a_dbl($px);`
+        `tg_looks[$l.u.i].y = (float) a_dbl($py);`
+        ;; `Sprite::update`, when it is drawn after the step
+        val now = game_time()
+        set frame += fps * (now - last)
+        set last = now
+    }
+}
+
+;; `Block::break_me`: six pieces of its sprite fly (the vertical speed is
+;; drawn first, as the official build evaluates the arguments of the
+;; vector), and the block is gone.
+func block_break (objs, b, sprite) {
+    val id = b.id
+    val x = `:number tg_objs[$id.u.i-1]->bbox.x1 + 16.0f`
+    val y = `:number tg_objs[$id.u.i-1]->bbox.y1 + 16.0f`
+    val gravity = `:number tg_sec.gravity * 100`
+    loop _,act in ["piece1", "piece2", "piece3", "piece4", "piece5", "piece6"] {
+        val vy = `:number tr_randf(&tg_grand, -400, -300)`
+        val vx = `:number tr_randf(&tg_grand, -100, 100)`
+        spawn @objs SpriteParticle(sprite, act, x, y, 32, 32, vx, vy, 0, gravity, LAYER_OBJECTS + 1, 1)
     }
 }
 
@@ -359,10 +573,13 @@ task Brick (life, objs, x, y, o) {
                 if (r & 2) != 0 {
                     try_break()          ;; `Brick::hit`
                 }
+            } else {
+                block_other(life, b, e@0, e@1)
             }
         }
     } with {
         await Block(b)                  ;; it breaks: `break_me`
+        block_break(objs, b, o.sprite)
     }
 }
 
@@ -585,6 +802,13 @@ task Life (lvl, ts, cont) {
         }
     }
     `tg_trigger = $trigger;`
+    val func solid (self, bits) {
+        val t = life.byid@self
+        if t {
+            emit @t :solid [bits]
+        }
+    }
+    `tg_solid = $solid;`
 
     ;; `GameSession::start_sequence`
     val func sequence (seq) {

@@ -97,4 +97,11 @@ if [ -d "$ROOT/../env-sdl" ]; then
         out/pngdiff tst/shots/official-brick-$t.png "$TMP/brick-$t.png" 0 > /dev/null || { echo "shot: brick-$t differs from the official one"; exit 1; }
     done
     echo "shot: bricks ok (frames 165 and 300 the same as the official ones)"
+    IN=$(grep '^grow1 ' tst/runs.txt | awk '{print $4}')
+    SDL_ATM_SHOT="70:$TMP/grow-70.png,160:$TMP/grow-160.png,420:$TMP/grow-420.png" \
+        tst/env-play.sh tst/levels/grow.stl 421 "$IN" > /dev/null
+    for t in 70 160 420; do
+        out/pngdiff tst/shots/official-grow-$t.png "$TMP/grow-$t.png" 0 > /dev/null || { echo "shot: grow-$t differs from the official one"; exit 1; }
+    done
+    echo "shot: powerups ok (the egg, the flower, the pieces of a brick: frames 70, 160 and 420 the same as the official ones)"
 fi

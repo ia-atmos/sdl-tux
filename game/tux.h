@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "player.h"
 #include "camera.h"
+#include "random.h"
 
 static TxSector     tg_sec;
 static TxPlayer     tg_tux;
@@ -52,15 +53,42 @@ static AVal tg_sequence;
 /* The kind of each object, for the player (TX_OTHER_*), by id. */
 static int*    tg_kinds;
 
+/* The physic of each object, by id, for the objects that move by it. */
+static TxPhysic* tg_physs;
+
+/* The function of the game that receives a collision of an object with
+ * the solid tiles and the static objects: f(self, hit), with `hit` as the
+ * bits TG_HIT_*, and TG_HIT_FLAT when the slope normal has no x. */
+static AVal    tg_solid;
+
 /* The function of the game that receives an event that the player gives
  * to an object: f(id, event), as `TriggerBase::event` (TX_EVENT_*). */
 static AVal    tg_trigger;
 
-enum { TG_HIT_LEFT=1, TG_HIT_RIGHT=2, TG_HIT_TOP=4, TG_HIT_BOTTOM=8, TG_HIT_CRUSH=16 };
+enum { TG_HIT_LEFT=1, TG_HIT_RIGHT=2, TG_HIT_TOP=4, TG_HIT_BOTTOM=8, TG_HIT_CRUSH=16, TG_HIT_FLAT=32 };
+
+static int tg_hit_bits (const TxHit* hit) {
+    return (hit->left   ? TG_HIT_LEFT   : 0) | (hit->right  ? TG_HIT_RIGHT  : 0)
+         | (hit->top    ? TG_HIT_TOP    : 0) | (hit->bottom ? TG_HIT_BOTTOM : 0)
+         | (hit->crush  ? TG_HIT_CRUSH  : 0) | ((hit->slope_normal.x == 0.0f) ? TG_HIT_FLAT : 0);
+}
 
 static void tg_on_solid (TxObj* self, const TxHit* hit) {
     if (self->user == &tg_tux) {
         tx_player_collision_solid(&tg_tux, hit);
+        return;
+    }
+    if (tg_cb_st != A_OK || tg_solid.type == A_NIL) {
+        return;
+    }
+    int base = a_top;
+    a_push(a_int(self->id));
+    a_push(a_int(tg_hit_bits(hit)));
+    AStatus st = a_call(tg_solid, base);
+    if (st == A_OK) {
+        a_settop(base);
+    } else {
+        tg_cb_st = st;
     }
 }
 
@@ -78,9 +106,7 @@ static int tg_on_collision (TxObj* self, TxObj* other, const TxHit* hit) {
     if (tg_cb_st != A_OK) {
         return TX_ABORT_MOVE;
     }
-    int bits = (hit->left   ? TG_HIT_LEFT   : 0) | (hit->right ? TG_HIT_RIGHT : 0)
-             | (hit->top    ? TG_HIT_TOP    : 0) | (hit->bottom ? TG_HIT_BOTTOM : 0)
-             | (hit->crush  ? TG_HIT_CRUSH  : 0);
+    int bits = tg_hit_bits(hit);
     int base = a_top;
     a_push(a_int(self->id));
     a_push(a_int(other->id));
@@ -112,6 +138,52 @@ static void tg_on_trigger (void* user, TxObj* other, int event) {
     } else {
         tg_cb_st = st;
     }
+}
+
+/* `graphicsRandom`: seeded once, at the start of the game, with
+ * TUX_GSEED, or else with the time, as the original. */
+static TrRandom tg_grand;
+static int      tg_grand_ready;
+
+static void tg_grand_init (void) {
+    if (!tg_grand_ready) {
+        const char* v = getenv("TUX_GSEED");
+        tr_seed(&tg_grand, v ? atoi(v) : 0);
+        tg_grand_ready = 1;
+    }
+}
+
+static int tg_on_rand_i (void* user, int lo, int hi) {
+    (void) user;
+    return tr_rand(&tg_grand, lo, hi);
+}
+
+static float tg_on_rand_f (void* user, float lo, float hi) {
+    (void) user;
+    return tr_randf(&tg_grand, lo, hi);
+}
+
+/* `Particles::Particles` (the second one): the random numbers that it
+ * draws, per particle. The particles are not drawn yet. */
+static void tg_on_particles (void* user, TxVec epicenter, int min_angle, int max_angle,
+                             float min_initial_velocity, float max_initial_velocity,
+                             TxVec acceleration, int number, float r, float g, float b,
+                             int size, float life_time, int drawing_layer) {
+    (void) user; (void) epicenter; (void) acceleration; (void) r; (void) g; (void) b;
+    (void) size; (void) life_time; (void) drawing_layer;
+    for (int p=0; p<number; p++) {
+        if (min_initial_velocity != max_initial_velocity) {
+            tr_randf(&tg_grand, min_initial_velocity, max_initial_velocity);
+        }
+        if (min_angle != max_angle) {
+            tr_randf(&tg_grand, (float) min_angle, (float) max_angle);
+        }
+    }
+}
+
+static void tg_on_shake (void* user, float duration, float x, float y) {
+    (void) user;
+    tc_shake(&tg_cam, duration, x, y);
 }
 
 static void tg_on_sequence (void* user, int seq, const void* data) {
@@ -166,8 +238,10 @@ static int tg_obj_new (float x, float y, float w, float h, int group, int kind) 
         tg_objs_cap = tg_objs_cap ? tg_objs_cap*2 : 256;
         tg_objs = realloc(tg_objs, tg_objs_cap * sizeof(TxObj*));
         tg_kinds = realloc(tg_kinds, tg_objs_cap * sizeof(int));
+        tg_physs = realloc(tg_physs, tg_objs_cap * sizeof(TxPhysic));
     }
     tg_kinds[tg_objs_n] = kind;
+    tx_physic_init(&tg_physs[tg_objs_n]);
     TxObj* o = malloc(sizeof(TxObj));
     tx_obj_init(o, group);
     tx_obj_set_size(o, w, h);
@@ -216,6 +290,12 @@ static void tg_obj_move (int id, float x, float y) {
 static void tg_obj_size (int id, float w, float h) {
     tx_obj_set_size(tg_objs[id-1], w, h);
 }
+/* The movement of an object by its physic in this step. */
+static void tg_obj_physic_move (int id) {
+    tx_obj_set_movement(tg_objs[id-1], tx_physic_get_movement(&tg_physs[id-1], tg_sec.gravity, tg_dt));
+}
+#define TG_PHYS(id) (tg_physs[(id)-1])
+
 static float tg_obj_y (int id) {
     return tg_objs[id-1]->bbox.y1;
 }
@@ -276,10 +356,12 @@ typedef struct TgLook {
     char  sprite[96];
     char  action[32];
     int   changed;                  /* the action changed */
+    int   loops;                    /* the loops of that action (-1: forever) */
     float x, y, angle, alpha;
     int   layer;
     int   alive;
     int   obj;                      /* at the box of this object, if > 0 */
+    float ty;                       /* added to the translation of the camera */
     float born;                     /* the game time of its creation */
 } TgLook;
 static TgLook* tg_looks;
@@ -299,17 +381,31 @@ static int tg_look_new (const char* sprite, float x, float y, int layer) {
     l->born = tx_game_time;
     return tg_looks_n++;
 }
-static void tg_look_action (int i, const char* action) {
+static void tg_look_action_loops (int i, const char* action, int loops) {
     snprintf(tg_looks[i].action, sizeof(tg_looks[i].action), "%s", action);
     tg_looks[i].changed = 1;
+    tg_looks[i].loops = loops;
+}
+static void tg_look_action (int i, const char* action) {
+    tg_look_action_loops(i, action, -1);
 }
 static void tg_look_del (int i) {
     tg_looks[i].alive = 0;
 }
 
+/* `Sector::get().get_camera().get_rect().contains(pos)` */
+static int tg_cam_contains (float x, float y) {
+    TxVec c = tx_vec(tg_cam.translation.x + tg_cam.screen_size.x / 2.0f,
+                     tg_cam.translation.y + tg_cam.screen_size.y / 2.0f);
+    TxRect r = tx_rect(c.x - tg_cam.screen_size.x / 2.0f, c.y - tg_cam.screen_size.y / 2.0f,
+                       c.x + tg_cam.screen_size.x / 2.0f, c.y + tg_cam.screen_size.y / 2.0f);
+    return x >= r.x1 && y >= r.y1 && x < tx_rect_right(&r) && y < tx_rect_bottom(&r);
+}
+
 /* The sector, with the attributes of `n` tiles still to fill. */
 static void tg_sector (int n) {
     tx_sector_init(&tg_sec);
+    tg_grand_init();
     tg_looks_n = 0;
     tg_sec.tiles.count = n;
     tg_sec.tiles.attrs = calloc(n, sizeof(uint32_t));
@@ -406,6 +502,10 @@ static void tg_player (float x, float y) {
     memset(&tg_host, 0, sizeof(tg_host));
     tg_host.trigger_event = tg_on_trigger;
     tg_host.start_sequence = tg_on_sequence;
+    tg_host.camera_shake = tg_on_shake;
+    tg_host.graphics_rand_i = tg_on_rand_i;
+    tg_host.graphics_rand_f = tg_on_rand_f;
+    tg_host.add_particles = tg_on_particles;
     if (tg_extra_hooks) tg_extra_hooks(&tg_host);
     tx_controller_reset(&tg_end_ctl);
     tx_timer_init(&tg_end_timer);

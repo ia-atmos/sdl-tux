@@ -64,7 +64,7 @@ index a201cab..efc6eb1 100644
      m_active = false;
      ScreenManager::current()->push_screen(std::make_unique<LevelIntro>(*m_level, m_best_level_statistics, m_savegame->get_player_status()));
 diff --git a/src/supertux/main.cpp b/src/supertux/main.cpp
-index e8200a1..4ce24be 100644
+index e8200a1..18a0936 100644
 --- a/src/supertux/main.cpp
 +++ b/src/supertux/main.cpp
 @@ -75,6 +75,7 @@ extern "C" {
@@ -75,14 +75,26 @@ index e8200a1..4ce24be 100644
  #include "supertux/world.hpp"
  #include "supertux/menu/download_dialog.hpp"
  #include "util/file_system.hpp"
-@@ -104,6 +105,7 @@ ConfigSubsystem::ConfigSubsystem() :
+@@ -104,8 +105,9 @@ ConfigSubsystem::ConfigSubsystem() :
    }
  
    // init random number stuff
 +  m_config.random_seed = TuxTestTrace::seed(m_config.random_seed);
    gameRandom.seed(m_config.random_seed);
-   graphicsRandom.seed(0);
+-  graphicsRandom.seed(0);
++  graphicsRandom.seed(TuxTestTrace::gseed(0));
    //const char *how = config->random_seed? ", user fixed.": ", from time().";
+   //log_info << "Using random seed " << config->random_seed << how << std::endl;
+ }
+@@ -690,7 +692,7 @@ Main::launch_game(const CommandLineArguments& args)
+         std::unique_ptr<GameSession> session = std::make_unique<GameSession>(start_level, *m_savegame);
+ 
+         gameRandom.seed(g_config->random_seed);
+-        graphicsRandom.seed(0);
++        graphicsRandom.seed(TuxTestTrace::gseed(0));
+ 
+         if (args.sector || args.spawnpoint)
+         {
 diff --git a/src/supertux/screen_manager.cpp b/src/supertux/screen_manager.cpp
 index 5190cc5..183486d 100644
 --- a/src/supertux/screen_manager.cpp
@@ -145,10 +157,10 @@ index 5190cc5..183486d 100644
  #ifdef __EMSCRIPTEN__
 diff --git a/src/supertux/tuxtest.cpp b/src/supertux/tuxtest.cpp
 new file mode 100644
-index 0000000..37903e1
+index 0000000..8d300d5
 --- /dev/null
 +++ b/src/supertux/tuxtest.cpp
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,204 @@
 +// Test mode for the port to Atmos (ia-atmos/sdl-tux). See tuxtest.hpp.
 +
 +#include "supertux/tuxtest.hpp"
@@ -231,6 +243,13 @@ index 0000000..37903e1
 +TuxTestTrace::seed(int def)
 +{
 +  const char* v = getenv("TUX_SEED");
++  return v ? atoi(v) : def;
++}
++
++int
++TuxTestTrace::gseed(int def)
++{
++  const char* v = getenv("TUX_GSEED");
 +  return v ? atoi(v) : def;
 +}
 +
@@ -348,10 +367,10 @@ index 0000000..37903e1
 +}
 diff --git a/src/supertux/tuxtest.hpp b/src/supertux/tuxtest.hpp
 new file mode 100644
-index 0000000..0173638
+index 0000000..520fa50
 --- /dev/null
 +++ b/src/supertux/tuxtest.hpp
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,36 @@
 +// Test mode for the port to Atmos (ia-atmos/sdl-tux): scripted input by
 +// tick, a trace, and a run with no pacing. All of it is off unless one
 +// of the TUX_* environment variables is set. See tools/bench/README.md
@@ -380,6 +399,7 @@ index 0000000..0173638
 +
 +  static void init();
 +  static int  seed(int def);
++  static int  gseed(int def);   // TUX_GSEED: the seed of graphicsRandom
 +  static void input(Controller& controller);   // before a logical step
 +  static void step();                          // after a logical step
 +  static void badguy_state(const BadGuy& b, int from, int to);

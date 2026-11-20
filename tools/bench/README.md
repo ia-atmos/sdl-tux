@@ -26,6 +26,7 @@ All of it is off unless a variable is set:
 | Variable | Effect |
 |----------|--------|
 | `TUX_SEED=n` | the seed of the random numbers of the game (`0` is the time) |
+| `TUX_GSEED=n` | the seed of the random numbers of the graphics (`graphicsRandom`, the time in the original) |
 | `TUX_INPUT=...` | scripted input: `tick:control:value,...`, applied before the logical step `tick` (the first step is the tick 1) |
 | `TUX_TICKS=n` | exits after `n` logical steps |
 | `TUX_TRACE=file` | writes the trace (`-` is the standard output) |

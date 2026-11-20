@@ -7,7 +7,7 @@ is left open.
 
 The plan is `261113-sdl-tux.md`, in this directory.
 
-Last update: 2026-11-19.
+Last update: 2026-11-20.
 
 ## Index of the items
 
@@ -31,8 +31,8 @@ change).
 | 5 | T3, a level drawn: the snow, the HUD, the fade at the start of a level, the moving paths | B3 | work |
 | 6 | 219 pixels differ at the edge of the tilemap `secret`, a seam at a fraction of a pixel | B4 | work |
 | 7 | `env-sdl` lacks flips, rotation and tint of an image, and music that loops between two points | B5 | work (ask when needed) |
-| 8 | T4: runs with the bonus (grow, duck, fire, hurt), slopes and ice | B6 | work (waits for #1) |
-| 9 | T5: the brick broken by the big Tux (its pieces), the powerups (the other contents of the bonus block), the secret area, the HUD data | B7 | work |
+| 8 | T4: runs with the bonus: grow, duck, fire and the break of bricks are done (`grow1..4`); hurt, slopes and ice remain | B6 | work |
+| 9 | T5: the other contents of the bonus block (star, 1up, rain, trampoline, ...), the drop of a powerup on a buttjump (`drop_growup_bonus`), the fireballs, the secret area, the HUD data | B7 | work |
 | 10 | `default.nut` of World 1 becomes Atmos code when a level of the slice calls it | B8 | work |
 | 11 | The order in which scripts that wake in the same step are woken | B9 | work |
 | 12 | T6 to T9 of the plan | B10 | work |
@@ -44,6 +44,7 @@ change).
 | 18 | The order of the milestones: T4 before T2 and T3 | C6 | done, not acknowledged |
 | 19 | The two migrations of `pin`, tests identical | C8 | done, not acknowledged |
 | 20 | `atmos-pin` handles what concerns `pin` | C9 | done, not acknowledged |
+| 21 | In the original, the drawing changes the game: Tux stops growing when the animation of his sprite ends, which advances only when he is drawn, and until then he cannot duck. The traces of the official game are now recorded drawing (`DRAW=1` in `tools/official-all.sh`; the 36 traces before are unchanged), and `graphicsRandom`, seeded by the time in the original, gets a fixed seed in the tests (`TUX_GSEED`, added to the test mode). The runner with no screen (`tst/play.sh`) ends the growing at once: it can differ in the steps of a growth; the runs through `env-sdl` draw, as the original | | done, not acknowledged |
 
 The details of each item follow, by its old id.
 
@@ -67,7 +68,7 @@ See C for the decisions taken as recommended.
 | B4 | In the frame 200 of `tst/levels/decals.stl`, 219 pixels differ from the official one: a column and a row at the edges of the tiles of one tilemap (`secret`, z-pos 110), where the edge falls at a fraction of a pixel (x = 20.64). The other tilemaps, at the same translation, are the same. To find out: how the official renderer rounds there | |
 | B5 | T2 is done: the game over `env-sdl` (`2723b34`, fetched by `tools/deps.sh`), with the window, the frames turned into steps, and the keys of the original; the 30 runs give the official trace through it too. T3, in course: a level drawn. `env-sdl` still lacks the flips, rotation and tint of an image, and the music that loops between two points: ask with a small program when they are needed | In course |
 | B6 | T4 is done for the small Tux in an empty level: eleven scripted runs (up to 3000 ticks of random input, with death by falling and the restart) give the trace of the official game. To do in T4: runs with the bonus (grow, duck, fire, hurt), which need the powerups; slopes and ice from other levels | |
-| B7 | T5, in course. Done: the objects of a sector as tasks in a pool, with their collisions as the event `:hit`; the tiles that become objects; the coin; the interpreter of the scripts of a level (`game/script.atm`), with `wait` timed as the original (32-bit game time, woken at the start of the step) and the player as the scripts see it; the script trigger (touch, button, oneshot), with the update phase of a step as the event `:update`; the end of a level (the sequence trigger, `endsequence` and `stoptux`, the game at half speed, Tux walking out, the end of the session); the restart after a death at the start of the next step, as the original; the bonus block with coins (hits by type and count, the box of 32x32.1 or of its sprite, the drop of a buttjump, the bounce, the script), the coin that rises; the brick (5 coins, or bounces for the small Tux; it breaks for the big one, not tested yet, and its pieces are not drawn); 36 runs identical. Next: the powerups (the other contents of the bonus block print a warning and give nothing), the secret area, the HUD data (time, coins, the statistics of a level) | In course |
+| B7 | T5, in course. Done: the objects of a sector as tasks in a pool, with their collisions as the event `:hit`; the tiles that become objects; the coin; the interpreter of the scripts of a level (`game/script.atm`), with `wait` timed as the original (32-bit game time, woken at the start of the step) and the player as the scripts see it; the script trigger (touch, button, oneshot), with the update phase of a step as the event `:update`; the end of a level (the sequence trigger, `endsequence` and `stoptux`, the game at half speed, Tux walking out, the end of the session); the restart after a death at the start of the next step, as the original; the bonus block with coins (hits by type and count, the box of 32x32.1 or of its sprite, the drop of a buttjump, the bounce, the script), the coin that rises; the brick (5 coins, or bounces for the small Tux, or breaks for the big one, in six pieces); the egg and the flowers, rising out of a block (`SpecialRiser`), with the objects that move by a physic and collide with the solids (`:solid`); the shake of the camera (a buttjump); `graphicsRandom` as the original (game/random.h: mt19937 and the distributions of libstdc++), with a fixed seed in the tests (`TUX_GSEED`, added to the test mode of the official game); 40 runs identical. Next: the other contents of the bonus block (they print a warning and give nothing), the secret area, the HUD data (time, coins, the statistics of a level) | In course |
 | B8 | `default.nut` of World 1 (the keys of the treasure: `add_key`, `remove_key`, `treasure_init`) runs before every init script of the world in the original. It does not change the game of Tux; it becomes Atmos code when a level of the slice calls it | |
 | B9 | When several scripts wake in the same step, the original wakes them in the order of their wake-up times (a heap); the port wakes them in the order of their tasks. The same when their times differ only within a step. To check when a level has two scripts waiting at once | |
 | B10 | T3 to T9 | See the plan |

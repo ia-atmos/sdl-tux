@@ -26,7 +26,7 @@ UD=$(mktemp -d)
 trap 'rm -rf "$UD"' EXIT
 
 export SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy
-export TUX_SEED=1 TUX_TICKS="$2" TUX_INPUT="$3"
+export TUX_SEED=1 TUX_GSEED=1 TUX_TICKS="$2" TUX_INPUT="$3"
 [ -z "$NOTRACE" ]  && export TUX_TRACE=-
 [ -z "$INTRO" ]    && export TUX_NOINTRO=1
 [ -n "$SHOT" ]     && export TUX_SHOT="$SHOT" DRAW=1

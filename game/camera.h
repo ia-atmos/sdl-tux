@@ -2,7 +2,7 @@
  * a translation of `Camera` (src/object/camera.cpp of SuperTux v0.7.0),
  * keeping its 32-bit float arithmetic operation by operation, as
  * coll.h and player.h. The other modes (manual, autoscroll, scrollto),
- * the scale, the shake, and the earthquake are not translated yet.
+ * the scale, and the earthquake are not translated yet.
  *
  * The names have the prefix `tc_`. */
 
@@ -24,6 +24,9 @@ typedef struct TcCamera {
     TxVec peek_pos;             /* m_peek_pos */
     TxVec cached_translation;   /* m_cached_translation */
     float earthquake_last_offset;
+    TxTimer shaketimer;         /* m_shaketimer */
+    float shakespeed;           /* m_shakespeed */
+    float shakedepth_x, shakedepth_y;
 } TcCamera;
 
 /* `static Vector last_player_pos` of update_scroll_normal: initialized at
@@ -72,8 +75,30 @@ static void tc_keep_in_bounds (TcCamera* c, const TxSector* s, TxVec* t) {
 static void tc_reset (TcCamera* c, const TxSector* s, TxVec tuxpos) {
     c->translation.x = tuxpos.x - c->screen_size.x / 2.0f;
     c->translation.y = tuxpos.y - c->screen_size.y / 2.0f;
+    c->shakespeed = 0;
+    tx_timer_stop(&c->shaketimer);
     tc_keep_in_bounds(c, s, &c->translation);
     c->cached_translation = c->translation;
+}
+
+/* Camera::shake (math::PI_2 is pi/2; the timer runs for 100 times the
+ * duration, as in the original) */
+static void tc_shake (TcCamera* c, float duration, float x, float y) {
+    tx_timer_start(&c->shaketimer, duration*100.f);
+    c->shakedepth_x = x;
+    c->shakedepth_y = y;
+    c->shakespeed = 1.57079632679489661923f / duration;
+}
+
+/* Camera::update_shake: the elastic easing */
+static void tc_update_shake (TcCamera* c) {
+    if (tx_timer_started(&c->shaketimer)) {
+        const float PI = 3.14159265358979323846f;
+        c->translation.x -= c->shakedepth_x * ((powf(2.f, -0.8f * (c->shakespeed * tx_timer_get_timegone(&c->shaketimer)))) *
+            sinf(((0.8f * c->shakespeed * tx_timer_get_timegone(&c->shaketimer)) - 0.75f) * (2.f * PI) / 3.f));
+        c->translation.y -= c->shakedepth_y * ((powf(2.f, -0.8f * (c->shakespeed * tx_timer_get_timegone(&c->shaketimer)))) *
+            sinf(((0.8f * c->shakespeed * tx_timer_get_timegone(&c->shaketimer)) - 0.75f) * (2.f * PI) / 3.f));
+    }
 }
 
 /* Camera::update_scroll_normal */
@@ -178,6 +203,7 @@ static void tc_update (TcCamera* c, const TxSector* s, const TxPlayer* player, f
     tc_update_scroll_normal(c, s, player, dt_sec);
     c->translation = tx_vec_add(c->translation,
         tx_vec_div(tx_vec_scale(c->screen_size, 1.f - 1.f), 2.f));
+    tc_update_shake(c);
 }
 
 #endif

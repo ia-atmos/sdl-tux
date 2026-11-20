@@ -478,13 +478,16 @@ static void td_draw_look (int i, TxVec translation, float sw, float sh) {
     TgLook* g = &tg_looks[i];
     TdLook* l = &td_looks[i];
     if (g->changed) {
-        ts_set_action(&l->s, g->action, -1);
+        ts_set_action(&l->s, g->action, g->loops);
+        if (g->loops != -1) {
+            l->s.animation_loops = g->loops;    /* set_animation_loops */
+        }
         g->changed = 0;
     }
     l->s.angle = g->angle;
     l->s.alpha = g->alpha;
     TxVec pos = (g->obj > 0) ? tx_obj_get_pos(tg_objs[g->obj-1]) : tx_vec(g->x, g->y);
-    ts_draw(&l->s, pos, translation, sw, sh);
+    ts_draw(&l->s, pos, tx_vec_add(translation, tx_vec(0, g->ty)), sw, sh);
 }
 
 /* A frame of the sector, with the translation of the camera. The objects
