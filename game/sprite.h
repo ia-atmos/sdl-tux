@@ -137,6 +137,7 @@ typedef struct TsSprite {
     float angle;
     float color[4];
     float alpha;
+    int   flip;                     /* the flip of the context, SDL_FLIP_* */
 } TsSprite;
 
 /* Sprite::Sprite: the action "default", or else the first one of an
@@ -243,7 +244,8 @@ static void ts_draw (TsSprite* s, TxVec pos, TxVec translation, float sw, float 
     SDL_Texture* tex = sdl_tex(td_imgs[f->img]);
     if (tex == NULL) return;
 
-    TxVec position = tx_vec_sub(pos, tx_vec(a->x_offset, a->y_offset));
+    TxVec position = tx_vec_sub(pos, tx_vec(a->x_offset, (s->flip & SDL_FLIP_VERTICAL) == 0 ? a->y_offset :
+        ((float) f->h - a->y_offset - a->hitbox_h)));
 
     /* Canvas::draw_surface: nothing if out of the clip rectangle */
     TxRect clip = tx_rect(translation.x, translation.y, translation.x + sw, translation.y + sh);
@@ -263,7 +265,7 @@ static void ts_draw (TsSprite* s, TxVec pos, TxVec translation, float sw, float 
     SDL_SetTextureColorMod(tex, r, g, b);
     SDL_SetTextureAlphaMod(tex, al);
     SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-    SDL_RenderCopyExF(sdl_ren(), tex, &src, &dst, (double) s->angle, NULL, (SDL_RendererFlip) f->flip);
+    SDL_RenderCopyExF(sdl_ren(), tex, &src, &dst, (double) s->angle, NULL, (SDL_RendererFlip) (f->flip ^ s->flip));
 }
 
 #endif

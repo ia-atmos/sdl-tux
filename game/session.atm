@@ -30,7 +30,8 @@ val PLAYER = 0      ;; the id of the player in a collision
 
 ;; The kinds of the objects, for the collisions of the player (TX_OTHER_*),
 ;; and the events that the player gives to a trigger (TX_EVENT_*).
-pin KIND = [OTHER=`:number TX_OTHER_OTHER`, TRIGGER=`:number TX_OTHER_TRIGGER`]
+pin KIND = [OTHER=`:number TX_OTHER_OTHER`, TRIGGER=`:number TX_OTHER_TRIGGER`,
+            BADGUY=`:number TX_OTHER_BADGUY`]
 pin EVENT = [TOUCH=`:number TX_EVENT_TOUCH`, ACTIVATE=`:number TX_EVENT_ACTIVATE`]
 
 ;; The sequences, as in the original (`Sequence`).
@@ -757,13 +758,15 @@ task EndSequenceWalk (life) {
     }
 }
 
+include "badguy.atm"
+
 ;; A life in a level: from the spawn of Tux to his death (`:dead`).
 ;; (`GameSession::restart_level` up to the next one.)
 
 ;; `cont` is true when the life starts in the middle of a step, at the
 ;; restart of the level after a death (`check_end_conditions`). It gives
 ;; :restart at a death, and :won at the end of the level.
-task Life (lvl, ts, cont) {
+task Life (lvl, ts, cont, n) {
     do {
         val n = ts.max + 1
         `tg_sector($n.u.i);`
@@ -781,7 +784,7 @@ task Life (lvl, ts, cont) {
     }
 
     pin objs = tasks()
-    pin life = [byid=[], endseq=false, running=false, done=false, stopped=false]
+    pin life = [byid=[], endseq=false, running=false, done=false, stopped=false, n=n]
     ```
     tg_cb_st = A_OK;
     ```
@@ -802,13 +805,20 @@ task Life (lvl, ts, cont) {
         }
     }
     `tg_trigger = $trigger;`
-    val func solid (self, bits) {
+    val func solid (self, bits, nx, ny) {
         val t = life.byid@self
         if t {
-            emit @t :solid [bits]
+            emit @t :solid [bits, nx, ny]
         }
     }
     `tg_solid = $solid;`
+    val func tile (self, attrs) {
+        val t = life.byid@self
+        if t {
+            emit @t :tile [attrs]
+        }
+    }
+    `tg_tile = $tile;`
 
     ;; `GameSession::start_sequence`
     val func sequence (seq) {
@@ -850,8 +860,8 @@ task Life (lvl, ts, cont) {
     loop _,s in lvl {
         if (type(s) == :table) && (s.tag == :sector) && (s.name == "main") {
             set init = s.init_script
-            loop _,o in s {
-                if type(o) == :table {
+            loop k,o in s {
+                if (type(k) == :number) && (type(o) == :table) {
                     if (o.tag == :tilemap) && o.solid {
                         val w, h, tiles = o.width, o.height, o.tiles
                         val ox, oy = map_offset(s, o)
@@ -866,6 +876,8 @@ task Life (lvl, ts, cont) {
                         :scripttrigger   => spawn @objs ScriptTrigger(life, scripts, env, o)
                         :sequencetrigger => spawn @objs SequenceTrigger(life, o)
                         :brick           => spawn @objs Brick(life, objs, o.x, o.y, brick_of_level(o))
+                        :snowball        => spawn @objs WalkingBadGuy(life, objs, o, WALKERS.snowball, "snowball", uid_of(life, k))
+                        :smartball       => spawn @objs WalkingBadGuy(life, objs, o, WALKERS.smartball, "smartball", uid_of(life, k))
                         :bonusblock      => spawn @objs BonusBlock(life, objs, scripts, env, o.x, o.y, bonus_of_level(o))
                         else           => nil
                     }
@@ -949,8 +961,10 @@ task Session (path) {
     pin lvl = data.load(path)
     pin ts  = data.tileset("/images/tiles.strf")
     var cont = false
+    var n = 0
     loop {
-        val r = await Life(lvl, ts, cont)
+        set n += 1
+        val r = await Life(lvl, ts, cont, n)
         until r == :won
         set cont = true
     }

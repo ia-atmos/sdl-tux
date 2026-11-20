@@ -486,6 +486,7 @@ static void td_draw_look (int i, TxVec translation, float sw, float sh) {
     }
     l->s.angle = g->angle;
     l->s.alpha = g->alpha;
+    l->s.flip = g->vflip ? SDL_FLIP_VERTICAL : 0;
     TxVec pos = (g->obj > 0) ? tx_obj_get_pos(tg_objs[g->obj-1]) : tx_vec(g->x, g->y);
     ts_draw(&l->s, pos, tx_vec_add(translation, tx_vec(0, g->ty)), sw, sh);
 }
@@ -509,7 +510,7 @@ static void td_draw (TxVec translation) {
     memcpy(td_sorted, td_items, td_items_n * sizeof(TdItem));
     n = td_items_n;
     for (int i=0; i<tg_looks_n; i++) {
-        if (tg_looks[i].alive && i < td_looks_cap && td_looks[i].bound) {
+        if (tg_looks[i].alive && !tg_looks[i].hidden && i < td_looks_cap && td_looks[i].bound) {
             td_sorted[n++] = (TdItem) { TD_LOOK, i, tg_looks[i].layer, td_looks[i].order };
         }
     }

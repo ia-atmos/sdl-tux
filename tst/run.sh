@@ -54,9 +54,8 @@ if [ -d "$ROOT/../env-sdl" ]; then
     VIA=env tools/compare.sh | grep -c '^same' | sed 's/^/env: same /'
 fi
 
-# a frame of the first level: identical to the one stored, and, as
-# information, how much it differs from the frame of the official game
-# (what the port does not draw yet: the badguys)
+# a frame of the first level: identical to the one stored, and to the
+# frame of the official game
 if [ -d "$ROOT/../env-sdl" ] && [ -d "$OFFICIAL/data" ]; then
     mkdir -p out
     cc -O2 tools/pngdiff.c -lSDL2 -lSDL2_image -o out/pngdiff
@@ -64,7 +63,8 @@ if [ -d "$ROOT/../env-sdl" ] && [ -d "$OFFICIAL/data" ]; then
     SDL_ATM_KEYS="10:dn:Right" SDL_ATM_SHOT="100:$TMP/jb-100.png" \
         ./tux.sh /levels/world1/journey_begins.stl
     out/pngdiff tst/shots/port-jb-100.png "$TMP/jb-100.png" 0 > /dev/null || { echo "shot: differs from tst/shots/port-jb-100.png"; exit 1; }
-    echo "shot: ok, differs from the official game in $(out/pngdiff tst/shots/official-jb-100.png "$TMP/jb-100.png" 0 | awk '{print $3}') of the pixels"
+    out/pngdiff tst/shots/official-jb-100.png "$TMP/jb-100.png" 0 > /dev/null || { echo "shot: jb-100 differs from the official one"; exit 1; }
+    echo "shot: the first level ok (frame 100 the same as the official one)"
 fi
 
 # frames of a level with no blocks nor badguys, with decals: the same as
@@ -104,4 +104,14 @@ if [ -d "$ROOT/../env-sdl" ]; then
         out/pngdiff tst/shots/official-grow-$t.png "$TMP/grow-$t.png" 0 > /dev/null || { echo "shot: grow-$t differs from the official one"; exit 1; }
     done
     echo "shot: powerups ok (the egg, the flower, the pieces of a brick: frames 70, 160 and 420 the same as the official ones)"
+    # snowballs, one squished, one falling: all but a seam at the bottom of
+    # a tilemap, when the camera is at a fraction of a pixel (see the TODO)
+    IN=$(grep '^snow4 ' tst/runs.txt | awk '{print $4}')
+    SDL_ATM_SHOT="599:$TMP/snow-599.png,2738:$TMP/snow-2738.png" \
+        tst/env-play.sh tst/levels/snow.stl 2739 "$IN" > /dev/null
+    for t in 599 2738; do
+        n=$(out/pngdiff tst/shots/official-snow-$t.png "$TMP/snow-$t.png" 0 | awk '{print $1}')
+        [ "$n" -le 207 ] || { echo "shot: snow-$t differs from the official one in $n pixels"; exit 1; }
+    done
+    echo "shot: snowballs ok (frames 599 and 2738 the same as the official ones but for 207 pixels of a seam)"
 fi

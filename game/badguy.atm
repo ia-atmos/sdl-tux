@@ -1,0 +1,464 @@
+;; The badguys: `BadGuy` and `WalkingBadguy` of the original, and the
+;; walking ones (`SnowBall`, `SmartBall`), as tasks in the pool of the
+;; objects of a sector.
+;;
+;; A badguy is a task with its state in the table `b`. As in the original,
+;; it is updated at each step (`:update`), and it receives the collisions
+;; of its object: with the solids (`:solid`), with the tiles (`:tile`),
+;; and with the other objects (`:hit`), whose response is `pub.resp`. Its
+;; state (`BadGuy::State`) goes to the trace (the lines `E`), and the
+;; lines `B` of the trace are printed by C (game/tux.h, `tg_bg_trace`).
+;;
+;; What asks for the collision system of the sector is in C (game/tux.h,
+;; `tg_bg_*`): whether the badguy is off screen, in water, over a ledge
+;; (`might_fall`, by raycasts).
+;;
+;; Not done yet: frozen and burning badguys (ice and fire bullets),
+;; glinting badguys, grabbed ones, wind, ice physics on ice tiles, and the
+;; dead script.
+
+;; `BadGuy::State`
+pin BG = [INIT=0, INACTIVE=1, ACTIVE=2, SQUISHED=3, FADING=4, FALLING=5]
+
+;; The directions of the original (`Direction`).
+pin DIR = [AUTO=`:number TX_DIR_AUTO`, LEFT=`:number TX_DIR_LEFT`, RIGHT=`:number TX_DIR_RIGHT`]
+pin DIRS = [auto=DIR.AUTO, left=DIR.LEFT, right=DIR.RIGHT]
+pin DIR_NAME = [@(DIR.LEFT)="left", @(DIR.RIGHT)="right"]
+
+;; A timer of the original (`Timer`), in game time.
+func timer () {
+    [period=0, start=0]
+}
+func timer_start (t, period) {
+    set t.period = period
+    set t.start = game_time()
+}
+func timer_check (t) {
+    if (t.period != 0) && ((game_time() - t.start) >= t.period) {
+        set t.period = 0
+        true
+    } else {
+        false
+    }
+}
+func timer_started (t) {
+    (t.period != 0) && ((t.period - (game_time() - t.start)) > 0)
+}
+func timer_progress (t) {
+    (game_time() - t.start) / t.period
+}
+
+;; The hitbox of an action of a sprite: its width and height. The action
+;; nil is the one that a new sprite has: "default", or else the first one.
+pin sprites = []
+func sprite_hitbox (path, action) {
+    val p = if string.sub(path, 0, 0) == "/" => path => ("/" ++ path)
+    if sprites@p == nil {
+        set sprites@p = data.load(p)
+    }
+    val spr = sprites@p
+    var act
+    loop _,a in spr {
+        if (type(a) == :table) && (a.tag == :action) {
+            if (action == nil) && (act == nil) {
+                set act = a
+            }
+            if a.name == (action || "default") {
+                set act = a
+            }
+        }
+    }
+    ;; a mirror action has the hitbox of the other, if not its own
+    if act && !act.hitbox && act.mirror_action {
+        loop _,a in spr {
+            if (type(a) == :table) && (a.tag == :action) && (a.name == act.mirror_action) {
+                set act = a
+            }
+        }
+    }
+    ifs {
+        act == nil   => (32, 32)
+        act.hitbox && (#act.hitbox == 4) => (act.hitbox@2, act.hitbox@3)
+        else => {
+            val sz = act.size || [32, 32]
+            val x, y = if act.hitbox => (act.hitbox@0, act.hitbox@1) => (0, 0)
+            (sz@0 - x, sz@1 - y)
+        }
+    }
+}
+
+;; The walking badguys, by the name of their class: their sprite, their
+;; speed, and how far they let themselves fall from a ledge
+;; (`max_drop_height`, -1: they always fall).
+pin WALKERS = [
+    snowball  = [sprite="images/creatures/snowball/snowball.sprite", walk_speed=80, max_drop=-1],
+    smartball = [sprite="images/creatures/snowball/smart-snowball.sprite", walk_speed=80, max_drop=16],
+]
+
+;; The uid of an object of a sector, as the original numbers them
+;; (`UIDGenerator`): the sector of the n-th life has the generator 2n-1
+;; (each restart makes two, as seen in the official game),
+;; and its objects are numbered in the order of the level, from 4 on
+;; (`k` is the position of the object in the sector, from 0).
+func uid_of (life, k) {
+    (((2 * life.n) - 1) * 16777216) + k + 4
+}
+
+;; A walking badguy of the level (`WalkingBadguy`, `SnowBall`, `SmartBall`).
+task WalkingBadGuy (life, objs, o, cls, name, uid) {
+    val sprite = o.sprite || cls.sprite
+    val w, h = sprite_hitbox(sprite, nil)
+    val id = obj_new(o.x, o.y, w, h, COL.DISABLED, KIND.BADGUY)
+    val l = look_new(sprite, o.x, o.y, LAYER_OBJECTS)
+    `tg_looks[$l.u.i].obj = $id.u.i;`
+    `tg_looks[$l.u.i].hidden = 1;`
+    set pub = [resp=HIT.FORCE, kind=:badguy, active=false]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+        `tg_look_del($l.u.i);`
+    }
+
+    val start_dir = DIRS@(o.direction) || DIR.AUTO
+    pin b = [
+        state = BG.INIT, dir = if start_dir == DIR.AUTO => DIR.LEFT => start_dir,
+        initialized = false, on_ground = false, nx = 0, ny = 0,
+        in_water = false, removed = false,
+        state_timer = timer(), turn_timer = timer(), turn_counter = 0,
+        alpha = 1, alpha_before = 1,
+        walk_speed = cls.walk_speed, max_drop = cls.max_drop,
+    ]
+    val bdir = b.dir
+    `tg_bg_new($id.u.i, (uint32_t) $uid.u.i, A_STR_OF($name)->s, (int) $bdir.u.i);`
+
+    ;; the physic, in C
+    val func vx ()  { `:number TG_PHYS($id.u.i).vx` }
+    val func vy ()  { `:number TG_PHYS($id.u.i).vy` }
+    val func ax ()  { `:number TG_PHYS($id.u.i).ax` }
+    val func set_vx (v) { `TG_PHYS($id.u.i).vx = (float) a_dbl($v);` }
+    val func set_vy (v) { `TG_PHYS($id.u.i).vy = (float) a_dbl($v);` }
+    val func set_ax (v) { `TG_PHYS($id.u.i).ax = (float) a_dbl($v);` }
+    val func set_ay (v) { `TG_PHYS($id.u.i).ay = (float) a_dbl($v);` }
+    val func group (g) { `tg_obj_group($id.u.i, (int) $g.u.i);` }
+
+    ;; `MovingSprite::set_action(name, dir)`: the action, and its hitbox
+    val func set_action (act) {
+        `tg_look_action($l.u.i, A_STR_OF($act)->s);`
+        val aw, ah = sprite_hitbox(sprite, act)
+        `tg_obj_size($id.u.i, (float) a_dbl($aw), (float) a_dbl($ah));`
+    }
+    val func set_dir (d) {
+        set b.dir = d
+        `tg_bg_dir[$id.u.i] = (int) $d.u.i;`
+    }
+
+    ;; `BadGuy::set_state`
+    val func set_state (s) {
+        if b.state != s {
+            val last = b.state
+            `tg_bg_state_trace($id.u.i, (int) $last.u.i, (int) $s.u.i);`
+            set b.state = s
+            match s {
+                BG.SQUISHED => timer_start(b.state_timer, 2)
+                BG.FADING   => timer_start(b.state_timer, 0.2 * b.alpha)
+                BG.ACTIVE   => {
+                    group(COL.MOVING)
+                    `tg_looks[$l.u.i].hidden = 0;`
+                }
+                BG.INACTIVE => {
+                    if (last == BG.SQUISHED) || (last == BG.FALLING) {
+                        set b.removed = true
+                    }
+                    group(COL.DISABLED)
+                    `tg_looks[$l.u.i].hidden = 1;`
+                }
+                BG.FALLING => {
+                    group(COL.DISABLED)
+                    `tg_looks[$l.u.i].vflip = 1;`
+                }
+                else => nil
+            }
+        }
+    }
+
+    ;; `BadGuy::run_dead_script` (no dead scripts yet)
+    val func run_dead_script () {
+        set pub.active = false
+    }
+
+    ;; `BadGuy::kill_fall`
+    val func kill_fall () {
+        if pub.active {
+            set_vy(0)
+            set_ay(0)
+            `TG_PHYS($id.u.i).gravity_enabled_flag = 1;`
+            set_state(BG.FALLING)
+            `tg_looks[$l.u.i].layer = tg_foremost + 1;`
+            run_dead_script()
+        }
+    }
+
+    ;; `BadGuy::kill_squished`, by the player
+    val func kill_squished () {
+        if pub.active {
+            `TG_PHYS($id.u.i).gravity_enabled_flag = 1;`
+            set_vx(0)
+            set_vy(0)
+            set_state(BG.SQUISHED)
+            group(COL.MOVING_ONLY_STATIC)
+            `tx_player_bounce(&tg_tux);`
+            run_dead_script()
+        }
+    }
+
+    ;; `WalkingBadguy::turn_around`
+    val func turn_around () {
+        set_dir(if b.dir == DIR.LEFT => DIR.RIGHT => DIR.LEFT)
+        if (b.state == BG.INIT) || (b.state == BG.INACTIVE) || (b.state == BG.ACTIVE) {
+            set_action(DIR_NAME@(b.dir))
+        }
+        `TG_PHYS($id.u.i).vx = -TG_PHYS($id.u.i).vx;`
+        `TG_PHYS($id.u.i).ax = -TG_PHYS($id.u.i).ax;`
+        ;; if we get dizzy, we fall off the screen
+        if timer_started(b.turn_timer) {
+            val c = b.turn_counter
+            set b.turn_counter += 1
+            if c > 10 {
+                kill_fall()
+            }
+        } else {
+            timer_start(b.turn_timer, 1)
+            set b.turn_counter = 0
+        }
+    }
+
+    ;; `WalkingBadguy::initialize`
+    val func initialize () {
+        set_action(DIR_NAME@(b.dir))
+        set_vx(if b.dir == DIR.LEFT => -b.walk_speed => b.walk_speed)
+        set_ax(0)
+    }
+
+    ;; `BadGuy::try_activate`
+    val func try_activate () {
+        if `:boolean tg_player_alive()` && !`:boolean tg_bg_offscreen($id.u.i)` {
+            set_state(BG.ACTIVE)
+            if !b.initialized {
+                if start_dir == DIR.AUTO {
+                    set_dir(if `:boolean tx_rect_left(&tg_tux.col.bbox) > tx_rect_right(&tg_objs[$id.u.i-1]->bbox)` => DIR.RIGHT => DIR.LEFT)
+                }
+                initialize()
+                set b.initialized = true
+            }
+        }
+    }
+
+    ;; `WalkingBadguy::active_update`
+    val func active_update () {
+        ;; `BadGuy::active_update`
+        val water = b.in_water
+        `tg_bg_move($id.u.i, a_truthy($water));`
+        ;; walk down slopes smoothly
+        if b.on_ground && (b.ny != 0) && ((b.nx * vx()) >= 0) {
+            set_vy((math.abs(vx()) * math.abs(b.nx)) + 100)
+        }
+        val cur = vx()
+        val dest = if b.dir == DIR.LEFT => -b.walk_speed => b.walk_speed
+        ifs {
+            (cur > (dest - 5.0)) && (cur < (dest + 5.0)) => {
+                set_vx(dest)
+                set_ax(0)
+            }
+            ((dest <= 0) && (cur > dest)) || ((dest > 0) && (cur < dest)) => {
+                set_ax(dest * 1.0)
+            }
+            else => {
+                set_ax(-1.0 * dest)
+            }
+        }
+        val drop = b.max_drop
+        if (drop > -1) && b.on_ground && `:boolean tg_bg_might_fall($id.u.i, (int) a_dbl($drop) + 1)` {
+            turn_around()
+        }
+        ifs {
+            (b.dir == DIR.LEFT) && (vx() > 0) => {
+                set_dir(DIR.RIGHT)
+                set_action("right")
+            }
+            (b.dir == DIR.RIGHT) && (vx() < 0) => {
+                set_dir(DIR.LEFT)
+                set_action("left")
+            }
+            else => nil
+        }
+    }
+
+    ;; `BadGuy::update`
+    val func update () {
+        if `:boolean tg_bg_out($id.u.i)` {
+            run_dead_script()
+            set b.removed = true
+            return nil
+        }
+        ;; deactivate, if off screen and not falling down
+        if pub.active && `:boolean tg_bg_offscreen($id.u.i)` && (vy() <= 0) {
+            set_state(BG.INACTIVE)
+        }
+        val water = b.in_water
+        set b.in_water = `:boolean tg_bg_water($id.u.i, a_truthy($water))`
+        match b.state {
+            BG.ACTIVE => {
+                set pub.active = true
+                active_update()
+            }
+            BG.INIT => {
+                set pub.active = false
+                set b.in_water = `:boolean tg_bg_in_water($id.u.i)`
+                try_activate()
+            }
+            BG.INACTIVE => {
+                set pub.active = false
+                set b.in_water = `:boolean tg_bg_in_water($id.u.i)`
+                try_activate()
+            }
+            BG.SQUISHED => {
+                set pub.active = false
+                if timer_check(b.state_timer) {
+                    if b.alpha > 0 {
+                        set b.alpha_before = b.alpha
+                        set_state(BG.FADING)
+                    } else {
+                        set b.removed = true
+                    }
+                } else {
+                    `tg_obj_physic_move($id.u.i);`
+                }
+            }
+            BG.FADING => {
+                if timer_check(b.state_timer) {
+                    set b.removed = true
+                } else {
+                    set b.alpha = b.alpha_before * (1.0 - timer_progress(b.state_timer))
+                    val a = b.alpha
+                    `tg_looks[$l.u.i].alpha = (float) a_dbl($a);`
+                }
+            }
+            BG.FALLING => {
+                set pub.active = false
+                `tg_obj_physic_move($id.u.i);`
+            }
+        }
+        set b.on_ground = false
+    }
+
+    ;; `update_on_ground_flag`
+    val func on_ground_hit (bits, nx, ny) {
+        if (bits & HIT.BOTTOM) != 0 {
+            set b.on_ground = true
+            set b.nx, b.ny = nx, ny
+        }
+    }
+
+    ;; `WalkingBadguy::collision_solid`
+    val func collision_solid (bits, nx, ny) {
+        on_ground_hit(bits, nx, ny)
+        if !pub.active {
+            ;; `BadGuy::collision_solid`
+            set_vx(0)
+            set_vy(0)
+            on_ground_hit(bits, nx, ny)
+        } else {
+            if ((bits & HIT.TOP) != 0) && (vy() < 0) {
+                set_vy(0)
+            }
+            if ((bits & HIT.BOTTOM) != 0) && (vy() > 0) {
+                set_vy(0)
+            }
+            if ((bits & HIT.FLAT) != 0) &&
+               ((((bits & HIT.LEFT) != 0) && (b.dir == DIR.LEFT)) ||
+                (((bits & HIT.RIGHT) != 0) && (b.dir == DIR.RIGHT)))
+            {
+                turn_around()
+            }
+        }
+    }
+
+    ;; `BadGuy::collision_tile`
+    val func collision_tile (attrs) {
+        if pub.active {
+            if ((attrs & TILE.WATER) != 0) && ((attrs & TILE.HURTS) == 0) && !b.in_water {
+                set b.in_water = true
+            }
+            if ((attrs & TILE.HURTS) != 0) {
+                if `:boolean tg_bg_hurt($id.u.i)` || ((attrs & TILE.UNISOLID) != 0) {
+                    if (attrs & TILE.FIRE) == 0 {
+                        kill_fall()
+                    }
+                }
+            }
+        }
+    }
+
+    ;; `BadGuy::collision`, `WalkingBadguy::collision_badguy`,
+    ;; `BadGuy::collision_player`, `SnowBall::collision_squished`
+    val func collision (other, bits) {
+        if !pub.active {
+            return HIT.ABORT
+        }
+        val t = life.byid@other
+        if t && (t.pub.kind == :badguy) {
+            if t.pub.active && `:boolean tg_objs[$other.u.i-1]->group == TX_COLGROUP_MOVING` {
+                if (bits & HIT.TOP) != 0 {
+                    return HIT.FORCE
+                }
+                if (((bits & HIT.LEFT) != 0) && (b.dir == DIR.LEFT)) ||
+                   (((bits & HIT.RIGHT) != 0) && (b.dir == DIR.RIGHT))
+                {
+                    turn_around()
+                }
+                return HIT.CONTINUE
+            }
+        }
+        if other == PLAYER {
+            ;; hit from above?
+            if `:boolean tx_rect_bottom(&tg_tux.col.bbox) < (tx_rect_top(&tg_objs[$id.u.i-1]->bbox) + 16)` {
+                if `:boolean tg_tux.stone` {
+                    kill_fall()
+                    return HIT.FORCE
+                }
+                set_action("squished-" ++ DIR_NAME@(b.dir))
+                kill_squished()
+                return HIT.FORCE
+            }
+            ;; `BadGuy::collision_player`
+            if `:boolean tx_player_is_invincible(&tg_tux)` {
+                kill_fall()
+                return HIT.ABORT
+            }
+            `tx_player_kill(&tg_tux, 0);`
+            return HIT.FORCE
+        }
+        HIT.FORCE
+    }
+
+    par :any {
+        loop {
+            await :update
+            update()
+            until b.removed
+        }
+    } with {
+        loop e on :solid {
+            collision_solid(e@0, e@1, e@2)
+        }
+    } with {
+        loop e on :tile {
+            collision_tile(e@0)
+        }
+    } with {
+        loop e on :hit {
+            set pub.resp = collision(e@0, e@1)
+        }
+    }
+}

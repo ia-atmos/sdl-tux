@@ -53,6 +53,16 @@ static AVal tg_sequence;
 /* The kind of each object, for the player (TX_OTHER_*), by id. */
 static int*    tg_kinds;
 
+/* The badguys (game/badguy.atm), by the id of their object, for the
+ * trace: their uid (0: not a badguy), class, state and direction; and
+ * m_detected_slope of might_fall. */
+static uint32_t* tg_bg_uid;
+static char    (*tg_bg_cls)[24];
+static int*      tg_bg_state;
+static int*      tg_bg_dir;             /* TX_DIR_* */
+static int*      tg_bg_slope;           /* m_detected_slope of might_fall */
+static int       tg_bg_cap;
+
 /* The physic of each object, by id, for the objects that move by it. */
 static TxPhysic* tg_physs;
 
@@ -84,6 +94,8 @@ static void tg_on_solid (TxObj* self, const TxHit* hit) {
     int base = a_top;
     a_push(a_int(self->id));
     a_push(a_int(tg_hit_bits(hit)));
+    a_push(a_num(hit->slope_normal.x));
+    a_push(a_num(hit->slope_normal.y));
     AStatus st = a_call(tg_solid, base);
     if (st == A_OK) {
         a_settop(base);
@@ -92,9 +104,24 @@ static void tg_on_solid (TxObj* self, const TxHit* hit) {
     }
 }
 
+static AVal tg_tile;     /* f(self, attributes): a tile touched by an object */
+
 static void tg_on_tile (TxObj* self, uint32_t attrs) {
     if (self->user == &tg_tux) {
         tx_player_collision_tile(&tg_tux, attrs);
+        return;
+    }
+    if (tg_cb_st != A_OK || tg_tile.type == A_NIL) {
+        return;
+    }
+    int base = a_top;
+    a_push(a_int(self->id));
+    a_push(a_int((int64_t) attrs));
+    AStatus st = a_call(tg_tile, base);
+    if (st == A_OK) {
+        a_settop(base);
+    } else {
+        tg_cb_st = st;
     }
 }
 
@@ -242,6 +269,7 @@ static int tg_obj_new (float x, float y, float w, float h, int group, int kind) 
     }
     tg_kinds[tg_objs_n] = kind;
     tx_physic_init(&tg_physs[tg_objs_n]);
+    if (tg_objs_n + 1 < tg_bg_cap) tg_bg_uid[tg_objs_n + 1] = 0;
     TxObj* o = malloc(sizeof(TxObj));
     tx_obj_init(o, group);
     tx_obj_set_size(o, w, h);
@@ -360,6 +388,8 @@ typedef struct TgLook {
     float x, y, angle, alpha;
     int   layer;
     int   alive;
+    int   hidden;                   /* not drawn (an inactive badguy) */
+    int   vflip;                    /* drawn flipped upside down */
     int   obj;                      /* at the box of this object, if > 0 */
     float ty;                       /* added to the translation of the camera */
     float born;                     /* the game time of its creation */
@@ -400,6 +430,194 @@ static int tg_cam_contains (float x, float y) {
     TxRect r = tx_rect(c.x - tg_cam.screen_size.x / 2.0f, c.y - tg_cam.screen_size.y / 2.0f,
                        c.x + tg_cam.screen_size.x / 2.0f, c.y + tg_cam.screen_size.y / 2.0f);
     return x >= r.x1 && y >= r.y1 && x < tx_rect_right(&r) && y < tx_rect_bottom(&r);
+}
+
+/* ------------------------------------------------------------------------ */
+/* The badguys (game/badguy.atm): what they ask of the sector              */
+/* ------------------------------------------------------------------------ */
+
+/* The trace of the badguys: their uid, class, state and direction, by
+ * the id of their object (uid 0: not a badguy). */
+static FILE*     tg_trace_out;          /* the trace, if any */
+static int       tg_trace_objs;         /* TUX_TRACE_OBJS: the lines `B` */
+static int       tg_foremost;           /* Sector::get_foremost_opaque_layer, from the view */
+
+static void tg_bg_new (int id, uint32_t uid, const char* cls, int dir) {
+    if (id >= tg_bg_cap) {
+        int n = tg_bg_cap ? tg_bg_cap : 256;
+        while (n <= id) n *= 2;
+        tg_bg_uid   = realloc(tg_bg_uid, n * sizeof(uint32_t));
+        tg_bg_cls   = realloc(tg_bg_cls, n * sizeof(*tg_bg_cls));
+        tg_bg_state = realloc(tg_bg_state, n * sizeof(int));
+        tg_bg_dir   = realloc(tg_bg_dir, n * sizeof(int));
+        tg_bg_slope = realloc(tg_bg_slope, n * sizeof(int));
+        for (int i=tg_bg_cap; i<n; i++) tg_bg_uid[i] = 0;
+        tg_bg_cap = n;
+    }
+    tg_bg_uid[id] = uid;
+    snprintf(tg_bg_cls[id], 24, "%s", cls);
+    tg_bg_state[id] = 0;
+    tg_bg_dir[id] = dir;
+    tg_bg_slope[id] = 0;
+}
+
+static int tg_is_bg (int id) {
+    return id > 0 && id < tg_bg_cap && tg_bg_uid[id] != 0;
+}
+
+/* `TuxTestTrace::badguy_state`: the line `E`, during the step */
+static void tg_bg_state_trace (int id, int from, int to) {
+    tg_bg_state[id] = to;
+    if (tg_trace_out) {
+        TxVec pos = tx_obj_get_pos(tg_objs[id-1]);
+        fprintf(tg_trace_out, "%ld E %u %s %d>%d %.9g %.9g\n",
+            tg_tick, tg_bg_uid[id], tg_bg_cls[id], from, to, pos.x, pos.y);
+    }
+}
+
+/* The lines `B`, after the step: the badguys in the sector, in its order. */
+static void tg_bg_trace (FILE* f) {
+    for (int i=0; i<tg_objs_n; i++) {
+        TxObj* o = tg_objs[i];
+        int id = i + 1;
+        if (o == NULL || o->user == NULL || !tg_is_bg(id)) continue;
+        TxVec pos = tx_obj_get_pos(o);
+        const char* d = (tg_bg_dir[id] == TX_DIR_LEFT) ? "L" : (tg_bg_dir[id] == TX_DIR_RIGHT) ? "R" :
+                        (tg_bg_dir[id] == TX_DIR_UP)   ? "U" : (tg_bg_dir[id] == TX_DIR_DOWN)  ? "D" : "-";
+        fprintf(f, "%ld B %u %s %.9g %.9g %.9g %.9g s=%d d=%s\n",
+            tg_tick, tg_bg_uid[id], tg_bg_cls[id], pos.x, pos.y,
+            tg_physs[i].vx, tg_physs[i].vy, tg_bg_state[id], d);
+    }
+}
+
+static void tg_obj_group (int id, int group) {
+    tg_objs[id-1]->group = group;
+}
+
+/* `Sector::get_nearest_player` gives the player only while he is alive */
+static int tg_player_alive (void) {
+    return !tg_tux.dead && !tg_tux.dying;
+}
+
+/* BadGuy::is_offscreen */
+static int tg_bg_offscreen (int id) {
+    const float X_OFFSCREEN_DISTANCE = 1280, Y_OFFSCREEN_DISTANCE = 800;
+    const TxRect* bb = &tg_objs[id-1]->bbox;
+    if (!tg_player_alive()) {
+        return 0;               /* no nearest player */
+    }
+    TxVec center = tx_vec(tg_cam.translation.x + tg_cam.screen_size.x / 2.0f,
+                          tg_cam.translation.y + tg_cam.screen_size.y / 2.0f);
+    TxVec cam_dist = tx_vec_sub(center, tx_rect_middle(bb));
+    TxVec player_dist = tx_vec_sub(tx_rect_middle(&tg_tux.col.bbox), tx_rect_middle(bb));
+    if (((fabsf(player_dist.x) <= X_OFFSCREEN_DISTANCE) && (fabsf(player_dist.y) <= Y_OFFSCREEN_DISTANCE))
+        ||((fabsf(cam_dist.x) <= X_OFFSCREEN_DISTANCE) && (fabsf(cam_dist.y) <= Y_OFFSCREEN_DISTANCE))) {
+        return 0;
+    }
+    return 1;
+}
+
+/* The part of BadGuy::update on the sector: out of it (1: the badguy is
+ * removed). */
+static int tg_bg_out (int id) {
+    const TxRect* bb = &tg_objs[id-1]->bbox;
+    TxVec pos = tx_obj_get_pos(tg_objs[id-1]);
+    return pos.x > tx__sector_get_width(&tg_sec) || pos.x < -tx_rect_width(bb) ||
+           pos.y > tx__sector_get_height(&tg_sec);
+}
+
+/* The part of BadGuy::update on the water (not frozen): the new
+ * m_in_water, and the gravity modifier. */
+static int tg_bg_water (int id, int in_water) {
+    TxObj* o = tg_objs[id-1];
+    TxPhysic* ph = &tg_physs[id-1];
+    const TxRect* bb = &o->bbox;
+    TxRect g1 = tx_rect_grown(bb, 1.f);
+    if (tx_is_free_of_tiles(&tg_sec, &g1, true, TX_TILE_WATER) && in_water) {
+        in_water = 0;
+    }
+    TxRect watertopbox = *bb;
+    tx_rect_set_bottom(&watertopbox, tx_rect_bottom(bb) - tx_rect_height(bb) / 3.f);
+    tx_rect_set_top(&watertopbox, tx_rect_top(bb) + tx_rect_height(bb) / 3.f);
+    int middle_has_water = !tx_is_free_of_tiles(&tg_sec, &watertopbox, true, TX_TILE_WATER);
+    if (ph->gravity_enabled_flag) {
+        ph->gravity_modifier = middle_has_water ? 0.3f : 1.f;
+    }
+    return in_water;
+}
+
+/* `!Sector::get().is_free_of_tiles(bbox.grown(-4.f), false, Tile::WATER)` */
+static int tg_bg_in_water (int id) {
+    TxRect g = tx_rect_grown(&tg_objs[id-1]->bbox, -4.f);
+    return !tx_is_free_of_tiles(&tg_sec, &g, false, TX_TILE_WATER);
+}
+
+/* `!is_free_of_tiles(bbox.grown(-6.f), true, Tile::HURTS)` */
+static int tg_bg_hurt (int id) {
+    TxRect g = tx_rect_grown(&tg_objs[id-1]->bbox, -6.f);
+    return !tx_is_free_of_tiles(&tg_sec, &g, true, TX_TILE_HURTS);
+}
+
+/* The movement of BadGuy::active_update: by the physic, slowed in water */
+static void tg_bg_move (int id, int water) {
+    TxVec m = tx_physic_get_movement(&tg_physs[id-1], tg_sec.gravity, tg_dt);
+    if (water) {
+        m = tx_vec(m.x * 0.7f, m.y * 0.3f);
+    }
+    tx_obj_set_movement(tg_objs[id-1], m);
+}
+
+/* BadGuy::might_fall(height), with m_detected_slope kept by id */
+static int tg_bg_might_fall (int id, int height) {
+    TxObj* o = tg_objs[id-1];
+    const TxRect* bb = &o->bbox;
+    int left = (tg_bg_dir[id] == TX_DIR_LEFT);
+    float oy = tx_rect_bottom(bb) + 1.f;
+    float fh = (float) height;
+
+    if (tg_bg_slope[id] == 0) {
+        TxVec eye = tx_vec(0, oy - 2.f);
+        eye.x = (left ? tx_rect_left(bb) : tx_rect_right(bb));
+        TxVec end = tx_vec(eye.x, eye.y + fh + 2.f);
+        TxRaycast result = tx_get_first_line_intersection(&tg_sec, eye, end, 0, o);
+        if (!result.is_valid) {
+            return 1;
+        }
+        if (result.kind == TX_RAY_TILE && result.tile_id < tg_sec.tiles.count &&
+            tx_tile_is_slope(tg_sec.tiles.attrs[result.tile_id])) {
+            int dir = tg_sec.tiles.data[result.tile_id];
+            int d = dir & TX_AAT_DIRECTION_MASK;
+            int south = (d == TX_AAT_SOUTHWEST || d == TX_AAT_SOUTHEAST);
+            int east  = (d == TX_AAT_NORTHEAST || d == TX_AAT_SOUTHEAST);
+            if (south && (left ? east : !east)) {
+                tg_bg_slope[id] = dir;
+            }
+        }
+    }
+
+    if (tg_bg_slope[id] != 0) {
+        float dirmult = (left ? 1.f : -1.f);
+        float rearx = (left ? tx_rect_right(bb) : tx_rect_left(bb));
+        float startoff = (tx_rect_width(bb) / 5.f) * dirmult;
+        TxVec eye = tx_vec(rearx - startoff, oy);
+        float endoff = startoff - (2.f * dirmult);
+        TxVec end = tx_vec(eye.x + endoff, eye.y + 80.f);
+        TxRaycast result = tx_get_first_line_intersection(&tg_sec, eye, end, 0, o);
+        if (!result.is_valid) {
+            tg_bg_slope[id] = 0;
+            return 1;
+        }
+        if (tx_rect_top(&result.box) - oy > fh + 1.f) {
+            tg_bg_slope[id] = 0;
+            return 1;
+        }
+        if (result.kind == TX_RAY_TILE && result.tile_id < tg_sec.tiles.count &&
+            tx_tile_is_slope(tg_sec.tiles.attrs[result.tile_id])) {
+            return 0;
+        }
+        tg_bg_slope[id] = 0;
+    }
+    return 0;
 }
 
 /* The sector, with the attributes of `n` tiles still to fill. */
@@ -583,6 +801,9 @@ static void tg_trace (FILE* f, int coins) {
         p->dying, p->dead, p->winning, coins);
     if (tg_trace_camera) {
         fprintf(f, "%ld C %.9g %.9g\n", tg_tick, tg_cam.translation.x, tg_cam.translation.y);
+    }
+    if (tg_trace_objs) {
+        tg_bg_trace(f);
     }
 }
 

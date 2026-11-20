@@ -222,6 +222,8 @@ func view.build (sec, raw, ntiles) {
                 :coin       => `td_look_level();`
                 :bonusblock => `td_look_level();`
                 :brick      => `td_look_level();`
+                :snowball   => `td_look_level();`
+                :smartball  => `td_look_level();`
                 :decal => {
                     val d = view.data(o.sprite || "images/decal/explanations/billboard-bigtux.png")
                     val x, y, z = o.x || 0, o.y || 0, o.z_pos || 50
@@ -253,6 +255,7 @@ func view.build (sec, raw, ntiles) {
     }
     view.tiles(raw)
     `tp_layer_dying = (int) $foremost.u.i + 1;`
+    `tg_foremost = (int) $foremost.u.i;`
 }
 
 ;; The view of a level: rebuilt at each life, drawn at each frame.

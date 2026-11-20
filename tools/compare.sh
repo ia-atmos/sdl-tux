@@ -10,6 +10,7 @@
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 export TUX_TRACE_CAMERA=1   # the traces have the camera
+export TUX_TRACE_OBJS=1     # and the badguys
 mkdir -p out/compare
 PLAY=tst/play.sh
 [ "$VIA" = env ] && PLAY=tst/env-play.sh
