@@ -206,14 +206,16 @@ func block_del (life, b) {
 }
 
 ;; `Block::start_bounce`, by the player
-func block_bounce (b) {
+func block_bounce (b, hitter) {
     val id, l = b.id, b.l
     if b.original_y == -1 {
         set b.original_y = `:number tg_obj_y($id.u.i)`
     }
     set b.bouncing = true
     set b.dir = -90
-    `tg_looks[$l.u.i].angle = tg_block_angle($id.u.i);`
+    if hitter {
+        `tg_looks[$l.u.i].angle = tg_block_angle($id.u.i);`
+    }
 }
 
 ;; `set_action("empty")`: the hitbox of its image
@@ -260,12 +262,23 @@ func block_other (life, b, other, bits) {
     if b.bouncing && ((bits & HIT.SIDES) != 0) {
         val t = life.byid@other
         val id = b.id
-        if t && (t.pub.kind == :growup) &&
-           `:boolean tx_rect_bottom(&tg_objs[$other.u.i-1]->bbox) < tx_rect_top(&tg_objs[$id.u.i-1]->bbox) + TX_SHIFT_DELTA`
-        {
-            `TG_PHYS($other.u.i).vy = -300;`     ;; `GrowUp::do_jump`
+        if t && `:boolean tx_rect_bottom(&tg_objs[$other.u.i-1]->bbox) < tx_rect_top(&tg_objs[$id.u.i-1]->bbox) + TX_SHIFT_DELTA` {
+            match t.pub.kind {
+                :badguy => emit @t :kill_fall               ;; badguys get killed
+                :growup => `TG_PHYS($other.u.i).vy = -300;` ;; `GrowUp::do_jump`
+                else    => nil
+            }
         }
     }
+}
+
+;; A badguy that breaks blocks (`can_break`: a kicked ice block) hits the
+;; block from a side (`BonusBlock::collision`, `Brick::collision`).
+func block_broken_by (life, b, other, bits) {
+    val t = life.byid@other
+    val id = b.id
+    t && (t.pub.kind == :badguy) && t.pub.can_break && ((bits & HIT.SIDES) != 0) &&
+        `:boolean tx_rect_bottom(&tg_objs[$other.u.i-1]->bbox) > tx_rect_top(&tg_objs[$id.u.i-1]->bbox) + TX_SHIFT_DELTA`
 }
 
 ;; A powerup that rises out of a bonus block (`SpecialRiser`): the looks
@@ -444,7 +457,7 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
             if o.script {
                 spawn @scripts script.Script(env, o.script, "BonusBlockScript")
             }
-            block_bounce(b)
+            block_bounce(b, true)
             ifs {
                 hits <= 0 => nil        ;; infinite
                 hits == 1 => {
@@ -469,6 +482,9 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
                     try_open()
                 }
             } else {
+                if block_broken_by(life, b, e@0, e@1) && `:boolean tg_player_alive()` {
+                    try_open()          ;; by the nearest player
+                }
                 block_other(life, b, e@0, e@1)
             }
         }
@@ -539,7 +555,8 @@ task Brick (life, objs, x, y, o) {
     var coins = if o.breakable => 0 => 5
 
     ;; `Brick::try_break`, by the player
-    val func try_break () {
+    var gone = false
+    val func try_break (by_player) {
         if !empty {
             ifs {
                 coins > 0 => {
@@ -551,12 +568,16 @@ task Brick (life, objs, x, y, o) {
                         set empty = true
                         block_empty(b)
                     }
-                    block_bounce(b)
+                    block_bounce(b, by_player)
                 }
                 o.breakable => {
-                    block_bounce(b)
-                    if `:boolean tx_player_is_big(&tg_tux)` {
-                        set b.breaking = true       ;; `start_break`
+                    if by_player {
+                        block_bounce(b, true)
+                        if `:boolean tx_player_is_big(&tg_tux)` {
+                            set b.breaking = true       ;; `start_break`
+                        }
+                    } else {
+                        set gone = true                 ;; `break_me`
                     }
                 }
             }
@@ -564,20 +585,26 @@ task Brick (life, objs, x, y, o) {
     }
 
     par :any {
-        loop e on :hit {
+        loop {
+            val e = await :hit
             if e@0 == PLAYER {
                 val id, bits = b.id, e@1
                 val r = `:number tg_block_player($id.u.i, (int) $bits.u.i)`
                 if (r & 1) != 0 {
-                    try_break()
+                    try_break(true)
                 }
                 if (r & 2) != 0 {
-                    try_break()          ;; `Brick::hit`
+                    try_break(true)          ;; `Brick::hit`
                 }
             } else {
+                if block_broken_by(life, b, e@0, e@1) {
+                    try_break(false)
+                }
                 block_other(life, b, e@0, e@1)
             }
+            until gone
         }
+        block_break(objs, b, o.sprite)
     } with {
         await Block(b)                  ;; it breaks: `break_me`
         block_break(objs, b, o.sprite)
@@ -819,6 +846,17 @@ task Life (lvl, ts, cont, n) {
         }
     }
     `tg_tile = $tile;`
+    val func portable (op, self, x, y, d) {
+        val t = life.byid@self
+        if t {
+            if op == 1 {
+                emit @t :grab [x, y, d]
+            } else {
+                emit @t :ungrab [d]
+            }
+        }
+    }
+    `tg_portable_cb = $portable;`
 
     ;; `GameSession::start_sequence`
     val func sequence (seq) {

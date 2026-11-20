@@ -21,12 +21,14 @@
 pin BG = [INIT=0, INACTIVE=1, ACTIVE=2, SQUISHED=3, FADING=4, FALLING=5]
 
 ;; The directions of the original (`Direction`).
-pin DIR = [AUTO=`:number TX_DIR_AUTO`, LEFT=`:number TX_DIR_LEFT`, RIGHT=`:number TX_DIR_RIGHT`]
+pin DIR = [AUTO=`:number TX_DIR_AUTO`, LEFT=`:number TX_DIR_LEFT`, RIGHT=`:number TX_DIR_RIGHT`,
+           UP=`:number TX_DIR_UP`, DOWN=`:number TX_DIR_DOWN`]
 pin DIRS = [auto=DIR.AUTO, left=DIR.LEFT, right=DIR.RIGHT]
 pin DIR_NAME = [@(DIR.LEFT)="left", @(DIR.RIGHT)="right"]
 
 ;; The badguys, by the name of their class: their kind (a walking badguy,
-;; a jumpy, a bouncing or a flying snowball, or a stalactite), their sprite; for the walking ones, their speed, and how far they let themselves fall from a ledge
+;; a jumpy, a bouncing or a flying snowball, an ice block, or a
+;; stalactite), their sprite; for the walking ones, their speed, and how far they let themselves fall from a ledge
 ;; (`max_drop_height`, -1: they always fall), whether the player squishes
 ;; them (`collision_squished`), and whether they sleep until the player
 ;; comes near (`SSpiky`).
@@ -45,6 +47,10 @@ pin BADGUYS = [
                  sprite="images/creatures/bouncing_snowball/bouncing_snowball.sprite", squish=true],
     flyingsnowball = [kind=:flying, name="flyingsnowball",
                  sprite="images/creatures/flying_snowball/flying_snowball.sprite", squish=true],
+    mriceblock = [kind=:iceblock, name="mriceblock", sprite="images/creatures/iceblock/iceblock.sprite",
+                 walk_speed=80, max_drop=-1, squish=false],
+    smartblock = [kind=:iceblock, name="smartblock", sprite="images/creatures/iceblock/smart_block.sprite",
+                 walk_speed=80, max_drop=16, squish=false],
     stalactite = [kind=:stalactite, name="stalactite", sprite="images/creatures/stalactite/stalactite_ice.sprite",
                  squish=false, layer=-1],
 ]
@@ -70,7 +76,7 @@ task BadGuy (life, objs, o, cls, uid) {
     `tg_looks[$l.u.i].obj = $id.u.i;`
     `tg_looks[$l.u.i].hidden = 1;`
     set pub = [resp=HIT.FORCE, kind=:badguy, active=false, cls=cls.kind,
-               freezable=cls.freezable]
+               freezable=cls.freezable, can_break=false]
     set life.byid@id = task
     defer {
         set life.byid@id = nil
@@ -85,6 +91,8 @@ task BadGuy (life, objs, o, cls, uid) {
         colgroup_active = if cls.kind == :stalactite => COL.TOUCHABLE => COL.MOVING,
         st = :hanging, shake_timer = timer(),               ;; Stalactite
         elapsed = 0, puff_timer = timer(),                  ;; FlyingSnowBall
+        ice = :normal, flat_timer = timer(), nokick_timer = timer(),
+        squishcount = 0, grabbed = false,                   ;; MrIceBlock
         in_water = false, removed = false,
         state_timer = timer(), turn_timer = timer(), turn_counter = 0,
         alpha = 1, alpha_before = 1,
@@ -230,7 +238,7 @@ task BadGuy (life, objs, o, cls, uid) {
             set_action(DIR_NAME@(b.dir))
             return nil
         }
-        if cls.kind != :walker {
+        if (cls.kind != :walker) && (cls.kind != :iceblock) {
             return nil              ;; `BadGuy::initialize`
         }
         if cls.sleeps {
@@ -429,8 +437,154 @@ task BadGuy (life, objs, o, cls, uid) {
         }
     }
 
+    ;; whether the player can grab it now (`is_portable`, not grabbed)
+    val func ice_portable () {
+        val p = (b.ice == :flat) && !b.grabbed
+        `tg_bg_portable[$id.u.i] = a_truthy($p);`
+        set pub.can_break = (b.ice == :kicked) || (b.ice == :flat)     ;; `can_break`
+    }
+
+    ;; `MrIceBlock::set_state`
+    val func ice_state (st) {
+        if b.ice != st {
+            val d = DIR_NAME@(b.dir)
+            match st {
+                :normal => {
+                    set_action(d, -1)
+                    walk_initialize()
+                }
+                :flat => {
+                    set_action("flat-" ++ d, -1)
+                    timer_start(b.flat_timer, 4)
+                }
+                :kicked => {
+                    set_vx(if b.dir == DIR.LEFT => -500 => 500)
+                    set_action("flat-" ++ d, -1)
+                    ;; we should slide above 1 block holes now: the size of
+                    ;; the box only (`m_bbox.set_size`), not of its
+                    ;; destination, which the collisions keep
+                    `tx_rect_set_size(&tg_objs[$id.u.i-1]->bbox, 34, 31.8f);`
+                }
+                :grabbed => set b.flat_timer.period = 0
+                :waking => {
+                    set b.flat_timer.period = 0
+                    set_action("waking-" ++ d, 1)
+                }
+            }
+            set b.ice = st
+            ice_portable()
+        }
+    }
+
+    ;; `MrIceBlock::active_update`
+    val func ice_active_update () {
+        if (b.ice == :grabbed) || b.grabbed {
+            return nil
+        }
+        if (b.ice == :flat) && timer_check(b.flat_timer) {
+            ice_state(:waking)
+        }
+        if (b.ice == :waking) && anim_done(b.anim) {
+            ice_state(:normal)
+        }
+        if b.ice == :normal {
+            walk_active_update()
+            return nil
+        }
+        base_active_update()
+    }
+
+    ;; `MrIceBlock::collision_squished`, by the player
+    val func ice_squished () {
+        if `:boolean tg_tux.does_buttjump || tx_player_is_invincible(&tg_tux)` {
+            `tx_player_bounce(&tg_tux);`
+            kill_fall()
+            return true
+        }
+        ifs {
+            (b.ice == :kicked) || (b.ice == :normal) => {
+                set b.squishcount += 1
+                if b.squishcount >= 10 {
+                    kill_fall()
+                    return true
+                }
+                set_vx(0)
+                set_vy(0)
+                ice_state(:flat)
+                timer_start(b.nokick_timer, 0.1)
+            }
+            (b.ice == :flat) || (b.ice == :waking) => {
+                set_dir(if `:boolean tg_tux.col.bbox.x1 < tg_objs[$id.u.i-1]->bbox.x1` => DIR.RIGHT => DIR.LEFT)
+                if timer_check(b.nokick_timer) {
+                    ice_state(:kicked)
+                }
+            }
+            else => nil
+        }
+        `tx_player_bounce(&tg_tux);`
+        true
+    }
+
+    ;; `MrIceBlock::grab`: held by the player at `x`, `y`
+    val func ice_grab (x, y, d) {
+        set b.grabbed = true
+        ```
+        {
+            TxObj* o = tg_objs[$id.u.i-1];
+            TxVec mv = tx_vec_sub(tx_vec((float) a_dbl($x), (float) a_dbl($y)), tx_obj_get_pos(o));
+            tx_obj_set_movement(o, mv);
+            const float LOGICAL_FPS = 1000.0f / 15.0f;
+            TG_PHYS($id.u.i).vx = mv.x * LOGICAL_FPS;
+            TG_PHYS($id.u.i).vy = mv.y * LOGICAL_FPS;
+        }
+        ```
+        set_dir(d)
+        set_action("flat-" ++ DIR_NAME@(b.dir), -1)
+        ice_state(:grabbed)
+        set b.colgroup_active = COL.DISABLED
+        if b.state == BG.ACTIVE {
+            group(COL.DISABLED)
+        }
+        ice_portable()
+    }
+
+    ;; `MrIceBlock::ungrab`: thrown, put down, or kicked
+    val func ice_ungrab (d) {
+        ifs {
+            d == DIR.UP => {
+                set_vy(-500)
+                if `:boolean fabsf(tg_tux.physic.vx) < 1.0f` {
+                    ice_state(:flat)
+                } else {
+                    set_dir(if vx() > 0 => DIR.RIGHT => DIR.LEFT)
+                    ice_state(:kicked)
+                }
+            }
+            d == DIR.DOWN => {
+                if `:boolean tg_ice_free_below($id.u.i)` {
+                    set_vy(500)
+                }
+                ice_state(:flat)
+            }
+            else => {
+                set_dir(d)
+                ice_state(:kicked)
+            }
+        }
+        set b.colgroup_active = COL.MOVING
+        if b.state == BG.ACTIVE {
+            group(COL.MOVING)
+        }
+        set b.grabbed = false
+        ice_portable()
+    }
+
     ;; `active_update`: `SSpiky::active_update`, for one that sleeps
     val func active_update () {
+        if cls.kind == :iceblock {
+            ice_active_update()
+            return nil
+        }
         if cls.kind == :bouncing {
             bouncing_active_update()
             return nil
@@ -473,7 +627,7 @@ task BadGuy (life, objs, o, cls, uid) {
 
     ;; `BadGuy::update`
     val func update () {
-        if `:boolean tg_bg_out($id.u.i)` {
+        if `:boolean tg_bg_out($id.u.i)` && !b.grabbed {
             run_dead_script()
             set b.removed = true
             return nil
@@ -536,6 +690,36 @@ task BadGuy (life, objs, o, cls, uid) {
     ;; `WalkingBadguy::collision_solid` (`BadGuy::collision_solid` for one
     ;; that is not walking)
     val func collision_solid (bits, nx, ny) {
+        if cls.kind == :iceblock {
+            ;; `MrIceBlock::collision_solid`
+            on_ground_hit(bits, nx, ny)
+            if (bits & (HIT.TOP | HIT.BOTTOM)) != 0 {
+                set_vy(0)
+            }
+            match b.ice {
+                :normal => nil      ;; as a walking badguy, below
+                :kicked => {
+                    if (bits & (HIT.LEFT | HIT.RIGHT)) != 0 {
+                        if (((bits & HIT.RIGHT) != 0) && (b.dir == DIR.RIGHT)) ||
+                           (((bits & HIT.LEFT) != 0) && (b.dir == DIR.LEFT))
+                        {
+                            set_dir(if b.dir == DIR.LEFT => DIR.RIGHT => DIR.LEFT)
+                        }
+                        set_vx(-vx() * 0.975)
+                    }
+                    set_action("flat-" ++ DIR_NAME@(b.dir), -1)
+                    if math.abs(vx()) < (b.walk_speed * 1.5) {
+                        ice_state(:normal)
+                    }
+                    return nil
+                }
+                :grabbed => return nil
+                else => {
+                    set_vx(0)       ;; flat, waking
+                    return nil
+                }
+            }
+        }
         if cls.kind == :flying {
             if (bits & (HIT.TOP | HIT.BOTTOM)) != 0 {
                 set_vy(0)
@@ -622,12 +806,30 @@ task BadGuy (life, objs, o, cls, uid) {
     ;; `BadGuy::collision`, `WalkingBadguy::collision_badguy`,
     ;; `BadGuy::collision_player`, `SnowBall::collision_squished`
     val func collision (other, bits) {
+        if (cls.kind == :iceblock) && (b.ice == :grabbed) {
+            return HIT.FORCE
+        }
         if !pub.active {
             return HIT.ABORT
+        }
+        if b.grabbed {
+            return HIT.FORCE
         }
         val t = life.byid@other
         if t && (t.pub.kind == :badguy) {
             if t.pub.active && `:boolean tg_objs[$other.u.i-1]->group == TX_COLGROUP_MOVING` {
+                if cls.kind == :iceblock {
+                    ;; `MrIceBlock::collision_badguy`
+                    match b.ice {
+                        :flat   => return HIT.FORCE
+                        :waking => return HIT.FORCE
+                        :kicked => {
+                            emit @t :kill_fall
+                            return HIT.FORCE
+                        }
+                        else => nil     ;; as a walking badguy, below
+                    }
+                }
                 if cls.kind == :stalactite {
                     ;; `Stalactite::collision_badguy`
                     ifs {
@@ -682,6 +884,10 @@ task BadGuy (life, objs, o, cls, uid) {
                     kill_fall()
                     return HIT.FORCE
                 }
+                if cls.kind == :iceblock {
+                    ice_squished()
+                    return HIT.FORCE
+                }
                 if cls.squish {
                     set_action("squished-" ++ DIR_NAME@(b.dir))
                     if cls.kind == :flying {
@@ -690,6 +896,21 @@ task BadGuy (life, objs, o, cls, uid) {
                         set_vy(0)
                     }
                     kill_squished()
+                    return HIT.FORCE
+                }
+            }
+            if (cls.kind == :iceblock) && ((b.ice == :waking) || (b.ice == :flat)) && (b.state == BG.ACTIVE) {
+                ;; `MrIceBlock::collision_player`: kicked from a side
+                if (bits & HIT.LEFT) != 0 {
+                    set_dir(DIR.RIGHT)
+                    `tx_player_kick(&tg_tux);`
+                    ice_state(:kicked)
+                    return HIT.FORCE
+                }
+                if (bits & HIT.RIGHT) != 0 {
+                    set_dir(DIR.LEFT)
+                    `tx_player_kick(&tg_tux);`
+                    ice_state(:kicked)
                     return HIT.FORCE
                 }
             }
@@ -739,6 +960,14 @@ task BadGuy (life, objs, o, cls, uid) {
     } with {
         loop on :kill_fall {
             kill_fall()
+        }
+    } with {
+        loop e on :grab {
+            ice_grab(e@0, e@1, e@2)
+        }
+    } with {
+        loop e on :ungrab {
+            ice_ungrab(e@0)
         }
     }
 }

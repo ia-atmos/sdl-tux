@@ -62,6 +62,7 @@ static int*      tg_bg_state;
 static int*      tg_bg_dir;             /* TX_DIR_* */
 static int*      tg_bg_slope;           /* m_detected_slope of might_fall */
 static float*    tg_bg_start_y;         /* m_start_position.y */
+static uint8_t*  tg_bg_portable;        /* the player can grab it now */
 static int       tg_bg_cap;
 
 /* The physic of each object, by id, for the objects that move by it. */
@@ -460,6 +461,7 @@ static void tg_bg_new (int id, uint32_t uid, const char* cls, int dir) {
         tg_bg_dir   = realloc(tg_bg_dir, n * sizeof(int));
         tg_bg_slope = realloc(tg_bg_slope, n * sizeof(int));
         tg_bg_start_y = realloc(tg_bg_start_y, n * sizeof(float));
+        tg_bg_portable = realloc(tg_bg_portable, n);
         for (int i=tg_bg_cap; i<n; i++) tg_bg_uid[i] = 0;
         tg_bg_cap = n;
     }
@@ -469,6 +471,7 @@ static void tg_bg_new (int id, uint32_t uid, const char* cls, int dir) {
     tg_bg_dir[id] = dir;
     tg_bg_slope[id] = 0;
     tg_bg_start_y[id] = tg_objs[id-1]->bbox.y1;
+    tg_bg_portable[id] = 0;
 }
 
 static int tg_is_bg (int id) {
@@ -558,6 +561,63 @@ static int tg_stalactite_reach (int id) {
     if (tx_free_line_of_sight(&tg_sec, eye, tx_vec(tx_rect_left(pb), tx_rect_bottom(pb)), false, me)) return 1;
     if (tx_free_line_of_sight(&tg_sec, eye, tx_rect_middle(pb), false, me)) return 1;
     return 0;
+}
+
+/* MrIceBlock::ungrab down: free space below */
+static int tg_ice_free_below (int id) {
+    TxObj* o = tg_objs[id-1];
+    TxRect r = o->bbox;
+    tx_rect_move(&r, tx_vec(0, 32));
+    return tx_is_free_of_statics(&tg_sec, &r, o, false, TX_TILE_SOLID);
+}
+
+/* The portable objects (Portable): the player finds one to grab, and grabs
+ * and releases it, through the game (f(op, id, x, y, dir): op 1 grab at
+ * x, y, op 2 ungrab). */
+static AVal tg_portable_cb;
+
+static TxObj* tg_on_find_portable (void* user, TxVec pos) {
+    (void) user;
+    for (int i=0; i<tg_objs_n; i++) {
+        TxObj* o = tg_objs[i];
+        int id = i + 1;
+        if (o == NULL || o->user == NULL || !o->valid) continue;
+        if (!(id < tg_bg_cap && tg_bg_uid[id] != 0 && tg_bg_portable[id])) continue;
+        if (o->group == TX_COLGROUP_DISABLED) continue;
+        const TxRect* r = &o->bbox;
+        if (pos.x >= r->x1 && pos.y >= r->y1 && pos.x < tx_rect_right(r) && pos.y < tx_rect_bottom(r)) {
+            return o;
+        }
+    }
+    return NULL;
+}
+
+static void tg_portable_call (int op, int id, float x, float y, int dir) {
+    if (tg_cb_st != A_OK || tg_portable_cb.type == A_NIL) {
+        return;
+    }
+    int base = a_top;
+    a_push(a_int(op));
+    a_push(a_int(id));
+    a_push(a_num(x));
+    a_push(a_num(y));
+    a_push(a_int(dir));
+    AStatus st = a_call(tg_portable_cb, base);
+    if (st == A_OK) {
+        a_settop(base);
+    } else {
+        tg_cb_st = st;
+    }
+}
+
+static void tg_on_portable_grab (void* user, TxObj* obj, TxVec pos, int dir) {
+    (void) user;
+    tg_portable_call(1, obj->id, pos.x, pos.y, dir);
+}
+
+static void tg_on_portable_ungrab (void* user, TxObj* obj, int dir) {
+    (void) user;
+    tg_portable_call(2, obj->id, 0, 0, dir);
 }
 
 /* BouncingSnowball::active_update: the ground below, and a solid at its
@@ -802,6 +862,9 @@ static void tg_player (float x, float y) {
     tg_host.graphics_rand_i = tg_on_rand_i;
     tg_host.graphics_rand_f = tg_on_rand_f;
     tg_host.add_particles = tg_on_particles;
+    tg_host.find_portable = tg_on_find_portable;
+    tg_host.portable_grab = tg_on_portable_grab;
+    tg_host.portable_ungrab = tg_on_portable_ungrab;
     if (tg_extra_hooks) tg_extra_hooks(&tg_host);
     tx_controller_reset(&tg_end_ctl);
     tx_timer_init(&tg_end_timer);
