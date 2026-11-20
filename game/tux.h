@@ -517,6 +517,17 @@ static int tg_bg_offscreen (int id) {
     return 1;
 }
 
+/* SSpiky::active_update: the player in reach of a sleeping spiky */
+static int tg_sspiky_reach (int id, int dir) {
+    const TxRect* pb = &tg_tux.col.bbox;
+    const TxRect* bb = &tg_objs[id-1]->bbox;
+    int inReach_left = (tx_rect_right(pb) >= tx_rect_right(bb)-((dir == TX_DIR_LEFT) ? 256 : 0));
+    int inReach_right = (tx_rect_left(pb) <= tx_rect_left(bb)+((dir == TX_DIR_RIGHT) ? 256 : 0));
+    int inReach_top = (tx_rect_bottom(pb) >= tx_rect_top(bb));
+    int inReach_bottom = (tx_rect_top(pb) <= tx_rect_bottom(bb));
+    return inReach_left && inReach_right && inReach_top && inReach_bottom;
+}
+
 /* The part of BadGuy::update on the sector: out of it (1: the badguy is
  * removed). */
 static int tg_bg_out (int id) {

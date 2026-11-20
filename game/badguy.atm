@@ -87,12 +87,88 @@ func sprite_hitbox (path, action) {
     }
 }
 
+;; An action of a sprite, as its data has it (a mirror action has the
+;; frames of the other): its number of frames, fps, loops, and loop frame.
+func sprite_action (path, name) {
+    val p = if string.sub(path, 0, 0) == "/" => path => ("/" ++ path)
+    if sprites@p == nil {
+        set sprites@p = data.load(p)
+    }
+    val spr = sprites@p
+    var act
+    loop _,a in spr {
+        if (type(a) == :table) && (a.tag == :action) && (a.name == name) {
+            set act = a
+        }
+    }
+    if act == nil {
+        return nil
+    }
+    var imgs = act.images
+    if act.mirror_action {
+        loop _,a in spr {
+            if (type(a) == :table) && (a.tag == :action) && (a.name == act.mirror_action) {
+                set imgs = a.images
+            }
+        }
+    }
+    [n=if imgs => #imgs => 1, fps=act.fps || 10,
+     loops=if act.loops != nil => act.loops => nil, loop_frame=math.max(act.loop_frame || 1, 1)]
+}
+
+;; The animation of a sprite, as the logic of the original sees it
+;; (`Sprite::set_action`, `Sprite::update`, `Sprite::animation_done`):
+;; the sprite advances when it is drawn, which is after each step.
+func anim_new () {
+    [act=nil, frame=0, idx=0, loops=-1, last=game_time()]
+}
+func anim_set (a, path, name, loops) {
+    val act = sprite_action(path, name)
+    if act {
+        set a.loops = if act.loops != nil => act.loops => loops
+        set a.frame = 0
+        set a.idx = 0
+        set a.act = act
+        set a.last = game_time()
+    }
+}
+func anim_update (a) {
+    val act = a.act
+    if act {
+        val now = game_time()
+        val inc = if a.last > 0 => act.fps * (now - a.last) => 0
+        set a.last = now
+        set a.frame += inc
+        loop {
+            until a.frame < 1
+            set a.frame -= 1
+            set a.idx += 1
+        }
+        loop {
+            until (a.idx < act.n) || (a.loops == 0)
+            set a.idx -= act.n - (act.loop_frame - 1)
+            set a.loops -= 1
+        }
+        if a.loops == 0 {
+            set a.frame = 0
+            set a.idx = act.n - 1
+        }
+    }
+}
+func anim_done (a) {
+    a.loops == 0
+}
+
 ;; The walking badguys, by the name of their class: their sprite, their
 ;; speed, and how far they let themselves fall from a ledge
-;; (`max_drop_height`, -1: they always fall).
+;; (`max_drop_height`, -1: they always fall), whether the player squishes
+;; them (`collision_squished`), and whether they sleep until the player
+;; comes near (`SSpiky`).
 pin WALKERS = [
-    snowball  = [sprite="images/creatures/snowball/snowball.sprite", walk_speed=80, max_drop=-1],
-    smartball = [sprite="images/creatures/snowball/smart-snowball.sprite", walk_speed=80, max_drop=16],
+    snowball  = [sprite="images/creatures/snowball/snowball.sprite", walk_speed=80, max_drop=-1, squish=true],
+    smartball = [sprite="images/creatures/snowball/smart-snowball.sprite", walk_speed=80, max_drop=16, squish=true],
+    spiky     = [sprite="images/creatures/spiky/spiky.sprite", walk_speed=80, max_drop=600, squish=false],
+    sspiky    = [sprite="images/creatures/spiky/sleepingspiky.sprite", walk_speed=80, max_drop=600, squish=false, sleeps=true],
 ]
 
 ;; The uid of an object of a sector, as the original numbers them
@@ -104,7 +180,8 @@ func uid_of (life, k) {
     (((2 * life.n) - 1) * 16777216) + k + 4
 }
 
-;; A walking badguy of the level (`WalkingBadguy`, `SnowBall`, `SmartBall`).
+;; A walking badguy of the level (`WalkingBadguy`, `SnowBall`, `SmartBall`,
+;; `Spiky`, `SSpiky`).
 task WalkingBadGuy (life, objs, o, cls, name, uid) {
     val sprite = o.sprite || cls.sprite
     val w, h = sprite_hitbox(sprite, nil)
@@ -128,6 +205,8 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
         state_timer = timer(), turn_timer = timer(), turn_counter = 0,
         alpha = 1, alpha_before = 1,
         walk_speed = cls.walk_speed, max_drop = cls.max_drop,
+        sleep = if cls.sleeps => :sleeping => :walking,     ;; SSpiky
+        anim = anim_new(),
     ]
     val bdir = b.dir
     `tg_bg_new($id.u.i, (uint32_t) $uid.u.i, A_STR_OF($name)->s, (int) $bdir.u.i);`
@@ -143,8 +222,13 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
     val func group (g) { `tg_obj_group($id.u.i, (int) $g.u.i);` }
 
     ;; `MovingSprite::set_action(name, dir)`: the action, and its hitbox
-    val func set_action (act) {
-        `tg_look_action($l.u.i, A_STR_OF($act)->s);`
+    val func set_action (act, loops) {
+        val lp = loops || -1
+        if (b.anim.act == nil) || (b.anim.name != act) {
+            anim_set(b.anim, sprite, act, lp)
+            set b.anim.name = act
+        }
+        `tg_look_action_loops($l.u.i, A_STR_OF($act)->s, (int) $lp.u.i);`
         val aw, ah = sprite_hitbox(sprite, act)
         `tg_obj_size($id.u.i, (float) a_dbl($aw), (float) a_dbl($ah));`
     }
@@ -234,10 +318,21 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
     }
 
     ;; `WalkingBadguy::initialize`
-    val func initialize () {
+    val func walk_initialize () {
         set_action(DIR_NAME@(b.dir))
         set_vx(if b.dir == DIR.LEFT => -b.walk_speed => b.walk_speed)
         set_ax(0)
+    }
+
+    ;; `initialize`: `SSpiky::initialize`, for one that sleeps
+    val func initialize () {
+        if cls.sleeps {
+            set b.sleep = :sleeping
+            set_vx(0)
+            set_action("sleeping-" ++ DIR_NAME@(b.dir))
+        } else {
+            walk_initialize()
+        }
     }
 
     ;; `BadGuy::try_activate`
@@ -254,11 +349,15 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
         }
     }
 
-    ;; `WalkingBadguy::active_update`
-    val func active_update () {
-        ;; `BadGuy::active_update`
+    ;; `BadGuy::active_update`
+    val func base_active_update () {
         val water = b.in_water
         `tg_bg_move($id.u.i, a_truthy($water));`
+    }
+
+    ;; `WalkingBadguy::active_update`
+    val func walk_active_update () {
+        base_active_update()
         ;; walk down slopes smoothly
         if b.on_ground && (b.ny != 0) && ((b.nx * vx()) >= 0) {
             set_vy((math.abs(vx()) * math.abs(b.nx)) + 100)
@@ -291,6 +390,32 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
                 set_action("left")
             }
             else => nil
+        }
+    }
+
+    ;; `active_update`: `SSpiky::active_update`, for one that sleeps
+    val func active_update () {
+        if b.sleep == :walking {
+            walk_active_update()
+            return nil
+        }
+        if b.sleep == :sleeping {
+            ;; wakes up when the player comes in reach
+            if `:boolean tg_player_alive()` {
+                val d = b.dir
+                if `:boolean tg_sspiky_reach($id.u.i, (int) $d.u.i)` {
+                    set_action("waking-" ++ DIR_NAME@(b.dir), 1)
+                    set b.sleep = :waking
+                }
+            }
+            base_active_update()
+        }
+        if b.sleep == :waking {
+            if anim_done(b.anim) {
+                set b.sleep = :walking
+                walk_initialize()
+            }
+            base_active_update()
         }
     }
 
@@ -360,8 +485,15 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
         }
     }
 
-    ;; `WalkingBadguy::collision_solid`
+    ;; `WalkingBadguy::collision_solid` (`BadGuy::collision_solid` for one
+    ;; that is not walking)
     val func collision_solid (bits, nx, ny) {
+        if b.sleep != :walking {
+            set_vx(0)
+            set_vy(0)
+            on_ground_hit(bits, nx, ny)
+            return nil
+        }
         on_ground_hit(bits, nx, ny)
         if !pub.active {
             ;; `BadGuy::collision_solid`
@@ -409,6 +541,9 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
         val t = life.byid@other
         if t && (t.pub.kind == :badguy) {
             if t.pub.active && `:boolean tg_objs[$other.u.i-1]->group == TX_COLGROUP_MOVING` {
+                if b.sleep != :walking {
+                    return HIT.FORCE        ;; `BadGuy::collision_badguy`
+                }
                 if (bits & HIT.TOP) != 0 {
                     return HIT.FORCE
                 }
@@ -427,9 +562,11 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
                     kill_fall()
                     return HIT.FORCE
                 }
-                set_action("squished-" ++ DIR_NAME@(b.dir))
-                kill_squished()
-                return HIT.FORCE
+                if cls.squish {
+                    set_action("squished-" ++ DIR_NAME@(b.dir))
+                    kill_squished()
+                    return HIT.FORCE
+                }
             }
             ;; `BadGuy::collision_player`
             if `:boolean tx_player_is_invincible(&tg_tux)` {
@@ -447,6 +584,13 @@ task WalkingBadGuy (life, objs, o, cls, name, uid) {
             await :update
             update()
             until b.removed
+        }
+    } with {
+        ;; the sprite advances when it is drawn, after the step
+        loop on :stepped {
+            if (b.state != BG.INIT) && (b.state != BG.INACTIVE) {
+                anim_update(b.anim)
+            }
         }
     } with {
         loop e on :solid {
