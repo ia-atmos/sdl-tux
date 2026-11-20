@@ -61,7 +61,6 @@ static char    (*tg_bg_cls)[24];
 static int*      tg_bg_state;
 static int*      tg_bg_dir;             /* TX_DIR_* */
 static int*      tg_bg_slope;           /* m_detected_slope of might_fall */
-static float*    tg_bg_start_y;         /* m_start_position.y */
 static uint8_t*  tg_bg_portable;        /* the player can grab it now */
 static int       tg_bg_cap;
 
@@ -460,7 +459,6 @@ static void tg_bg_new (int id, uint32_t uid, const char* cls, int dir) {
         tg_bg_state = realloc(tg_bg_state, n * sizeof(int));
         tg_bg_dir   = realloc(tg_bg_dir, n * sizeof(int));
         tg_bg_slope = realloc(tg_bg_slope, n * sizeof(int));
-        tg_bg_start_y = realloc(tg_bg_start_y, n * sizeof(float));
         tg_bg_portable = realloc(tg_bg_portable, n);
         for (int i=tg_bg_cap; i<n; i++) tg_bg_uid[i] = 0;
         tg_bg_cap = n;
@@ -470,7 +468,6 @@ static void tg_bg_new (int id, uint32_t uid, const char* cls, int dir) {
     tg_bg_state[id] = 0;
     tg_bg_dir[id] = dir;
     tg_bg_slope[id] = 0;
-    tg_bg_start_y[id] = tg_objs[id-1]->bbox.y1;
     tg_bg_portable[id] = 0;
 }
 
@@ -637,22 +634,6 @@ static int tg_bsnow_free_side (int id, int dir) {
     tx_rect_set_left(&side, tx_rect_left(bb) + (dir == TX_DIR_LEFT ? -1.f : 1.f));
     tx_rect_set_right(&side, tx_rect_right(bb) + (dir == TX_DIR_LEFT ? -1.f : 1.f));
     return tx_is_free_of_statics(&tg_sec, &side, NULL, true, TX_TILE_SOLID);
-}
-
-/* FlyingSnowBall::active_update: the height it flies to, and its
- * movement; gives the new total_time_elapsed */
-static float tg_fly_update (int id, float total_time_elapsed) {
-    const float GLOBAL_SPEED_MULT = 0.8f;
-    const float TAU = 6.28318530717958647692f, PI = 3.14159265358979323846f;
-    TxObj* o = tg_objs[id-1];
-    TxPhysic* ph = &tg_physs[id-1];
-    total_time_elapsed = fmodf(total_time_elapsed + tg_dt, TAU / GLOBAL_SPEED_MULT);
-    float delta = total_time_elapsed * GLOBAL_SPEED_MULT;
-    float targetHgt = powf(sinf(delta), 3.f) + sinf(3.f * ((delta - PI) / 3.f)) / 3.f;
-    targetHgt = targetHgt * 100.f + tg_bg_start_y[id];
-    ph->vy = targetHgt - o->bbox.y1;
-    tx_obj_set_movement(o, tx_physic_get_movement(ph, tg_sec.gravity, 1.f));
-    return total_time_elapsed;
 }
 
 /* The part of BadGuy::update on the sector: out of it (1: the badguy is

@@ -97,6 +97,7 @@ task BadGuy (life, objs, o, cls, uid) {
         state_timer = timer(), turn_timer = timer(), turn_counter = 0,
         alpha = 1, alpha_before = 1,
         walk_speed = cls.walk_speed, max_drop = cls.max_drop,
+        start_y = o.y,                                      ;; m_start_position.y
         sleep = if cls.sleeps => :sleeping => :walking,     ;; SSpiky
         ground_y = 0, ground_set = false,                   ;; Jumpy
         anim = anim_new(),
@@ -421,8 +422,16 @@ task BadGuy (life, objs, o, cls, uid) {
 
     ;; `FlyingSnowBall::active_update`
     val func flying_active_update () {
-        val el = b.elapsed
-        set b.elapsed = `:number tg_fly_update($id.u.i, (float) a_dbl($el))`
+        ;; the height it flies to: sin(x)^3 + sin(3(x - pi/3))/3, around the
+        ;; start, at 0.8 the speed; its velocity reaches it in one second
+        val mult = 0.8
+        set b.elapsed = (b.elapsed + step_dt()) % (6.28318530717958647692 / mult)
+        val delta = b.elapsed * mult
+        val h = math.pow(math.sin(delta), 3.0) +
+                (math.sin(3.0 * ((delta - 3.14159265358979323846) / 3.0)) / 3.0)
+        val target = (h * 100.0) + b.start_y
+        set_vy(target - `:number tg_objs[$id.u.i-1]->bbox.y1`)
+        `tx_obj_set_movement(tg_objs[$id.u.i-1], tx_physic_get_movement(&TG_PHYS($id.u.i), tg_sec.gravity, 1.f));`
         if `:boolean tg_player_alive()` {
             set_dir(if `:boolean tg_tux.col.bbox.x1 > tg_objs[$id.u.i-1]->bbox.x1` => DIR.RIGHT => DIR.LEFT)
             set_action(DIR_NAME@(b.dir))
