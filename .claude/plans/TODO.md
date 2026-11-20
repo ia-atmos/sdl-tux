@@ -25,7 +25,7 @@ change).
 | # | Item | Was | State |
 |---|------|-----|-------|
 | 1 | The form of the 32-bit reals: the author chose on 2026-11-19 a build option; done in `ia-atmos/lang` `4565af1` (`ATMOS_REAL=float`), on in every build of the game; the suite is identical with it | C7 | done 2026-11-19 |
-| 2 | The init script of `between_glaciers.stl` defines a function (`release_treasure`), which two triggers of the level call: keep it as `:squirrel` until the second version | A1 | open (recommended: keep it so; explained again 2026-11-19) |
+| 2 | The init script of `between_glaciers.stl` defines a function (`release_treasure`), which two triggers of the level call: keep it as `:squirrel` until the second version | A1 | decided 2026-11-20: keep it so until the second version, then #2a (write that init script by hand in Atmos, `release_treasure` as a global function of the scripts) |
 | 3 | The trace of the official game: coins, blocks, powerups and the end of a level enter it with T5 | B1 | work |
 | 4 | Where the images, sounds and music come from (today: the checkout of the official game) | B2 | work |
 | 5 | T3, a level drawn: the snow, the HUD, the fade at the start of a level, the moving paths | B3 | work |
