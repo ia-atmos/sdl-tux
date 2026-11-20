@@ -15,15 +15,27 @@ The plan is in `.claude/plans/261113-sdl-tux.md`, and what is pending in
       levels are data too (`tools/squirrel.py`): 193 of 196.
 - [x] T2: the game over `env-sdl` (`game/main.atm`, `./tux.sh LEVEL`).
 - [ ] T3, in course: a level drawn: a frame of the first level is the
-      official one, pixel by pixel, but for the blocks and the badguys.
+      official one, pixel by pixel, with its blocks and badguys; not yet
+      the snow, the HUD, the fades, the moving paths.
 - [x] T4, for the small Tux: the player and the collisions with no
-      screen (`game/`, `tst/play.sh`), death and restart included.
-- [ ] T5, in course: objects as tasks (the coin, the triggers), the
-      interpreter of the scripts of a level (`game/script.atm`), and the
-      end of a level.
+      screen (`game/`, `tst/play.sh`), death and restart included; the
+      big and fire Tux in part.
+- [ ] T5, in course: objects as tasks (coins, bonus blocks, bricks, the
+      egg and the flowers, triggers), the interpreter of the scripts of a
+      level (`game/script.atm`), and the end of a level.
+- [ ] T6, in course: the badguys as tasks (`game/badguy.atm`): ten of the
+      classes of World 1.
 
-Thirty scripted runs, of up to 3000 ticks, give the trace of the official
-game line by line (`tools/compare.sh`).
+69 scripted runs, of up to 3000 ticks, give the trace of the official
+game line by line (`tools/compare.sh`), the badguys included.
+
+How it was written: the parts of the original that the trace depends on
+most finely (the collision system, the player, the camera) were first
+translated to C statement by statement; the rest (the session, the
+objects, the badguys) is Atmos, with 32-bit reals (`ATMOS_REAL=float`), and
+each piece was compared with the official game, tick by tick and pixel by
+pixel, before the next. Its size, CPU and memory against the original are
+in `doc/bench.md`.
 
 ## Tests
 
