@@ -8,8 +8,8 @@
 #   tools/deps.sh
 set -e
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-LANG_COMMIT=61979ce
-ENV_COMMIT=85b23cc
+LANG_COMMIT=d19d40f
+ENV_COMMIT=94cb414
 
 fetch () {   # dir repository commit
     if [ ! -d "$ROOT/../$1" ]; then
