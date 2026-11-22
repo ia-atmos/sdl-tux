@@ -177,6 +177,55 @@ task BouncyCoin (x, y, emerge, sprite) {
     }
 }
 
+;; A coin that falls (`HeavyCoin`): the coin that a glinting badguy leaves
+;; when it dies, at `x`, `y`, thrown at `vx`. It falls, bounces, and is
+;; collected as a coin.
+task HeavyCoin (life, objs, x, y, vx) {
+    val sprite = "images/objects/coin/coin.sprite"
+    val id = obj_new(x, y, 32, 32, COL.MOVING, KIND.OTHER)
+    `TG_PHYS($id.u.i).vx = (float) a_dbl($vx);`
+    val l = look_new(sprite, x, y, LAYER_OBJECTS - 1)
+    `tg_looks[$l.u.i].obj = $id.u.i;`
+    set pub = [resp=HIT.ABORT, kind=:coin]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+        `tg_look_del($l.u.i);`
+    }
+    var last = 0            ;; the sides of the last hit (`m_last_hit`)
+    par :any {
+        loop on :update {
+            `tg_obj_physic_move($id.u.i);`
+        }
+    } with {
+        ;; `HeavyCoin::collision_solid`
+        loop e on :solid {
+            val bits = e@0
+            if (bits & HIT.BOTTOM) != 0 {
+                if `:boolean TG_PHYS($id.u.i).vy > 200` {
+                    `TG_PHYS($id.u.i).vy = -99;`         ;; it bounces
+                } else {
+                    `TG_PHYS($id.u.i).vx = 0; TG_PHYS($id.u.i).vy = 0;`
+                }
+            }
+            if (bits & (HIT.LEFT | HIT.RIGHT)) != 0 {
+                `TG_PHYS($id.u.i).vx = -TG_PHYS($id.u.i).vx;`
+            }
+            if (bits & HIT.TOP) != 0 {
+                `TG_PHYS($id.u.i).vy = -TG_PHYS($id.u.i).vy;`
+            }
+            set last = bits
+        }
+    } with {
+        ;; `Coin::collision`: collected by the player
+        await :hit until (it@0 == PLAYER) && `:boolean tg_touches_player($id.u.i, -0.1f)`
+        set status.coins = math.min(status.coins + 1, 9999)
+        val px, py = `:number tg_objs[$id.u.i-1]->bbox.x1`, `:number tg_objs[$id.u.i-1]->bbox.y1`
+        spawn @objs BouncyCoin(px, py, false, sprite)
+    }
+}
+
 ;; The contents of a bonus block by the data of its tile
 ;; (`get_content_by_data`); an invalid one is a coin.
 pin BONUS_DATA = ["coin", "coin", "firegrow", "star", "1up", "icegrow",
@@ -213,10 +262,18 @@ func block_bounce (b, hitter) {
     }
     set b.bouncing = true
     set b.dir = -90
-    if hitter {
+    if hitter == true {
         `tg_looks[$l.u.i].angle = tg_block_angle($id.u.i);`
+    } else {
+        if hitter {
+            ;; an explosion, with its middle at `hitter`
+            `tg_looks[$l.u.i].angle = tg_block_angle_x($id.u.i, (float) a_dbl($hitter));`
+        }
     }
 }
+
+;; `Block::start_bounce`: the hitter is the player (`true`), nothing, or the
+;; middle x of an explosion
 
 ;; `set_action("empty")`: the hitbox of its image
 func block_empty (b) {
@@ -421,7 +478,7 @@ pin GROWS = [firegrow=BONUS.FIRE, icegrow=BONUS.ICE, airgrow=BONUS.AIR, earthgro
 ;; 32x32.
 task BonusBlock (life, objs, scripts, env, x, y, o) {
     pin b = block_new(life, task, x, y, o.h, o.sprite)
-    set pub = [resp=HIT.FORCE, empty=false]
+    set pub = [resp=HIT.FORCE, kind=:block, empty=false]
     defer {
         block_del(life, b)
     }
@@ -489,6 +546,17 @@ task BonusBlock (life, objs, scripts, env, x, y, o) {
             }
         }
     } with {
+        ;; `Explosion::explode`: shaken, and opened if near
+        loop e on :explode {
+            val d, cx = e@0, e@1
+            if d <= 100 {
+                block_bounce(b, cx)
+                if (d <= 60) && `:boolean tg_player_alive()` {
+                    try_open()
+                }
+            }
+        }
+    } with {
         await Block(b)
     }
 }
@@ -547,7 +615,7 @@ func block_break (objs, b, sprite) {
 ;; `sprite`, and `h`, as a bonus block.
 task Brick (life, objs, x, y, o) {
     pin b = block_new(life, task, x, y, o.h, o.sprite)
-    set pub = [resp=HIT.FORCE]
+    set pub = [resp=HIT.FORCE, kind=:block]
     defer {
         block_del(life, b)
     }
@@ -604,11 +672,23 @@ task Brick (life, objs, x, y, o) {
             }
             until gone
         }
-        block_break(objs, b, o.sprite)
+    } with {
+        ;; `Explosion::explode`: shaken, and broken if near
+        loop {
+            val e = await :explode
+            val d, cx = e@0, e@1
+            if d <= 100 {
+                block_bounce(b, cx)
+                if d <= 60 {
+                    try_break(false)
+                }
+            }
+            until gone
+        }
     } with {
         await Block(b)                  ;; it breaks: `break_me`
-        block_break(objs, b, o.sprite)
     }
+    block_break(objs, b, o.sprite)
 }
 
 ;; A bonus block of a level, as its fields give it.

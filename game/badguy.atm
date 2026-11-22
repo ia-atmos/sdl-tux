@@ -27,7 +27,7 @@ pin DIRS = [auto=DIR.AUTO, left=DIR.LEFT, right=DIR.RIGHT]
 pin DIR_NAME = [@(DIR.LEFT)="left", @(DIR.RIGHT)="right"]
 
 ;; The badguys, by the name of their class: their kind (a walking badguy,
-;; a jumpy, a bouncing or a flying snowball, an ice block, or a
+;; a jumpy, a bouncing or a flying snowball, an ice block, a bomb, or a
 ;; stalactite), their sprite; for the walking ones, their speed, and how far they let themselves fall from a ledge
 ;; (`max_drop_height`, -1: they always fall), whether the player squishes
 ;; them (`collision_squished`), and whether they sleep until the player
@@ -51,6 +51,8 @@ pin BADGUYS = [
                  walk_speed=80, max_drop=-1, squish=false],
     smartblock = [kind=:iceblock, name="smartblock", sprite="images/creatures/iceblock/smart_block.sprite",
                  walk_speed=80, max_drop=16, squish=false],
+    mrbomb     = [kind=:bomb, name="mrbomb", sprite="images/creatures/mr_bomb/mr_bomb.sprite",
+                 walk_speed=80, max_drop=16, squish=false, freezable=true],
     stalactite = [kind=:stalactite, name="stalactite", sprite="images/creatures/stalactite/stalactite_ice.sprite",
                  squish=false, layer=-1],
 ]
@@ -62,6 +64,114 @@ pin BADGUYS = [
 ;; (`k` is the position of the object in the sector, from 0).
 func uid_of (life, k) {
     (((2 * life.n) - 1) * 16777216) + k + 4
+}
+
+;; An explosion (`Explosion`), at `x`, `y` (its middle): it explodes at its
+;; first update (it shakes the camera, throws particles, pushes the
+;; player and the walking badguys, shakes and opens the blocks near), kills
+;; what it touches in the first frames of its sprite, and fades.
+task Explosion (life, x, y, push_strength) {
+    val sprite = "images/objects/explosion/explosion.sprite"
+    val box = sprite_box(sprite, "default")
+    val id = obj_new(x, y, box@2, box@3, COL.MOVING, KIND.OTHER)
+    `tg_explosion_center($id.u.i);`
+    val l = look_new(sprite, x, y, LAYER_OBJECTS + 40)
+    `tg_looks[$l.u.i].obj = $id.u.i;`
+    set pub = [resp=HIT.ABORT, kind=:explosion]
+    set life.byid@id = task
+    defer {
+        set life.byid@id = nil
+        `tg_obj_del($id.u.i);`
+        `tg_look_del($l.u.i);`
+    }
+    pin a = anim_new()
+    anim_set(a, sprite, "default", -1)
+    set a.name = "default"
+    var st = :waiting
+    pin fading = timer()
+
+    ;; `Explosion::explode`
+    val func explode () {
+        set st = :exploding
+        `tc_shake(&tg_cam, .1f, 0.f, 10.f);`
+        set a.loops = 1                         ;; `set_animation_loops(1)`
+        `tg_looks[$l.u.i].angle = tr_randf(&tg_grand, 0, 360);`
+        `tg_look_action_loops($l.u.i, "default", 1);`
+        ```
+        {
+            TxObj* o = tg_objs[$id.u.i-1];
+            tg_on_particles(NULL, tx_rect_middle(&o->bbox), -360, 360, 450.0f, 900.0f,
+                tx_vec(0, tg_sec.gravity*100), 100, .4f, .4f, .4f, 3, .8f, 49);
+        }
+        ```
+        if push_strength > 0 {
+            `tg_explosion_near($id.u.i, (float) a_dbl($push_strength), 0);`
+            val cx = `:number tx_rect_middle(&tg_objs[$id.u.i-1]->bbox).x`
+            loop i in `:number tg_near_n` {
+                val oid = `:number tg_near_id[$i.u.i]`
+                val d = `:number tg_near_d[$i.u.i]`
+                if oid == PLAYER {
+                    `if (!tg_tux.stone) tx_player_add_velocity(&tg_tux, tx_vec(tg_near_ax[$i.u.i], tg_near_ay[$i.u.i]));`
+                } else {
+                    val t = life.byid@oid
+                    if t {
+                        match t.pub.kind {
+                            :badguy => {
+                                ;; a walking badguy, active, gets the speed
+                                if t.pub.walks && t.pub.active {
+                                    `TG_PHYS($oid.u.i).vx = TG_PHYS($oid.u.i).vx + tg_near_ax[$i.u.i];`
+                                    `TG_PHYS($oid.u.i).vy = TG_PHYS($oid.u.i).vy + tg_near_ay[$i.u.i];`
+                                }
+                            }
+                            :block => emit @t :explode [d, cx]
+                            else => nil
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    par :any {
+        await :flush
+        loop {
+            await :update
+            match st {
+                :waiting => {
+                    explode()
+                    timer_start(fading, 0.15)
+                }
+                :exploding => {
+                    if timer_check(fading) {
+                        timer_start(fading, 1.5)
+                        set st = :fading
+                    }
+                }
+                :fading => nil
+            }
+            until (st == :fading) && timer_check(fading)
+        }
+    } with {
+        ;; the sprite advances when it is drawn, after the step
+        loop on :stepped {
+            anim_update(a)
+        }
+    } with {
+        ;; `Explosion::collision`: kills what it touches, while it explodes
+        loop e on :hit {
+            set pub.resp = HIT.ABORT
+            if (st == :exploding) && (a.idx <= 8) {
+                if e@0 == PLAYER {
+                    `if (!tg_tux.stone) tx_player_kill(&tg_tux, 0);`
+                } else {
+                    val t = life.byid@(e@0)
+                    if t && (t.pub.kind == :badguy) {
+                        emit @t :kill_fall
+                    }
+                }
+            }
+        }
+    }
 }
 
 ;; A badguy of the level: a walking one (`WalkingBadguy`, `SnowBall`,
@@ -76,7 +186,8 @@ task BadGuy (life, objs, o, cls, uid) {
     `tg_looks[$l.u.i].obj = $id.u.i;`
     `tg_looks[$l.u.i].hidden = 1;`
     set pub = [resp=HIT.FORCE, kind=:badguy, active=false, cls=cls.kind,
-               freezable=cls.freezable, can_break=false]
+               freezable=cls.freezable, can_break=false,
+               walks=(cls.kind == :walker) || (cls.kind == :iceblock) || (cls.kind == :bomb)]
     set life.byid@id = task
     defer {
         set life.byid@id = nil
@@ -91,6 +202,8 @@ task BadGuy (life, objs, o, cls, uid) {
         colgroup_active = if cls.kind == :stalactite => COL.TOUCHABLE => COL.MOVING,
         st = :hanging, shake_timer = timer(),               ;; Stalactite
         elapsed = 0, puff_timer = timer(),                  ;; FlyingSnowBall
+        bomb = :normal,                                     ;; MrBomb
+        glinting = (o.glinting == true),                    ;; m_is_glinting
         ice = :normal, flat_timer = timer(), nokick_timer = timer(),
         squishcount = 0, grabbed = false,                   ;; MrIceBlock
         in_water = false, removed = false,
@@ -172,11 +285,37 @@ task BadGuy (life, objs, o, cls, uid) {
 
     ;; `BadGuy::run_dead_script` (no dead scripts yet)
     val func run_dead_script () {
-        set pub.active = false
+        if pub.active {
+            set pub.active = false
+            ;; a glinting badguy leaves a coin
+            if b.glinting {
+                val cx = `:number tx_rect_middle(&tg_objs[$id.u.i-1]->bbox).x - 16.0f`
+                val cy = `:number tg_objs[$id.u.i-1]->bbox.y1 - 32.0f`
+                val vx = `:number tr_randf(&tg_grand, -96.0f, 96.0f)`
+                spawn @objs HeavyCoin(life, objs, cx, cy, vx)
+            }
+            set b.glinting = false
+        }
     }
 
     ;; `BadGuy::kill_fall`
     val func kill_fall () {
+        if cls.kind == :bomb {
+            ;; `MrBomb::kill_fall`: it explodes
+            if b.grabbed {
+                `tx_player_stop_grabbing(&tg_tux);`
+            }
+            if !b.removed {
+                set b.removed = true
+                `tg_obj_del($id.u.i);`
+                `tg_look_del($l.u.i);`
+                val cx = `:number tx_rect_middle(&tg_objs[$id.u.i-1]->bbox).x`
+                val cy = `:number tx_rect_middle(&tg_objs[$id.u.i-1]->bbox).y`
+                spawn @objs Explosion(life, cx, cy, 1464.8 * 32.0 * 32.0)
+                run_dead_script()
+            }
+            return nil
+        }
         if pub.active && (cls.kind != :stalactite) {
             set_vy(0)
             set_ay(0)
@@ -239,7 +378,7 @@ task BadGuy (life, objs, o, cls, uid) {
             set_action(DIR_NAME@(b.dir))
             return nil
         }
-        if (cls.kind != :walker) && (cls.kind != :iceblock) {
+        if (cls.kind != :walker) && (cls.kind != :iceblock) && (cls.kind != :bomb) {
             return nil              ;; `BadGuy::initialize`
         }
         if cls.sleeps {
@@ -588,8 +727,97 @@ task BadGuy (life, objs, o, cls, uid) {
         ice_portable()
     }
 
+    ;; `MrBomb::trigger`: it ticks
+    val func bomb_trigger () {
+        set b.bomb = :ticking
+        set_action("ticking-" ++ DIR_NAME@(b.dir), 1)
+        set_vx(0)
+        `tx_player_bounce(&tg_tux);`
+        `tg_bg_portable[$id.u.i] = 1;`      ;; `is_portable`, while ticking
+    }
+
+    ;; `MrBomb::update_ticking`
+    val func bomb_ticking () {
+        if b.on_ground {
+            set_vx(0)
+        }
+        if anim_done(b.anim) {
+            kill_fall()
+        } else {
+            if !b.grabbed {
+                `tg_obj_physic_move($id.u.i);`
+            }
+        }
+    }
+
+    ;; `MrBomb::grab`
+    val func bomb_grab (x, y, d) {
+        set b.grabbed = true
+        `tg_bg_portable[$id.u.i] = 0;`
+        if b.bomb == :ticking {
+            ;; it faces the other way than Tux, its loops continued
+            val act = "ticking-" ++ DIR_NAME@(b.dir)
+            set b.anim.name = act
+            `tg_look_action_loops($l.u.i, A_STR_OF($act)->s, -100);`
+            set b.colgroup_active = COL.DISABLED
+            if b.state == BG.ACTIVE {
+                group(COL.DISABLED)
+            }
+        }
+        ```
+        {
+            TxObj* o = tg_objs[$id.u.i-1];
+            TxVec mv = tx_vec_sub(tx_vec((float) a_dbl($x), (float) a_dbl($y)), tx_obj_get_pos(o));
+            tx_obj_set_movement(o, mv);
+            const float LOGICAL_FPS = 1000.0f / 15.0f;
+            TG_PHYS($id.u.i).vx = mv.x * LOGICAL_FPS;
+            TG_PHYS($id.u.i).vy = mv.y * LOGICAL_FPS;
+        }
+        ```
+        set_dir(d)
+        set b.colgroup_active = COL.DISABLED
+        if b.state == BG.ACTIVE {
+            group(COL.DISABLED)
+        }
+    }
+
+    ;; `MrBomb::ungrab`
+    val func bomb_ungrab (d) {
+        val du, dd = DIR.UP, DIR.DOWN
+        ```
+        {
+            float pvx = tg_tux.physic.vx;
+            int pdir = tg_tux.dir;
+            TxPhysic* ph = &TG_PHYS($id.u.i);
+            if (fabsf(pvx) < 1.0f)
+                ph->vx = 0.f;
+            else if ((pdir == TX_DIR_LEFT && pvx <= -1.0f) || (pdir == TX_DIR_RIGHT && pvx >= 1.0f))
+                ph->vx = pvx + (pdir == TX_DIR_LEFT ? -10.f : 10.f);
+            else
+                ph->vx = pvx + (pdir == TX_DIR_LEFT ? -330.f : 330.f);
+            int dir_ = (int) $d.u.i;
+            ph->vy = dir_ == (int) $du.u.i ? -500.f : dir_ == (int) $dd.u.i ? 500.f :
+                     pvx != 0.f ? -200.f : 0.f;
+        }
+        ```
+        set b.colgroup_active = COL.MOVING
+        if b.state == BG.ACTIVE {
+            group(COL.MOVING)
+        }
+        set b.grabbed = false
+        `tg_bg_portable[$id.u.i] = 1;`
+    }
+
     ;; `active_update`: `SSpiky::active_update`, for one that sleeps
     val func active_update () {
+        if cls.kind == :bomb {
+            if b.bomb == :ticking {
+                bomb_ticking()
+            } else {
+                walk_active_update()
+            }
+            return nil
+        }
         if cls.kind == :iceblock {
             ice_active_update()
             return nil
@@ -654,6 +882,12 @@ task BadGuy (life, objs, o, cls, uid) {
         match b.state {
             BG.ACTIVE => {
                 set pub.active = true
+                ;; a glinting badguy sparkles
+                if b.glinting && (`:number tr_rand(&tg_grand, 0, 8)` == 0) {
+                    val px = `:number tr_randf(&tg_grand, tg_objs[$id.u.i-1]->bbox.x1, tx_rect_right(&tg_objs[$id.u.i-1]->bbox))`
+                    val py = `:number tr_randf(&tg_grand, tg_objs[$id.u.i-1]->bbox.y1, tx_rect_bottom(&tg_objs[$id.u.i-1]->bbox))`
+                    spawn @objs SpriteParticle("images/particles/glint.sprite", "default", px, py, 0, 0, 0, 0, LAYER_OBJECTS + 6)
+                }
                 active_update()
             }
             BG.INIT => {
@@ -699,6 +933,17 @@ task BadGuy (life, objs, o, cls, uid) {
     ;; `WalkingBadguy::collision_solid` (`BadGuy::collision_solid` for one
     ;; that is not walking)
     val func collision_solid (bits, nx, ny) {
+        if (cls.kind == :bomb) && (b.bomb == :ticking) {
+            ;; `MrBomb::collision_solid`, while it ticks
+            if (bits & HIT.BOTTOM) != 0 {
+                set_vx(0)
+                set_vy(0)
+            } else {
+                kill_fall()
+            }
+            on_ground_hit(bits, nx, ny)
+            return nil
+        }
         if cls.kind == :iceblock {
             ;; `MrIceBlock::collision_solid`
             on_ground_hit(bits, nx, ny)
@@ -815,6 +1060,20 @@ task BadGuy (life, objs, o, cls, uid) {
     ;; `BadGuy::collision`, `WalkingBadguy::collision_badguy`,
     ;; `BadGuy::collision_player`, `SnowBall::collision_squished`
     val func collision (other, bits) {
+        if (cls.kind == :bomb) && (b.bomb == :ticking) {
+            ;; `MrBomb::collision`, while it ticks: a player or a badguy
+            ;; that it hits while it moves makes it explode
+            val t = life.byid@other
+            if (other == PLAYER) || (t && (t.pub.kind == :badguy)) {
+                if (vx() != 0) || (vy() != 0) {
+                    kill_fall()
+                }
+                return HIT.ABORT
+            }
+        }
+        if (cls.kind == :bomb) && b.grabbed {
+            return HIT.FORCE
+        }
         if (cls.kind == :iceblock) && (b.ice == :grabbed) {
             return HIT.FORCE
         }
@@ -827,6 +1086,9 @@ task BadGuy (life, objs, o, cls, uid) {
         val t = life.byid@other
         if t && (t.pub.kind == :badguy) {
             if t.pub.active && `:boolean tg_objs[$other.u.i-1]->group == TX_COLGROUP_MOVING` {
+                if (cls.kind == :bomb) && (b.bomb != :normal) {
+                    return HIT.FORCE
+                }
                 if cls.kind == :iceblock {
                     ;; `MrIceBlock::collision_badguy`
                     match b.ice {
@@ -897,6 +1159,18 @@ task BadGuy (life, objs, o, cls, uid) {
                     ice_squished()
                     return HIT.FORCE
                 }
+                if cls.kind == :bomb {
+                    ;; `MrBomb::collision_squished`
+                    if `:boolean tx_player_is_invincible(&tg_tux)` {
+                        `tx_player_bounce(&tg_tux);`
+                        kill_fall()
+                        return HIT.FORCE
+                    }
+                    if b.bomb != :ticking {
+                        bomb_trigger()
+                    }
+                    return HIT.FORCE
+                }
                 if cls.squish {
                     set_action("squished-" ++ DIR_NAME@(b.dir))
                     if cls.kind == :flying {
@@ -935,6 +1209,18 @@ task BadGuy (life, objs, o, cls, uid) {
                 kill_fall()
                 return HIT.ABORT
             }
+            ;; the player carries a badguy: both die (the carried one is let
+            ;; go twice, as the original: by itself, and by `stop_grabbing`)
+            val g = `:number tg_tux.grabbed_object ? tg_tux.grabbed_object->id : -1`
+            val tg = life.byid@g
+            if (g > 0) && tg && (tg.pub.kind == :badguy) {
+                val pd = `:number tg_tux.dir`
+                emit @tg :ungrab [pd]
+                `tx_player_stop_grabbing(&tg_tux);`
+                emit @tg :kill_fall
+                kill_fall()
+                return HIT.ABORT
+            }
             `tx_player_kill(&tg_tux, 0);`
             return HIT.FORCE
         }
@@ -944,6 +1230,7 @@ task BadGuy (life, objs, o, cls, uid) {
     par :any {
         loop {
             await :update
+            until b.removed         ;; gone in a collision (a bomb exploded)
             update()
             until b.removed
         }
@@ -972,11 +1259,19 @@ task BadGuy (life, objs, o, cls, uid) {
         }
     } with {
         loop e on :grab {
-            ice_grab(e@0, e@1, e@2)
+            if cls.kind == :bomb {
+                bomb_grab(e@0, e@1, e@2)
+            } else {
+                ice_grab(e@0, e@1, e@2)
+            }
         }
     } with {
         loop e on :ungrab {
-            ice_ungrab(e@0)
+            if cls.kind == :bomb {
+                bomb_ungrab(e@0)
+            } else {
+                ice_ungrab(e@0)
+            }
         }
     }
 }

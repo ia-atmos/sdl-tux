@@ -288,7 +288,9 @@ static int tg_obj_new (float x, float y, float w, float h, int group, int kind) 
 }
 
 static void tg_obj_del (int id) {
-    tg_objs[id-1]->valid = false;
+    if (tg_objs[id-1] != NULL) {        /* not freed already */
+        tg_objs[id-1]->valid = false;
+    }
 }
 
 /* `flush_game_objects`: the removed leave, the created enter. */
@@ -372,14 +374,17 @@ static int tg_block_player (int id, int bits) {
     return r;
 }
 
-/* `Block::start_bounce(player)`: the angle of the sprite. */
-static float tg_block_angle (int id) {
+/* `Block::start_bounce(hitter)`: the angle of the sprite, by the middle
+ * of the hitter (the player, or an explosion). */
+static float tg_block_angle_x (int id, float center_of_hitter) {
     const TxObj* b = tg_objs[id-1];
-    float center_of_hitter = tx_rect_middle(&tg_tux.col.bbox).x;
     float offset = (tx_rect_middle(&b->bbox).x - center_of_hitter)*2 / tx_rect_width(&b->bbox);
     if (offset > 2 || offset < -2)
         offset = 0;
     return 10 * offset;         /* BUMP_ROTATION_ANGLE */
+}
+static float tg_block_angle (int id) {
+    return tg_block_angle_x(id, tx_rect_middle(&tg_tux.col.bbox).x);
 }
 
 /* The looks of the objects: what the view draws of each one, a sprite
@@ -634,6 +639,52 @@ static int tg_bsnow_free_side (int id, int dir) {
     tx_rect_set_left(&side, tx_rect_left(bb) + (dir == TX_DIR_LEFT ? -1.f : 1.f));
     tx_rect_set_right(&side, tx_rect_right(bb) + (dir == TX_DIR_LEFT ? -1.f : 1.f));
     return tx_is_free_of_statics(&tg_sec, &side, NULL, true, TX_TILE_SOLID);
+}
+
+/* Explosion::explode: the objects near its middle (get_nearby_objects),
+ * that it sees, with the speed it gives each one: their ids (0, the
+ * player), the speed and the distance. */
+#define TG_NEAR_MAX 1024
+static int   tg_near_n;
+static int   tg_near_id[TG_NEAR_MAX];
+static float tg_near_ax[TG_NEAR_MAX], tg_near_ay[TG_NEAR_MAX], tg_near_d[TG_NEAR_MAX];
+
+static void tg_explosion_near (int id, float push_strength, int short_fuse) {
+    static TxObj* buf[TG_NEAR_MAX];
+    TxObj* e = tg_objs[id-1];
+    TxVec center = tx_rect_middle(&e->bbox);
+    int n = tx_get_nearby_objects(&tg_sec, center, (float) (128.0 * 32.0), buf, TG_NEAR_MAX);
+    if (n > TG_NEAR_MAX) n = TG_NEAR_MAX;
+    tg_near_n = 0;
+    for (int i=0; i<n; i++) {
+        TxObj* obj = buf[i];
+        if (!tx_free_line_of_sight(&tg_sec, center, tx_obj_get_pos(obj), true, NULL))
+            continue;
+        TxVec obj_vector = tx_rect_middle(&obj->bbox);
+        TxVec direction = tx_vec_sub(obj_vector, center);
+        float distance = sqrtf(direction.x*direction.x + direction.y*direction.y);  /* glm::length */
+        if (distance <= 1.0f)
+            continue;
+        float force = push_strength / (distance * distance);
+        float force_limit = short_fuse ? 400.f : 200.f;
+        if (force > force_limit)
+            force = force_limit;
+        /* glm::normalize: v * inversesqrt(dot(v, v)) */
+        float inv = 1.0f / sqrtf(direction.x*direction.x + direction.y*direction.y);
+        TxVec add_speed = tx_vec(direction.x * inv * force, direction.y * inv * force);
+        tg_near_id[tg_near_n] = (obj == &tg_tux.col) ? 0 : obj->id;
+        tg_near_ax[tg_near_n] = add_speed.x;
+        tg_near_ay[tg_near_n] = add_speed.y;
+        tg_near_d[tg_near_n]  = distance;
+        tg_near_n++;
+    }
+}
+
+/* The box of an explosion, centered at its position (`Explosion::Explosion`) */
+static void tg_explosion_center (int id) {
+    TxObj* o = tg_objs[id-1];
+    TxVec pos = tx_obj_get_pos(o);
+    tx_obj_set_pos(o, tx_vec_sub(pos, tx_vec_sub(tx_rect_middle(&o->bbox), pos)));
 }
 
 /* The part of BadGuy::update on the sector: out of it (1: the badguy is
