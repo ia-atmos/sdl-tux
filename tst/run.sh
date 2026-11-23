@@ -51,7 +51,9 @@ tools/compare.sh
 
 # the same runs, through the game over the SDL environment
 if [ -d "$ROOT/../env-sdl" ]; then
-    VIA=env tools/compare.sh | grep -c '^same' | sed 's/^/env: same /'
+    VIA=env tools/compare.sh > "$TMP/env.txt" || true
+    echo "env: same $(grep -c '^same' "$TMP/env.txt")"
+    grep -v '^same' "$TMP/env.txt" | head -8
 fi
 
 # a frame of the first level: identical to the one stored, and to the
