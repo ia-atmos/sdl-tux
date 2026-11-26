@@ -502,15 +502,14 @@ task BadGuy (life, objs, o, cls, uid) {
 
     ;; `Jumpy::hit`
     val func jumpy_hit (bits, nx, ny) {
-        if (bits & HIT.BOTTOM) != 0 {
-            set b.ground_y = `:number tg_objs[$id.u.i-1]->bbox.y1`
-            set b.ground_set = true
-            set_vy(if b.state != BG.ACTIVE => 0 => -600)
-            on_ground_hit(bits, nx, ny)
-        } else {
-            if (bits & HIT.TOP) != 0 {
-                set_vy(0)
+        ifs {
+            (bits & HIT.BOTTOM) != 0 => {
+                set b.ground_y = `:number tg_objs[$id.u.i-1]->bbox.y1`
+                set b.ground_set = true
+                set_vy(if b.state != BG.ACTIVE => 0 => -600)
+                on_ground_hit(bits, nx, ny)
             }
+            (bits & HIT.TOP) != 0 => set_vy(0)
         }
         HIT.CONTINUE
     }
@@ -741,12 +740,9 @@ task BadGuy (life, objs, o, cls, uid) {
         if b.on_ground {
             set_vx(0)
         }
-        if anim_done(b.anim) {
-            kill_fall()
-        } else {
-            if !b.grabbed {
-                `tg_obj_physic_move($id.u.i);`
-            }
+        ifs {
+            anim_done(b.anim) => kill_fall()
+            !b.grabbed        => `tg_obj_physic_move($id.u.i);`
         }
     }
 
@@ -1236,10 +1232,8 @@ task BadGuy (life, objs, o, cls, uid) {
         }
     } with {
         ;; the sprite advances when it is drawn, after the step
-        loop on :stepped {
-            if (b.state != BG.INIT) && (b.state != BG.INACTIVE) {
-                anim_update(b.anim)
-            }
+        loop on :stepped until ((b.state != BG.INIT) && (b.state != BG.INACTIVE)) {
+            anim_update(b.anim)
         }
     } with {
         loop e on :solid {
