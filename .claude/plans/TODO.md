@@ -64,6 +64,8 @@ change).
 | 25 | The general instruction for the ports (author, 2026-11-26, relayed by `atmos` from pico-1oom#29): fidelity is only the behaviour observable while running; idiomatic Atmos; native file formats; no bugs of safety or of the original's language. Answered: grade 4/10. To redo: the player and the collision kernel (`game/player.h`, `game/coll.h`, ~6400 lines of C translated statement by statement) as Atmos; the badguys by class (#22); the helpers of `game/tux.h` folded into the Atmos objects; record any bug of the original that the checks fix in a local copy | | answered, waiting for the author |
 | 26 | Excerpt, idiomatic (the `@name` rewrite, 2026-11-26): `game/data.atm:38`, `if ts.attrs@id == nil` | | shown |
 | 27 | Excerpt, bad (the `@name` rewrite, 2026-11-26): `game/badguy.atm:254` and 17 more, `DIR_NAME@(b.dir)`: the direction is an integer enum carried from C, mapped to its name by a table. With the direction as a tag (`:left`/`:right`), the table and the parentheses go away | | shown |
+| 28 | Excerpt, idiomatic (idioms of IDIOMS.md, 2026-11-26): `game/session.atm:737`, the methods of Tux for the scripts as lambdas, `get_velocity_x = \{ `:number tg_tux.physic.vx` }` | | shown |
+| 29 | Excerpt, bad (idioms of IDIOMS.md, 2026-11-26): `game/session.atm:265`, `ifs { hitter == true => ... ; hitter => ... }`: `hitter` is `true` (the player), a number (the middle x of an explosion), or nil, a union told apart by `== true`; each branch is a line of C. Better in the port: a tag or a table (`:player` / `[x=cx]`) with a `match`, and the angle of the look in Atmos | | shown |
 
 The details of each item follow, by its old id.
 
