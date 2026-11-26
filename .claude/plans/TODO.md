@@ -15,6 +15,11 @@ the local `#N` sequence and is listed in the index. Each bad one says
 why: what makes it awkward, and what would make it better (the
 language, the environment, or the port).
 
+Before writing Atmos, read `ia-atmos/lang` `.claude/plans/IDIOMS.md`
+(rule of 2026-11-26, atmos#29). When the author corrects or approves an
+excerpt and a general rule comes out of it, send it to `atmos` (source
+`sdl-tux#N`, a before and an after).
+
 Last update: 2026-11-20.
 
 ## Index of the items
