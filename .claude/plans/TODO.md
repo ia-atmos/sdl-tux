@@ -7,6 +7,11 @@ is left open.
 
 The plan is `261113-sdl-tux.md`, in this directory.
 
+Reports to the author (rules of 2026-11-26): at each big step, a few
+screenshots (`doc/shots/`); for each group of changes, one pair of short
+Atmos excerpts from that work, with file and line: one idiomatic, one
+bad (awkward, verbose, a workaround).
+
 Last update: 2026-11-20.
 
 ## Index of the items
