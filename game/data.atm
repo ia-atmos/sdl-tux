@@ -35,11 +35,11 @@ func data.tileset (path) {
     val src = data.load(path)
     val ts = [attrs=[], datas=[], objs=[], max=0]
     val func add (id, a, d, name, odata) {
-        if ts.attrs@(id) == nil {       ;; the first definition stays
-            set ts.attrs@(id) = a
-            set ts.datas@(id) = d
+        if ts.attrs@id == nil {       ;; the first definition stays
+            set ts.attrs@id = a
+            set ts.datas@id = d
             if name {
-                set ts.objs@(id) = [name, odata]
+                set ts.objs@id = [name, odata]
             }
             if id > ts.max {
                 set ts.max = id
