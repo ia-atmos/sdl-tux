@@ -262,13 +262,10 @@ func block_bounce (b, hitter) {
     }
     set b.bouncing = true
     set b.dir = -90
-    if hitter == true {
-        `tg_looks[$l.u.i].angle = tg_block_angle($id.u.i);`
-    } else {
-        if hitter {
-            ;; an explosion, with its middle at `hitter`
-            `tg_looks[$l.u.i].angle = tg_block_angle_x($id.u.i, (float) a_dbl($hitter));`
-        }
+    ifs {
+        hitter == true => `tg_looks[$l.u.i].angle = tg_block_angle($id.u.i);`
+        ;; an explosion, with its middle at `hitter`
+        hitter => `tg_looks[$l.u.i].angle = tg_block_angle_x($id.u.i, (float) a_dbl($hitter));`
     }
 }
 
@@ -729,50 +726,50 @@ func brick_of_tile (d) {
 ;; The player, as the scripts see it (`Player::register_class`). Each
 ;; method receives the vector of its arguments.
 pin TUX = [
-    walk = func (a) {
-        val x = a@0
+    walk = \{
+        val x = it@0
         `tx_player_walk(&tg_tux, (float) a_dbl($x));`
     },
-    set_velocity = func (a) {
-        val x, y = a@0, a@1
+    set_velocity = \{
+        val x, y = it@0, it@1
         `tx_player_set_velocity(&tg_tux, (float) a_dbl($x), (float) a_dbl($y));`
     },
-    get_velocity_x = func (a) { `:number tg_tux.physic.vx` },
-    get_velocity_y = func (a) { `:number tg_tux.physic.vy` },
-    do_jump = func (a) {
-        val y = a@0
+    get_velocity_x = \{ `:number tg_tux.physic.vx` },
+    get_velocity_y = \{ `:number tg_tux.physic.vy` },
+    do_jump = \{
+        val y = it@0
         `tx_player_do_jump(&tg_tux, (float) a_dbl($y));`
     },
-    do_duck     = func (a) { `tx_player_do_duck(&tg_tux);` },
-    do_backflip = func (a) { `tx_player_do_backflip(&tg_tux);` },
-    do_cheer    = func (a) { `tx_player_do_cheer(&tg_tux);` },
-    activate    = func (a) { `tx_player_activate(&tg_tux);` },
-    deactivate  = func (a) { `tx_player_deactivate(&tg_tux);` },
-    set_dir = func (a) {
-        val r = script.truthy(a@0)
+    do_duck     = \{ `tx_player_do_duck(&tg_tux);` },
+    do_backflip = \{ `tx_player_do_backflip(&tg_tux);` },
+    do_cheer    = \{ `tx_player_do_cheer(&tg_tux);` },
+    activate    = \{ `tx_player_activate(&tg_tux);` },
+    deactivate  = \{ `tx_player_deactivate(&tg_tux);` },
+    set_dir = \{
+        val r = script.truthy(it@0)
         `tx_player_set_dir(&tg_tux, a_truthy($r));`
     },
-    kill = func (a) {
-        val c = script.truthy(a@0)
+    kill = \{
+        val c = script.truthy(it@0)
         `tx_player_kill(&tg_tux, a_truthy($c));`
     },
-    use_scripting_controller = func (a) {
-        val yes = script.truthy(a@0)
+    use_scripting_controller = \{
+        val yes = script.truthy(it@0)
         `tx_player_use_scripting_controller(&tg_tux, a_truthy($yes));`
     },
-    do_scripting_controller = func (a) {
-        val c = CONTROLS@(a@0)
-        val yes = script.truthy(a@1)
+    do_scripting_controller = \{
+        val c = CONTROLS@(it@0)
+        val yes = script.truthy(it@1)
         if c != nil {
             `tx_player_do_scripting_controller(&tg_tux, (int) $c.u.i, a_truthy($yes));`
         }
     },
-    add_coins = func (a) {
-        set status.coins = math.min(status.coins + a@0, 9999)
+    add_coins = \{
+        set status.coins = math.min(status.coins + it@0, 9999)
     },
-    get_coins = func (a) { status.coins },
-    trigger_sequence = func (a) {
-        val seq = SEQS@(a@0)
+    get_coins = \{ status.coins },
+    trigger_sequence = \{
+        val seq = SEQS@(it@0)
         if seq != nil {
             `tx_player_trigger_sequence(&tg_tux, (int) $seq.u.i, NULL);`
         }
@@ -1044,12 +1041,9 @@ task Life (lvl, ts, cont, n) {
                 }
             }
             ;; `check_end_conditions`
-            if life.done {
-                set finishing = true
-            } else {
-                if !life.endseq && `:boolean tg_tux.dead` {
-                    break :restart
-                }
+            ifs {
+                life.done => set finishing = true
+                !life.endseq && `:boolean tg_tux.dead` => break :restart
             }
         }
         set first = false
