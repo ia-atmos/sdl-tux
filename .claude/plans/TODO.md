@@ -10,7 +10,10 @@ The plan is `261113-sdl-tux.md`, in this directory.
 Reports to the author (rules of 2026-11-26): at each big step, a few
 screenshots (`doc/shots/`); for each group of changes, one pair of short
 Atmos excerpts from that work, with file and line: one idiomatic, one
-bad (awkward, verbose, a workaround).
+bad (awkward, verbose, a workaround). Each excerpt takes a number of
+the local `#N` sequence and is listed in the index. Each bad one says
+why: what makes it awkward, and what would make it better (the
+language, the environment, or the port).
 
 Last update: 2026-11-20.
 
